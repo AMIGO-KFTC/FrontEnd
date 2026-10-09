@@ -2,7 +2,7 @@
 // AI 가 처리 중이거나 자료를 적재 중이면 1초, 그 외에는 4초 간격.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { ChatMessage, SessionDetail } from "../types";
+import type { ChatMessage, SessionDetail, UsageTotal } from "../types";
 
 export function isBusy(session: SessionDetail | null): boolean {
   if (!session) return false;
@@ -12,6 +12,7 @@ export function isBusy(session: SessionDetail | null): boolean {
 export function useSessionState(sessionId: string | null) {
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [usageTotal, setUsageTotal] = useState<UsageTotal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cursor = useRef(0);
   const timer = useRef<number | undefined>(undefined);
@@ -35,6 +36,7 @@ export function useSessionState(sessionId: string | null) {
       const data = await api.state(sessionId, cursor.current);
       if (!alive.current) return;
       setSession(data.session);
+      setUsageTotal(data.usage_total ?? null);
       addMessages(data.messages);
       busyRef.current = isBusy(data.session);
       setError(null);
@@ -73,5 +75,5 @@ export function useSessionState(sessionId: string | null) {
     };
   }, [sessionId, poll, schedule]);
 
-  return { session, messages, error, refresh, addMessages };
+  return { session, messages, usageTotal, error, refresh, addMessages };
 }

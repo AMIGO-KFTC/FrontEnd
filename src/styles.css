@@ -1731,3 +1731,46 @@ a {
     padding: 0 !important;
   }
 }
+
+/* Claude API 사용량 */
+.usage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  cursor: help;
+}
+
+.usage-badge.warn,
+.usage-summary.warn {
+  color: #9a5b00;
+  border-color: #f3d39b;
+  background: #fff8ea;
+}
+
+.usage-badge.over,
+.usage-summary.over {
+  color: #b42318;
+  border-color: #f5c2bd;
+  background: #fff1f0;
+}
+
+.usage-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}

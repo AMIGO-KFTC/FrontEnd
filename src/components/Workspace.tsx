@@ -1,5 +1,6 @@
 // 세션 작업 화면: 진행 단계 + (자료 | 대화·문서 | 항목 현황) 3단 레이아웃
 import { ArrowLeft, Bot, FileText, LayoutList, MessagesSquare, UploadCloud } from "lucide-react";
+import { UsageBadge } from "./UsageBadge";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { useSessionState } from "../hooks/useSessionState";
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export function Workspace({ sessionId, config, onBack, notify }: Props) {
-  const { session, messages, error, refresh, addMessages } = useSessionState(sessionId);
+  const { session, messages, usageTotal, error, refresh, addMessages } = useSessionState(sessionId);
   const [tab, setTab] = useState<Tab>("chat");
   const [mobile, setMobile] = useState<MobilePanel>("main");
   const [unseenDoc, setUnseenDoc] = useState(false);
@@ -127,6 +128,9 @@ export function Workspace({ sessionId, config, onBack, notify }: Props) {
           <Bot size={14} />
           {(session.engine || config?.engine) === "claude" ? `Claude · ${config?.model ?? ""}` : "오프라인 규칙 엔진"}
         </span>
+        {(session.usage.requests > 0 || (session.engine || config?.engine) === "claude") && (
+          <UsageBadge usage={session.usage} total={usageTotal} />
+        )}
       </header>
 
       <StageProgress session={session} />
