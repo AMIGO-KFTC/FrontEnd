@@ -1,8 +1,9 @@
 // 첫 화면: 인계자 기초 정보 등록 + 이전 작업 이어하기
 import { ArrowRight, Clock, FileSearch, MessagesSquare, ScrollText, Trash2, Wand2 } from "lucide-react";
+import { UsageSummary } from "./UsageBadge";
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api";
-import type { SessionCreate, SessionSummary } from "../types";
+import type { SessionCreate, SessionSummary, UsageTotal } from "../types";
 
 const STAGE_LABEL: Record<string, string> = {
   setup: "자료 등록",
@@ -31,10 +32,12 @@ interface Props {
 export function StartScreen({ onOpen, onError }: Props) {
   const [form, setForm] = useState<SessionCreate>(EMPTY);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [usage, setUsage] = useState<UsageTotal | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     api.listSessions().then(setSessions).catch((e: Error) => onError(e.message));
+    api.usage().then(setUsage).catch(() => setUsage(null));
   }, [onError]);
 
   const update = (key: keyof SessionCreate) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
@@ -148,6 +151,8 @@ export function StartScreen({ onOpen, onError }: Props) {
             인수인계 시작 <ArrowRight size={16} />
           </button>
         </form>
+
+        {usage && <UsageSummary total={usage} />}
 
         {sessions.length > 0 && (
           <div className="recent">

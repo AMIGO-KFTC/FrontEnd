@@ -67,6 +67,22 @@ export interface SessionSummary {
   updated_at: string;
 }
 
+// Claude API 사용량. cost_usd 는 모델 단가로 계산한 추정치(실제 청구액은 Anthropic Console)
+export interface Usage {
+  requests: number;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  cost_usd: number;
+}
+
+export interface UsageTotal extends Usage {
+  sessions: number;
+  budget_usd: number; // 0 이면 제한 없음
+  remaining_usd: number | null;
+}
+
 export interface SessionDetail extends SessionSummary {
   duties: string;
   successor: string;
@@ -80,6 +96,7 @@ export interface SessionDetail extends SessionSummary {
   question_count: number;
   sources: Source[];
   last_message_id: number;
+  usage: Usage;
 }
 
 export interface MessageMeta {
