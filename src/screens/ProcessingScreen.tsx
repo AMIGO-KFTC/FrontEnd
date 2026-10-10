@@ -2,15 +2,16 @@ import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import type { SessionDetail } from "../shared/types";
 
-export function ProcessingScreen({ session, onNext }: { session: SessionDetail; onNext: () => void }) {
+export function ProcessingScreen({ session, onNext, onRetry }: { session: SessionDetail; onNext: () => void; onRetry: () => void }) {
   const { stage, status, progress, sources } = session;
   const total = sources.length;
-  const finished = stage !== "setup" && stage !== "analyzing" && status !== "running";
+  const finished = stage !== "setup" && stage !== "analyzing" && status !== "running" && status !== "error";
   const ratio = progress.total ? Math.min(progress.current / progress.total, 1) : 0;
   const percent = finished ? 100 : Math.max(5, Math.round(ratio * 100));
   const analyzed = finished ? total : Math.min(Math.floor(ratio * total), total);
   const currentFile = sources[Math.min(analyzed, Math.max(total - 1, 0))]?.name ?? "";
   const currentTask = status === "error" ? session.error || "오류가 발생했어요" : progress.message || "문서의 텍스트와 표를 읽고 있어요";
+  const failed = status === "error";
   const progressValue = percent;
   return (
     <div className="processing-page">
@@ -35,7 +36,7 @@ export function ProcessingScreen({ session, onNext }: { session: SessionDetail; 
         </div>
         <span className="processing-kicker">{finished ? "ANALYSIS COMPLETE" : "ANALYZING YOUR FILES"}</span>
         <h1>{finished ? "자료를 모두 읽었어요" : "AMIGO가 자료를 분석하고 있어요"}</h1>
-        <p>{finished ? "자료 분석을 마쳤어요. 이제 빈틈을 채워볼까요?" : "자료의 양에 따라 잠시 시간이 걸릴 수 있어요. 창을 닫아도 분석은 계속됩니다."}</p>
+        <p>{failed ? "분석 중 문제가 생겼어요. 다시 시도해 주세요." : finished ? "자료 분석을 마쳤어요. 이제 빈틈을 채워볼까요?" : "자료의 양에 따라 잠시 시간이 걸릴 수 있어요. 창을 닫아도 분석은 계속됩니다."}</p>
         <section className="processing-status">
           <div className="processing-status-head"><span>{currentTask}</span><strong>{progressValue}%</strong></div>
           <div className="processing-track"><span style={{ width: `${progressValue}%` }} /></div>
@@ -50,7 +51,7 @@ export function ProcessingScreen({ session, onNext }: { session: SessionDetail; 
           <i />
           <div><strong>{analyzed}</strong><span>분석 완료한 자료</span></div>
         </div>
-        <button className="primary-button processing-next" disabled={!finished} onClick={onNext}>{finished ? "질의응답 시작" : "분석 중"} <Icon name="arrow" size={18} /></button>
+        <button className="primary-button processing-next" disabled={!finished && !failed} onClick={failed ? onRetry : onNext}>{failed ? "다시 시도" : finished ? "질의응답 시작" : "분석 중"} <Icon name="arrow" size={18} /></button>
       </main>
       <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>

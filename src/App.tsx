@@ -179,7 +179,7 @@ export default function App() {
       />
     );
   }
-  if (screen === "processing") return <ProcessingScreen session={session} onNext={() => toScreen("question")} />;
+  if (screen === "processing") return <ProcessingScreen session={session} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} />;
   if (screen === "question") {
     return (
       <QuestionScreen
