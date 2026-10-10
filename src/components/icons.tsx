@@ -1,7 +1,7 @@
 import {
-  AlertTriangle,
   Archive,
   Briefcase,
+  Building2,
   FileCode2,
   FileSpreadsheet,
   FileText,
@@ -49,11 +49,11 @@ export function sourceLabel(source: Source): string {
 
 export const SLOT_ICONS: Record<string, LucideIcon> = {
   duties: Briefcase,
+  stakeholders: Users,
   recurring: Repeat,
   projects: ListChecks,
-  contacts: Users,
-  systems: KeyRound,
-  issues: AlertTriangle,
+  accounts: KeyRound,
+  dept: Building2,
 };
 
 export function formatSize(bytes: number): string {

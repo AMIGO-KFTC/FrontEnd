@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../api";
 import type { SessionDetail } from "../types";
+import { MermaidDiagram } from "./MermaidDiagram";
 
 export function DocumentViewer({ session, onGenerate }: { session: SessionDetail; onGenerate: () => void }) {
   const [markdown, setMarkdown] = useState("");
@@ -75,6 +76,15 @@ export function DocumentViewer({ session, onGenerate }: { session: SessionDetail
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
+              pre: ({ children }) => <>{children}</>,
+              code: ({ className, children }) =>
+                /language-mermaid/.test(className ?? "") ? (
+                  <MermaidDiagram code={String(children).trimEnd()} />
+                ) : (
+                  <pre>
+                    <code className={className}>{children}</code>
+                  </pre>
+                ),
               table: ({ children }) => (
                 <div className="table-wrap">
                   <table>{children}</table>

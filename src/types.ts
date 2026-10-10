@@ -2,6 +2,7 @@
 
 export type Stage = "setup" | "analyzing" | "summary" | "qna" | "composing" | "review";
 export type Status = "idle" | "running" | "waiting" | "error";
+export type HandoverMode = "transfer" | "leave"; // 인사발령 / 장기휴가(Light)
 export type Coverage = "sufficient" | "partial" | "missing";
 
 export interface Source {
@@ -60,6 +61,8 @@ export interface SessionSummary {
   owner_name: string;
   organization: string;
   position: string;
+  mode: HandoverMode;
+  task_name: string;
   stage: Stage;
   status: Status;
   document_version: number;
@@ -126,6 +129,7 @@ export interface SlotSpec {
   description: string;
   fields: { key: string; label: string }[];
   required: string[];
+  modes: HandoverMode[];
 }
 
 export interface AppConfig {
@@ -134,6 +138,7 @@ export interface AppConfig {
   allowed_extensions: string[];
   format_labels: Record<string, string>;
   link_types: { key: string; label: string }[];
+  modes: { key: HandoverMode; label: string }[];
   slots: SlotSpec[];
   engine: string;
   model: string | null;
@@ -146,4 +151,6 @@ export interface SessionCreate {
   duties: string;
   successor: string;
   handover_date: string;
+  mode: HandoverMode;
+  task_name: string;
 }

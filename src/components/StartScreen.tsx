@@ -14,9 +14,24 @@ const STAGE_LABEL: Record<string, string> = {
   review: "문서 완성",
 };
 
-const EMPTY: SessionCreate = { owner_name: "", organization: "", position: "", duties: "", successor: "", handover_date: "" };
+const EMPTY: SessionCreate = {
+  owner_name: "",
+  organization: "",
+  position: "",
+  duties: "",
+  successor: "",
+  handover_date: "",
+  mode: "transfer",
+  task_name: "",
+};
+const MODES: { key: SessionCreate["mode"]; label: string; hint: string }[] = [
+  { key: "transfer", label: "인사발령", hint: "전체 양식: 업무 소개·이해관계자·정기/비정기 업무·시스템 접근 계정·부서별 특이사항" },
+  { key: "leave", label: "장기휴가", hint: "Light 양식: 업무 소개·정기 업무·이해관계자·시스템 접근 계정만" },
+];
 const DEMO: SessionCreate = {
   owner_name: "김민수",
+  mode: "transfer",
+  task_name: "기관 홈페이지 운영",
   organization: "디지털전략부 웹서비스팀",
   position: "과장",
   duties: "기관 홈페이지 운영, 웹 접근성 관리, 유지보수 계약 관리",
@@ -117,6 +132,20 @@ export function StartScreen({ onOpen, onError }: Props) {
           </button>
         </header>
         <form onSubmit={submit} className="form">
+          <fieldset className="mode-pick">
+            <legend>인수인계 유형</legend>
+            {MODES.map((m) => (
+              <label key={m.key} className={form.mode === m.key ? "on" : ""} title={m.hint}>
+                <input type="radio" name="mode" value={m.key} checked={form.mode === m.key} onChange={() => setForm({ ...form, mode: m.key })} />
+                <strong>{m.label}</strong>
+                <small>{m.hint}</small>
+              </label>
+            ))}
+          </fieldset>
+          <label>
+            <span>단위 업무명</span>
+            <input value={form.task_name} onChange={update("task_name")} placeholder="예) CD공동망 운영 (업무 단위별로 인수인계서를 만들어요)" maxLength={200} />
+          </label>
           <label>
             <span>
               성명 <b className="req">*</b>
@@ -125,16 +154,16 @@ export function StartScreen({ onOpen, onError }: Props) {
           </label>
           <div className="form-row">
             <label>
-              <span>소속 조직</span>
+              <span>소속 (부서명/팀명)</span>
               <input value={form.organization} onChange={update("organization")} placeholder="○○부 ○○팀" maxLength={100} />
             </label>
             <label>
-              <span>직책</span>
+              <span>직위</span>
               <input value={form.position} onChange={update("position")} placeholder="과장" maxLength={50} />
             </label>
           </div>
           <label>
-            <span>담당 업무</span>
+            <span>담당 업무 개요</span>
             <textarea value={form.duties} onChange={update("duties")} rows={3} placeholder="예) 홈페이지 운영, 웹 접근성 관리" maxLength={2000} />
           </label>
           <div className="form-row">

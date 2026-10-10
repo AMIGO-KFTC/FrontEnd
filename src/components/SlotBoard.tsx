@@ -12,7 +12,7 @@ const COVERAGE: Record<Coverage, { label: string; className: string }> = {
 
 export function SlotBoard({ session, config }: { session: SessionDetail; config: AppConfig | null }) {
   const [open, setOpen] = useState<string | null>(null);
-  const specs: SlotSpec[] = config?.slots ?? [];
+  const specs: SlotSpec[] = (config?.slots ?? []).filter((s) => !s.modes || s.modes.includes(session.mode ?? "transfer"));
   const analyzed = Object.keys(session.slots).length > 0;
   const counts = { sufficient: 0, partial: 0, missing: 0 };
   specs.forEach((s) => {
