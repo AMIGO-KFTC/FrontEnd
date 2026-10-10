@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, SessionDetail, Source } from "./shared/types";
+import type { AppConfig, SessionDetail, Source, UsageTotal } from "./shared/types";
+import { budgetNotice } from "./shared/usage";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
@@ -29,11 +30,18 @@ export default function App() {
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { session, messages, refresh, addMessages } = useSessionState(sessionId);
+  const [usage, setUsage] = useState<UsageTotal | null>(null);
+  const { session, messages, usageTotal, refresh, addMessages } = useSessionState(sessionId);
 
   useEffect(() => {
     api.config().then(setConfig).catch(() => setConfig(null));
   }, []);
+
+  // 예산 안내는 AI 작업을 시작하기 전 화면(기본 정보·자료 등록)에서만 쓴다.
+  useEffect(() => {
+    if (screen === "start" || screen === "upload") api.usage().then(setUsage).catch(() => setUsage(null));
+  }, [screen]);
+  const notice = budgetNotice(usageTotal ?? usage);
 
   // AI 단계가 끝나면 화면을 이어서 넘긴다: 분석 완료 → 질의응답, 문서 작성 시작 → 문서
   const stage = session?.stage;
@@ -159,7 +167,7 @@ export default function App() {
   };
 
   if (screen === "login") return <LoginScreen onLogin={() => toScreen("start")} />;
-  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
+  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} notice={notice} />;
 
   if (!session) {
     return null;
@@ -170,6 +178,7 @@ export default function App() {
       <UploadStepScreen
         sources={session.sources}
         error={error}
+        notice={notice}
         busy={busy}
         onBack={() => toScreen("start")}
         onNext={analyze}

@@ -7,6 +7,7 @@ import type { Source } from "../shared/types";
 type Props = {
   sources: Source[];
   error: string | null;
+  notice: { message: string; tone: "info" | "error" } | null;
   busy: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -21,7 +22,7 @@ function sourceStatus(source: Source): string {
   return "";
 }
 
-export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource }: Props) {
+export function UploadStepScreen({ sources, error, notice, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const files = sources.filter((source) => source.kind === "file");
@@ -140,6 +141,7 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
             ))}
         </section>
         <ErrorNote message={error} />
+        {notice && <ErrorNote message={notice.message} tone={notice.tone} />}
         <div className="upload-step-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
           <button className="primary-button onboarding-next" disabled={busy} onClick={onNext}>AI 분석 시작 <Icon name="arrow" size={18} /></button>
