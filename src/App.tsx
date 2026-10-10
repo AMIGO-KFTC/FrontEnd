@@ -134,6 +134,7 @@ export default function App() {
     }
     setBusy(true);
     const result = await run(() => api.analyze(sessionId));
+    if (result) await refresh(); // 재분석이면 이전 단계 값이 남아 있으므로 새 상태를 받은 뒤 화면을 넘긴다
     setBusy(false);
     if (result) setScreen("processing");
   };
@@ -186,7 +187,7 @@ export default function App() {
         messages={messages}
         config={config}
         error={error}
-        onBack={() => toScreen("processing")}
+        onBack={() => toScreen("upload")}
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}
         onComplete={generate}
