@@ -75,7 +75,6 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
           <div className="final-document-toolbar">
             <div>
               <button className={isEditing ? "editing" : ""} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
-              <button><Icon name="more" size={17} /></button>
             </div>
           </div>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
