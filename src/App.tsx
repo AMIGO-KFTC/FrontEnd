@@ -190,6 +190,7 @@ export default function App() {
         onBack={() => toScreen("upload")}
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}
+        onUploadFiles={uploadFiles}
         onComplete={generate}
       />
     );

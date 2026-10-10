@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import { ErrorNote } from "../shared/ErrorNote";
@@ -20,10 +20,12 @@ type Props = {
   onBack: () => void;
   onSend: (text: string) => void;
   onSkip: () => void;
+  onUploadFiles: (files: File[]) => void;
   onComplete: () => void;
 };
 
-export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onComplete }: Props) {
+export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onComplete }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [answer, setAnswer] = useState("");
   const [expandedCoverage, setExpandedCoverage] = useState<number | null>(null);
   const specs = config?.slots ?? [];
@@ -48,6 +50,9 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
     const check = session.gaps.filter((g) => g.slot === spec.key && (g.status === "open" || g.status === "asked")).length;
     return { title: spec.title, count: slot?.items.length ?? 0, status: view.status, label: view.label, icon: SLOT_ICON[spec.key] ?? "file", check };
   });
+  const extraSources = session.sources.filter((source) => source.added_stage !== "setup");
+  const extraReading = extraSources.some((source) => source.status === "pending" || source.status === "processing");
+  const extraNote = extraSources.length ? `대화 중 올린 자료 ${extraSources.length}건${extraReading ? "을 읽고 있어요" : "이 분석에 반영됐어요"}` : null;
   const countOf = (status: string) => rows.filter((row) => row.status === status).length;
 
   return (
@@ -98,10 +103,12 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
               placeholder="답변을 입력해 주세요"
             />
             <div>
-              <button className="answer-attach"><Icon name="paperclip" size={17} /> 자료 첨부</button>
+              <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) onUploadFiles(files); event.target.value = ""; }} />
+              <button className="answer-attach" onClick={() => fileRef.current?.click()}><Icon name="paperclip" size={17} /> 자료 첨부</button>
               <button className="answer-send" disabled={waiting} onClick={() => submitAnswer()}>{isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
             </div>
           </section>
+          <ErrorNote message={extraNote} tone="info" />
           <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
         </section>
         <aside className="question-summary">
