@@ -979,3 +979,8 @@ body { background: #faf8f6; }
 .paper-section > blockquote p { margin: 0; }
 .paper-section strong { color: #4d4650; }
 .paper-section table { margin: 10px 0; font-size: 8px; }
+
+/* 툴바의 다른 버튼을 없앤 뒤 "직접 수정하기"가 :last-child(아이콘 전용 29px) 규칙을 받지 않도록 되돌린다. 600px 이하는 원래 아이콘 전용이라 그대로 둔다. */
+@media (min-width: 601px) {
+  .final-document-toolbar button.edit-toggle { width: auto; padding: 0 9px; display: flex; }
+}

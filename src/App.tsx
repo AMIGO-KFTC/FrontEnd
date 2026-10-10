@@ -191,6 +191,7 @@ export default function App() {
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}
         onUploadFiles={uploadFiles}
+        onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onComplete={generate}
       />
     );
@@ -203,6 +204,8 @@ export default function App() {
         markdown={markdown}
         loading={docLoading}
         sourceCount={citationCount(session)}
+        failedMessage={session.status === "error" ? session.error : null}
+        onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => toScreen("question")}
         onComplete={() => toScreen("complete")}
       />

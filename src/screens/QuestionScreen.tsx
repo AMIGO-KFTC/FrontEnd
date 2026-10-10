@@ -21,15 +21,17 @@ type Props = {
   onSend: (text: string) => void;
   onSkip: () => void;
   onUploadFiles: (files: File[]) => void;
+  onRetry: () => void;
   onComplete: () => void;
 };
 
-export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onComplete }: Props) {
+export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [answer, setAnswer] = useState("");
   const [expandedCoverage, setExpandedCoverage] = useState<number | null>(null);
   const specs = config?.slots ?? [];
   const asking = messages.filter((m) => m.role === "assistant" && (m.kind === "question" || m.kind === "confirm")).at(-1);
+  const failed = session.status === "error";
   const waiting = session.status === "running" || session.stage !== "qna";
   const gap = session.gaps.find((g) => g.id === asking?.meta.gap_id);
   const category = asking?.kind === "confirm" ? "확인 요청" : (specs.find((spec) => spec.key === asking?.meta.slot)?.title ?? "");
@@ -105,7 +107,7 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
             <div>
               <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) onUploadFiles(files); event.target.value = ""; }} />
               <button className="answer-attach" onClick={() => fileRef.current?.click()}><Icon name="paperclip" size={17} /> 자료 첨부</button>
-              <button className="answer-send" disabled={waiting} onClick={() => submitAnswer()}>{isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
+              <button className="answer-send" disabled={waiting} onClick={() => (failed ? onRetry() : submitAnswer())}>{failed ? "다시 시도" : isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
             </div>
           </section>
           <ErrorNote message={extraNote} tone="info" />
@@ -132,7 +134,7 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
           </div>
           <div className="summary-note"><Icon name="sparkle" size={15} /><p><strong>답변은 자동으로 정리돼요</strong><br />편하게 말하듯 작성해 주세요.</p></div>
         </aside>
-        <ErrorNote message={error} />
+        <ErrorNote message={error ?? (failed ? session.error || "AI 처리 중 문제가 생겼어요. 다시 시도해 주세요." : null)} />
         <div className="question-page-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
           <button className="primary-button onboarding-next" disabled={session.status === "running"} onClick={onComplete}>인수인계서 생성하기 <Icon name="arrow" size={18} /></button>

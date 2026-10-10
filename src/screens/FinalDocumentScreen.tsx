@@ -12,6 +12,8 @@ type Props = {
   markdown: string;
   loading: boolean;
   sourceCount: number;
+  failedMessage: string | null;
+  onRetry: () => void;
   onBack: () => void;
   onComplete: () => void;
 };
@@ -27,7 +29,7 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, loading, sourceCount, onBack, onComplete }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const tasks = data.task.split("\n").filter(Boolean);
@@ -74,7 +76,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
         <section className="final-document-view">
           <div className="final-document-toolbar">
             <div>
-              <button className={isEditing ? "editing" : ""} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
+              <button className={`edit-toggle ${isEditing ? "editing" : ""}`} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
             </div>
           </div>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
@@ -89,7 +91,13 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
                 <div><small>인계 예정일</small><strong>{data.date || "미정"}</strong></div>
               </div>
             </header>
-            {loading && parsed.length === 0 && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
+            {parsed.length === 0 && failedMessage !== null && (
+              <section className="paper-section">
+                <p>{failedMessage || "문서를 만드는 중 문제가 생겼어요. 다시 시도해 주세요."}</p>
+                <button className="primary-button onboarding-next" onClick={onRetry}>다시 시도</button>
+              </section>
+            )}
+            {loading && parsed.length === 0 && failedMessage === null && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
             {parsed.map((section, index) => (
               <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${index}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
