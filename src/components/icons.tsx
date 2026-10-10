@@ -48,12 +48,12 @@ export function sourceLabel(source: Source): string {
 }
 
 export const SLOT_ICONS: Record<string, LucideIcon> = {
-  duties: Briefcase,
-  recurring: Repeat,
-  projects: ListChecks,
-  contacts: Users,
+  overview: Briefcase,
+  stakeholders: Users,
+  regular: Repeat,
+  irregular: ListChecks,
   systems: KeyRound,
-  issues: AlertTriangle,
+  dept_notes: AlertTriangle,
 };
 
 export function formatSize(bytes: number): string {
