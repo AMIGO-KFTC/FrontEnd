@@ -1,7 +1,7 @@
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 
-export function CompletionScreen({ onViewDocument, onNew }: { onViewDocument: () => void; onNew: () => void }) {
+export function CompletionScreen({ sourceCount, questionCount, citationCount, onViewDocument, onNew }: { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void }) {
   return (
     <div className="completion-page">
       <header className="completion-header"><Brand /></header>
@@ -17,11 +17,11 @@ export function CompletionScreen({ onViewDocument, onNew }: { onViewDocument: ()
         <h1>인수인계가 완료됐어요.<br />그동안 정말 수고하셨습니다.</h1>
         <p>AMIGO가 정리한 업무의 맥락과 경험이<br />다음 담당자에게 안전하게 이어질 거예요.</p>
         <section className="completion-summary">
-          <div><span><Icon name="file" size={18} /></span><strong>8</strong><small>분석한 자료</small></div>
+          <div><span><Icon name="file" size={18} /></span><strong>{sourceCount}</strong><small>분석한 자료</small></div>
           <i />
-          <div><span><Icon name="message" size={18} /></span><strong>4</strong><small>완료한 확인</small></div>
+          <div><span><Icon name="message" size={18} /></span><strong>{questionCount}</strong><small>완료한 확인</small></div>
           <i />
-          <div><span><Icon name="link" size={18} /></span><strong>18</strong><small>연결된 출처</small></div>
+          <div><span><Icon name="link" size={18} /></span><strong>{citationCount}</strong><small>연결된 출처</small></div>
         </section>
         <div className="completion-actions">
           <button className="secondary-completion" onClick={onViewDocument}><Icon name="file" size={16} /> 완성 문서 다시 보기</button>

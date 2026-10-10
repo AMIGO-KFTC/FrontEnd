@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import type { ChatMessage, SessionDetail } from "../types";
+import type { ChatMessage, SessionDetail } from "../../shared/types";
 
 interface Props {
   session: SessionDetail;

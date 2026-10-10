@@ -969,3 +969,13 @@ body { background: #faf8f6; }
 @media (max-width: 850px) {
   .finish-handover-mobile { display: flex; width: calc(100% - 36px); margin: 12px 18px 24px; height: 44px; font-size: 11px; }
 }
+
+/* 연동 시 추가: 생성된 Markdown 문서의 목록·인용·소제목을 .paper-section 안에서 디자인의 글자 크기와 색에 맞춘다. */
+.paper-section h3 { margin: 18px 0 8px; color: #4d4650; font-size: 10px; font-weight: 700; }
+.paper-section ul, .paper-section ol { margin: 8px 0; padding-left: 18px; color: #5f5962; font-size: 9px; line-height: 1.9; }
+.paper-section ul { list-style: disc; }
+.paper-section ol { list-style: decimal; }
+.paper-section > blockquote { margin: 16px 0 0; padding: 13px 14px; border-left: 3px solid #7558d2; background: #f7f4fc; color: #746d78; font-size: 8px; line-height: 1.8; }
+.paper-section > blockquote p { margin: 0; }
+.paper-section strong { color: #4d4650; }
+.paper-section table { margin: 10px 0; font-size: 8px; }

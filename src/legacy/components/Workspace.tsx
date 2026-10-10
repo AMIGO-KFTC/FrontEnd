@@ -2,9 +2,9 @@
 import { ArrowLeft, Bot, FileText, LayoutList, MessagesSquare, UploadCloud } from "lucide-react";
 import { UsageBadge } from "./UsageBadge";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../api";
-import { useSessionState } from "../hooks/useSessionState";
-import type { AppConfig, ChatMessage, Source } from "../types";
+import { api } from "../../shared/api";
+import { useSessionState } from "../../shared/useSessionState";
+import type { AppConfig, ChatMessage, Source } from "../../shared/types";
 import { ChatPanel } from "./ChatPanel";
 import { DocumentViewer } from "./DocumentViewer";
 import { SlotBoard } from "./SlotBoard";

@@ -1,7 +1,7 @@
 // 자료 등록: 드래그 앤 드롭 파일 업로드 + 컨플루언스/나누미 링크 입력 + 등록 자료 목록 + 분석 시작
 import { AlertCircle, CheckCircle2, Link2, Loader2, Play, RotateCcw, UploadCloud, X } from "lucide-react";
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
-import type { AppConfig, SessionDetail, Source } from "../types";
+import type { AppConfig, SessionDetail, Source } from "../../shared/types";
 import { formatSize, sourceIcon, sourceLabel } from "./icons";
 
 interface Props {

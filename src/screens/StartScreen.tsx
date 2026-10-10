@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
+import { ErrorNote } from "../shared/ErrorNote";
 import type { StartData } from "../shared/handover";
 
-export function StartScreen({ onStart }: { onStart: (data: StartData) => void }) {
+export function StartScreen({ onStart, busy = false, error = null }: { onStart: (data: StartData) => void; busy?: boolean; error?: string | null }) {
   const [data, setData] = useState<StartData>({ name: "김민준", division: "프로덕트본부", team: "플랫폼팀", role: "프로덕트 매니저", task: "B2B 플랫폼 기획 및 운영", date: "2025-03-14" });
   const [taskDraft, setTaskDraft] = useState("");
   const update = (key: keyof StartData, value: string) => setData({ ...data, [key]: value });
@@ -100,8 +101,9 @@ export function StartScreen({ onStart }: { onStart: (data: StartData) => void })
               </label>
               <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>
             </div>
+          <ErrorNote message={error} />
           <div className="onboarding-actions">
-            <button className="primary-button onboarding-next" onClick={() => onStart(data)}>다음 단계로 이동 <Icon name="arrow" size={18} /></button>
+            <button className="primary-button onboarding-next" disabled={busy} onClick={() => onStart(data)}>다음 단계로 이동 <Icon name="arrow" size={18} /></button>
           </div>
         </section>
       </main>

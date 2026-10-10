@@ -2,8 +2,8 @@
 import { ArrowRight, Clock, FileSearch, MessagesSquare, ScrollText, Trash2, Wand2 } from "lucide-react";
 import { UsageSummary } from "./UsageBadge";
 import { useEffect, useState, type FormEvent } from "react";
-import { api } from "../api";
-import type { SessionCreate, SessionSummary, UsageTotal } from "../types";
+import { api } from "../../shared/api";
+import type { SessionCreate, SessionSummary, UsageTotal } from "../../shared/types";
 
 const STAGE_LABEL: Record<string, string> = {
   setup: "자료 등록",

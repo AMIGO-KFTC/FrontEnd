@@ -1,21 +1,40 @@
 import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
+import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
+import type { Source } from "../shared/types";
 
-export function UploadStepScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+type Props = {
+  sources: Source[];
+  error: string | null;
+  busy: boolean;
+  onBack: () => void;
+  onNext: () => void;
+  onUploadFiles: (files: File[]) => void;
+  onAddLink: (url: string) => void;
+  onDeleteSource: (source: Source) => void;
+};
+
+function sourceStatus(source: Source): string {
+  if (source.status === "pending" || source.status === "processing") return " · 읽는 중";
+  if (source.status === "failed") return ` · 실패${source.error ? `: ${source.error}` : ""}`;
+  return "";
+}
+
+export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState("");
-  const [links, setLinks] = useState<string[]>([]);
+  const files = sources.filter((source) => source.kind === "file");
+  const links = sources.filter((source) => source.kind === "link");
   const [activeSource, setActiveSource] = useState<"file" | "mail" | "confluence" | "messenger">("file");
   const addFiles = (fileList: FileList | null) => {
-    if (!fileList) return;
-    setFiles((current) => [...current, ...Array.from(fileList)]);
+    if (!fileList || !fileList.length) return;
+    onUploadFiles(Array.from(fileList));
   };
   const addLink = () => {
     const nextLink = link.trim();
     if (!nextLink) return;
-    setLinks((current) => [...current, nextLink]);
+    onAddLink(nextLink);
     setLink("");
   };
 
@@ -103,26 +122,27 @@ export function UploadStepScreen({ onBack, onNext }: { onBack: () => void; onNex
         </section>
         ) : null}
         <section className="step-added-list">
-            <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{files.length + links.length}개</span></div>
-            {files.length === 0 && links.length === 0 && <div className="empty-resource">아직 등록된 자료가 없습니다.</div>}
-            {files.map((file, index) => (
-              <div className="added-resource" key={`${file.name}-${index}`}>
+            <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{sources.length}개</span></div>
+            {sources.length === 0 && <div className="empty-resource">아직 등록된 자료가 없습니다.</div>}
+            {files.map((file) => (
+              <div className="added-resource" key={file.id}>
                 <span><Icon name="file" size={17} /></span>
-                <div><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></div>
-                <button onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}><Icon name="close" size={14} /></button>
+                <div><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(1)} MB{sourceStatus(file)}</small></div>
+                <button onClick={() => onDeleteSource(file)}><Icon name="close" size={14} /></button>
               </div>
             ))}
-            {links.map((item, index) => (
-              <div className="added-resource" key={`${item}-${index}`}>
+            {links.map((item) => (
+              <div className="added-resource" key={item.id}>
                 <span><Icon name="link" size={17} /></span>
-                <div><strong>{item}</strong><small>외부 링크</small></div>
-                <button onClick={() => setLinks((current) => current.filter((_, linkIndex) => linkIndex !== index))}><Icon name="close" size={14} /></button>
+                <div><strong>{item.url || item.name}</strong><small>외부 링크{sourceStatus(item)}</small></div>
+                <button onClick={() => onDeleteSource(item)}><Icon name="close" size={14} /></button>
               </div>
             ))}
         </section>
+        <ErrorNote message={error} />
         <div className="upload-step-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
-          <button className="primary-button onboarding-next" onClick={onNext}>AI 분석 시작 <Icon name="arrow" size={18} /></button>
+          <button className="primary-button onboarding-next" disabled={busy} onClick={onNext}>AI 분석 시작 <Icon name="arrow" size={18} /></button>
         </div>
       </main>
       <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>

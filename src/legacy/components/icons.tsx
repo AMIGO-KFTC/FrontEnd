@@ -14,7 +14,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import type { Source } from "../types";
+import type { Source } from "../../shared/types";
 
 const CODE = new Set([
   ".py", ".java", ".kt", ".js", ".jsx", ".ts", ".tsx", ".vue", ".go", ".rb", ".php", ".c", ".h", ".cpp", ".hpp",

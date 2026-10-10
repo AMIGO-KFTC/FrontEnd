@@ -1,6 +1,6 @@
 // STAGE 1(분석) ➔ 2(요약) ➔ 3(Q&A) ➔ 4(최종 생성) 진행 상태 표시
 import { Check, Loader2 } from "lucide-react";
-import type { SessionDetail, Stage } from "../types";
+import type { SessionDetail, Stage } from "../../shared/types";
 
 const STEPS = [
   { n: 1, label: "자료 분석", desc: "문서·메일·링크에서 업무 정보 추출" },

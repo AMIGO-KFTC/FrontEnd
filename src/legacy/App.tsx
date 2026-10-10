@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api";
+import { api } from "../shared/api";
 import { StartScreen } from "./components/StartScreen";
 import { Workspace } from "./components/Workspace";
-import type { AppConfig } from "./types";
+import type { AppConfig } from "../shared/types";
 
 interface Toast {
   id: number;

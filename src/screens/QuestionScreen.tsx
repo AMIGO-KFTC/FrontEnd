@@ -1,37 +1,54 @@
 import { useState } from "react";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
+import { ErrorNote } from "../shared/ErrorNote";
 import type { IconName } from "../shared/Icon";
+import type { AppConfig, ChatMessage, Coverage, SessionDetail } from "../shared/types";
 
-export function QuestionScreen({ onBack, onComplete }: { onBack: () => void; onComplete: () => void }) {
-  const questions = [
-    { category: "정기 업무", text: "매주 진행하는 ‘운영 지표 리뷰’에는 누가 참석하고, 결과는 어디에 공유하나요?", hint: "참석자와 공유 채널을 함께 알려주세요.", suggestions: ["플랫폼팀 전원", "관련 부서 리더", "별도 참석자 없음"] },
-    { category: "장애 대응", text: "서비스 장애가 발생했을 때 가장 먼저 연락해야 하는 담당자는 누구인가요?", hint: "이름, 역할 또는 연락 채널을 알려주세요.", suggestions: ["팀장에게 보고", "당직 담당자 확인", "운영 채널에 공유"] },
-    { category: "시스템 권한", text: "인수자가 미리 신청해야 하는 시스템이나 관리자 권한이 있나요?", hint: "시스템 이름과 신청 방법을 알려주세요.", suggestions: ["Jira 관리자", "AWS 콘솔", "추가 권한 없음"] },
-    { category: "진행 중인 업무", text: "현재 진행 중인 업무 중 가장 먼저 확인해야 할 일정이나 이슈는 무엇인가요?", hint: "마감일이나 주의할 점을 함께 알려주세요.", suggestions: ["이번 주 배포", "고객사 요청", "특이사항 없음"] },
-  ];
-  const [questionIndex, setQuestionIndex] = useState(0);
+const SLOT_ICON: Record<string, IconName> = { duties: "file", recurring: "arrow", projects: "check", contacts: "user", systems: "shield", issues: "sparkle" };
+const COVERAGE_VIEW: Record<Coverage, { status: string; label: string }> = {
+  sufficient: { status: "full", label: "충분" },
+  partial: { status: "part", label: "부분" },
+  missing: { status: "lack", label: "부족" },
+};
+
+type Props = {
+  session: SessionDetail;
+  messages: ChatMessage[];
+  config: AppConfig | null;
+  error: string | null;
+  onBack: () => void;
+  onSend: (text: string) => void;
+  onSkip: () => void;
+  onComplete: () => void;
+};
+
+export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onComplete }: Props) {
   const [answer, setAnswer] = useState("");
-  const [, setHistory] = useState<{ question: string; answer: string }[]>([]);
   const [expandedCoverage, setExpandedCoverage] = useState<number | null>(null);
-  const current = questions[questionIndex];
-  const isLast = questionIndex === questions.length - 1;
+  const specs = config?.slots ?? [];
+  const asking = messages.filter((m) => m.role === "assistant" && (m.kind === "question" || m.kind === "confirm")).at(-1);
+  const waiting = session.status === "running" || session.stage !== "qna";
+  const gap = session.gaps.find((g) => g.id === asking?.meta.gap_id);
+  const category = asking?.kind === "confirm" ? "확인 요청" : (specs.find((spec) => spec.key === asking?.meta.slot)?.title ?? "");
+  const suggestions = (asking?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정"));
+  // 질문 본문의 Markdown 강조와 앞머리 "[항목명]"은 화면의 분류 배지가 대신하므로 걷어 낸다.
+  const questionText = (asking?.content ?? "").replace(/\*\*/g, "").replace(/^\[[^\]]+\]\s*/, "").trim();
+  const total = session.question_count + session.open_gap_count;
+  const isLast = session.open_gap_count <= 1;
   const submitAnswer = (value = answer) => {
     const nextAnswer = value.trim();
-    if (!nextAnswer) return;
-    setHistory((items) => [...items, { question: current.text, answer: nextAnswer }]);
+    if (!nextAnswer || waiting) return;
     setAnswer("");
-    if (isLast) {
-      onComplete();
-    } else {
-      setQuestionIndex((index) => index + 1);
-    }
+    onSend(nextAnswer);
   };
-  const skip = () => {
-    setHistory((items) => [...items, { question: current.text, answer: "건너뜀" }]);
-    if (isLast) onComplete();
-    else setQuestionIndex((index) => index + 1);
-  };
+  const rows = specs.map((spec) => {
+    const slot = session.slots[spec.key];
+    const view = COVERAGE_VIEW[slot?.coverage ?? "missing"];
+    const check = session.gaps.filter((g) => g.slot === spec.key && (g.status === "open" || g.status === "asked")).length;
+    return { title: spec.title, count: slot?.items.length ?? 0, status: view.status, label: view.label, icon: SLOT_ICON[spec.key] ?? "file", check };
+  });
+  const countOf = (status: string) => rows.filter((row) => row.status === status).length;
 
   return (
     <div className="question-page">
@@ -54,19 +71,19 @@ export function QuestionScreen({ onBack, onComplete }: { onBack: () => void; onC
           </div>
           <div className="question-counter">
             <span>확인 질문</span>
-            <strong>{questionIndex + 1} <small>/ {questions.length}</small></strong>
+            <strong>{Math.max(session.question_count, 1)} <small>/ {Math.max(total, 1)}</small></strong>
           </div>
           <section className="amigo-question-card">
             <div className="question-card-top">
               <span className="question-ai"><Icon name="sparkle" size={16} /></span>
               <div><strong>AMIGO</strong><small>자료 분석을 바탕으로 질문드려요</small></div>
-              <em>{current.category}</em>
+              <em>{category}</em>
             </div>
-            <h2>{current.text}</h2>
-            <p>{current.hint}</p>
+            <h2 style={asking?.kind === "confirm" ? { whiteSpace: "pre-line" } : undefined}>{questionText || (waiting ? "AMIGO가 다음 질문을 준비하고 있어요" : "")}</h2>
+            <p>{gap?.description ?? ""}</p>
           </section>
           <div className="answer-suggestions">
-            {current.suggestions.map((suggestion) => <button key={suggestion} onClick={() => setAnswer(suggestion)}>{suggestion}</button>)}
+            {suggestions.map((suggestion) => <button key={suggestion} onClick={() => setAnswer(suggestion)}>{suggestion}</button>)}
           </div>
           <section className="answer-compose">
             <textarea
@@ -82,22 +99,16 @@ export function QuestionScreen({ onBack, onComplete }: { onBack: () => void; onC
             />
             <div>
               <button className="answer-attach"><Icon name="paperclip" size={17} /> 자료 첨부</button>
-              <button className="answer-send" onClick={() => submitAnswer()}>{isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
+              <button className="answer-send" disabled={waiting} onClick={() => submitAnswer()}>{isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
             </div>
           </section>
-          <button className="question-skip" onClick={skip}>이 질문 건너뛰기</button>
+          <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
         </section>
         <aside className="question-summary">
-          <div className="coverage-head"><strong>항목 충족 현황</strong><span><em>충분 3</em> · <i>부분 1</i> · 부족 1</span></div>
-          <div className="coverage-track"><span className="full" /><span className="part" /><span className="empty" /></div>
+          <div className="coverage-head"><strong>항목 충족 현황</strong><span><em>충분 {countOf("full")}</em> · <i>부분 {countOf("part")}</i> · 부족 {countOf("lack")}</span></div>
+          <div className="coverage-track"><span className="full" style={{ width: `${(countOf("full") / Math.max(rows.length, 1)) * 100}%` }} /><span className="part" style={{ width: `${(countOf("part") / Math.max(rows.length, 1)) * 100}%` }} /><span className="empty" style={{ width: `${(countOf("lack") / Math.max(rows.length, 1)) * 100}%` }} /></div>
           <div className="coverage-list">
-            {[
-              { title: "담당 업무", count: 4, status: "full", label: "충분", icon: "file" as IconName, check: 0 },
-              { title: "반복 수행 업무", count: 6, status: "full", label: "충분", icon: "arrow" as IconName, check: 0 },
-              { title: "진행 중인 과제", count: 3, status: "full", label: "충분", icon: "check" as IconName, check: 0 },
-              { title: "협업 관계", count: 5, status: "part", label: "부분", icon: "user" as IconName, check: 1 },
-              { title: "시스템 및 권한", count: 2, status: "lack", label: "부족", icon: "shield" as IconName, check: 2 },
-            ].map((item, index) => {
+            {rows.map((item, index) => {
               const expanded = expandedCoverage === index;
               return (
                 <div className={`coverage-item ${item.status} ${expanded ? "expanded" : ""}`} key={item.title} onClick={() => setExpandedCoverage(expanded ? null : index)}>
@@ -114,9 +125,10 @@ export function QuestionScreen({ onBack, onComplete }: { onBack: () => void; onC
           </div>
           <div className="summary-note"><Icon name="sparkle" size={15} /><p><strong>답변은 자동으로 정리돼요</strong><br />편하게 말하듯 작성해 주세요.</p></div>
         </aside>
+        <ErrorNote message={error} />
         <div className="question-page-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
-          <button className="primary-button onboarding-next" onClick={onComplete}>인수인계서 생성하기 <Icon name="arrow" size={18} /></button>
+          <button className="primary-button onboarding-next" disabled={session.status === "running"} onClick={onComplete}>인수인계서 생성하기 <Icon name="arrow" size={18} /></button>
         </div>
       </main>
       <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
