@@ -82,7 +82,7 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
                   <option>프로덕트 매니저</option>
                 </select>
               </label>
-              <label className="wide-field task-field">담당 업무 <i>*</i>
+              <label className="wide-field task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>담당 업무 <i>*</i>
                 <div className="task-editor">
                   <div className="task-list">
                     {tasks.map((task, index) => (

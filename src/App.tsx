@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
 import type { AppConfig, SessionDetail, Source } from "./shared/types";
@@ -31,15 +31,20 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const { session, messages, refresh, addMessages } = useSessionState(sessionId);
 
+  // 서버가 늦게 떠서 실패했더라도 화면을 옮길 때 다시 불러온다.
   useEffect(() => {
+    if (config) return;
     api.config().then(setConfig).catch(() => setConfig(null));
-  }, []);
+  }, [config, screen]);
 
   // AI 단계가 끝나면 화면을 이어서 넘긴다: 분석 완료 → 질의응답, 문서 작성 시작 → 문서
   const stage = session?.stage;
   const documentVersion = session?.document_version ?? 0;
+  const prevStage = useRef(stage);
   useEffect(() => {
-    if (!stage) return;
+    const changed = prevStage.current !== stage;
+    prevStage.current = stage;
+    if (!stage || !changed) return;
     if (screen === "question" && (stage === "composing" || stage === "review")) setScreen("document");
   }, [screen, stage]);
 
