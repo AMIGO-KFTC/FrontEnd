@@ -21,16 +21,16 @@ const EMPTY: SessionCreate = {
   duties: "",
   successor: "",
   handover_date: "",
-  mode: "transfer",
+  mode: "reassignment",
   task_name: "",
 };
 const MODES: { key: SessionCreate["mode"]; label: string; hint: string }[] = [
-  { key: "transfer", label: "인사발령", hint: "전체 양식: 업무 소개·이해관계자·정기/비정기 업무·시스템 접근 계정·부서별 특이사항" },
-  { key: "leave", label: "장기휴가", hint: "Light 양식: 업무 소개·정기 업무·이해관계자·시스템 접근 계정만" },
+  { key: "reassignment", label: "인사발령", hint: "전체 양식: 업무 소개·이해관계자·정기·비정기 업무·시스템 접근 계정·부서별 특이사항" },
+  { key: "leave", label: "장기휴가", hint: "Light 양식: 정기·비정기 업무·이해관계자·시스템 접근 계정만" },
 ];
 const DEMO: SessionCreate = {
   owner_name: "김민수",
-  mode: "transfer",
+  mode: "reassignment",
   task_name: "기관 홈페이지 운영",
   organization: "디지털전략부 웹서비스팀",
   position: "과장",
