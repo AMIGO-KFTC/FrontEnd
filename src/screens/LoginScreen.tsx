@@ -1,13 +1,34 @@
 import { useState, type FormEvent } from "react";
 import { Brand } from "../shared/Brand";
+import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
 
-export function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [id, setId] = useState("");
+const SAVED_ID_KEY = "amigo-saved-login-id";
+
+function savedLoginId(): string {
+  try {
+    return window.localStorage.getItem(SAVED_ID_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+type Props = { onLogin: (loginId: string, password: string) => Promise<void>; busy?: boolean; error?: string | null };
+
+export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
+  const [id, setId] = useState(savedLoginId);
   const [password, setPassword] = useState("");
-  const submit = (event: FormEvent) => {
+  const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (id.trim() && password.trim()) onLogin();
+    if (!id.trim() || !password.trim() || busy) return;
+    try {
+      if (saveId) window.localStorage.setItem(SAVED_ID_KEY, id.trim());
+      else window.localStorage.removeItem(SAVED_ID_KEY);
+    } catch {
+      /* 저장소를 못 쓰는 브라우저는 저장만 건너뛴다 */
+    }
+    await onLogin(id.trim(), password);
   };
 
   return (
@@ -42,10 +63,11 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <div className="input-wrap"><Icon name="shield" size={18} /><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력하세요" type="password" autoComplete="current-password" /></div>
           </label>
           <div className="login-options">
-            <label className="check-label"><input type="checkbox" /> <span>아이디 저장</span></label>
+            <label className="check-label"><input type="checkbox" checked={saveId} onChange={(e) => setSaveId(e.target.checked)} /> <span>아이디 저장</span></label>
             <button type="button" className="text-button">비밀번호 찾기</button>
           </div>
-          <button className="primary-button login-button" type="submit">로그인 <Icon name="arrow" size={18} /></button>
+          {error && <div style={{ marginBottom: 14 }}><ErrorNote message={error} /></div>}
+          <button className="primary-button login-button" type="submit" disabled={busy}>로그인 <Icon name="arrow" size={18} /></button>
           <p className="security-note"><Icon name="shield" size={14} /> 모든 자료는 암호화되어 안전하게 보호됩니다.</p>
         </form>
       </section>

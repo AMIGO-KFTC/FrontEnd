@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
 import type { AppConfig, SessionDetail, Source } from "./shared/types";
+import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
@@ -22,6 +23,7 @@ function citationCount(session: SessionDetail | null): number {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("login");
+  const [authChecked, setAuthChecked] = useState(false); // 로그인 상태 확인이 끝나기 전에는 로그인 화면을 깜빡이지 않는다
   const [data, setData] = useState<StartData>(EMPTY);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -29,7 +31,56 @@ export default function App() {
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { session, messages, refresh, addMessages } = useSessionState(sessionId);
+  const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
+  const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
+
+  // 로그인된 상태가 확인되면(앱 시작·로그인 직후) 해시의 작업을 이어서 열고, 없으면 시작 화면으로 간다.
+  const enter = useCallback(() => {
+    const id = sessionFromHash();
+    if (id) {
+      setRestoreId(id);
+      setSessionId(id);
+    } else {
+      setScreen("start");
+    }
+  }, []);
+
+  // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛴다.
+  useEffect(() => {
+    api
+      .me()
+      .then(() => enter())
+      .catch(() => undefined)
+      .finally(() => setAuthChecked(true));
+  }, [enter]);
+
+  // 같은 탭에서 주소의 해시만 다른 작업으로 바뀌면(링크 붙여넣기 등) 그 작업을 이어서 연다.
+  useEffect(() => {
+    const onHash = () => {
+      const id = sessionFromHash();
+      if (!id || id === sessionId || !authChecked || screen === "login") return;
+      setRestoreId(id);
+      setSessionId(id);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [sessionId, authChecked, screen]);
+
+  // 이어서 열기: 작업을 불러오면 진행 단계에 맞는 화면으로, 불러오지 못하면(없거나 내 작업이 아니면) 시작 화면으로
+  useEffect(() => {
+    if (!restoreId) return;
+    if (session && session.id === restoreId) {
+      setData(dataFromSession(session));
+      setScreen(screenForStage(session.stage));
+      setRestoreId(null);
+    } else if (sessionError) {
+      writeHash(null);
+      setSessionId(null);
+      setRestoreId(null);
+      setError("이전 작업을 불러오지 못했어요. 새로 시작해 주세요.");
+      setScreen("start");
+    }
+  }, [restoreId, session, sessionError]);
 
   // 서버가 늦게 떠서 실패했더라도 화면을 옮길 때 다시 불러온다.
   useEffect(() => {
@@ -102,6 +153,7 @@ export default function App() {
       });
       setData(form);
       setSessionId(created.id);
+      writeHash(created.id);
       setScreen("upload");
     } catch (e) {
       setError((e as Error).message);
@@ -153,6 +205,7 @@ export default function App() {
   };
 
   const reset = () => {
+    writeHash(null);
     setSessionId(null);
     setData(EMPTY);
     setMarkdown("");
@@ -165,7 +218,21 @@ export default function App() {
     setScreen(next);
   };
 
-  if (screen === "login") return <LoginScreen onLogin={() => toScreen("start")} />;
+  const login = async (loginId: string, password: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.login(loginId, password);
+      enter();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!authChecked || restoreId) return null;
+  if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
   if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
 
   if (!session) {
