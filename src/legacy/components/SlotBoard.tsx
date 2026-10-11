@@ -1,7 +1,7 @@
 // 인수인계서 항목(슬롯)별 정보 충족 현황: 충분 / 부분 / 부족 + 항목·근거 미리보기
 import { ChevronDown, Loader2, MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
-import type { AppConfig, Coverage, SessionDetail, SlotSpec } from "../types";
+import type { AppConfig, Coverage, SessionDetail, SlotSpec } from "../../shared/types";
 import { SLOT_ICONS } from "./icons";
 
 const COVERAGE: Record<Coverage, { label: string; className: string }> = {

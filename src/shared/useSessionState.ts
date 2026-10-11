@@ -1,8 +1,8 @@
 // 세션 상태 폴링 훅: /state?after=<마지막 메시지 ID> 를 주기적으로 불러 새 메시지만 이어 붙인다.
 // AI 가 처리 중이거나 자료를 적재 중이면 1초, 그 외에는 4초 간격.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../api";
-import type { ChatMessage, SessionDetail, UsageTotal } from "../types";
+import { api } from "./api";
+import type { ChatMessage, SessionDetail, UsageTotal } from "./types";
 
 export function isBusy(session: SessionDetail | null): boolean {
   if (!session) return false;

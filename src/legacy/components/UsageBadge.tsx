@@ -1,7 +1,7 @@
 // Claude API 사용량 표시: 작업 화면 머리글의 배지와 시작 화면의 누적 사용량 줄.
 // 비용은 모델 단가로 계산한 추정치이며, 실제 청구액은 Anthropic Console 에서 확인한다.
 import { Coins } from "lucide-react";
-import type { Usage, UsageTotal } from "../types";
+import type { Usage, UsageTotal } from "../../shared/types";
 
 export function formatUsd(value: number): string {
   return value < 0.01 && value > 0 ? "<$0.01" : `$${value.toFixed(2)}`;

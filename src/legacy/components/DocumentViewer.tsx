@@ -3,9 +3,9 @@ import { Download, FileDown, FileText, Loader2, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api } from "../api";
-import type { SessionDetail } from "../types";
-import { MermaidDiagram } from "./MermaidDiagram";
+import { api } from "../../shared/api";
+import type { SessionDetail } from "../../shared/types";
+import { MermaidDiagram } from "../../shared/MermaidDiagram";
 
 export function DocumentViewer({ session, onGenerate }: { session: SessionDetail; onGenerate: () => void }) {
   const [markdown, setMarkdown] = useState("");
