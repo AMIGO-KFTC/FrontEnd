@@ -154,3 +154,18 @@ export interface SessionCreate {
   mode: HandoverMode;
   task_name: string;
 }
+
+// 로그인(BackEnd /api/auth). 세션 쿠키(amigo_session)는 서버가 내려 주고 브라우저가 알아서 보낸다.
+export interface AuthUser {
+  id: number;
+  login_id: string;
+  name: string;
+  profile: { department: string; position: string; team: string; name: string } | null;
+}
+
+export interface LoginResult {
+  message: string;
+  name: string;
+  user: AuthUser;
+  expires_at: string;
+}

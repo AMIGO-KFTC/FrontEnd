@@ -22,6 +22,7 @@ function citationCount(session: SessionDetail | null): number {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("login");
+  const [authChecked, setAuthChecked] = useState(false); // 로그인 상태 확인이 끝나기 전에는 로그인 화면을 깜빡이지 않는다
   const [data, setData] = useState<StartData>(EMPTY);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -30,6 +31,15 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { session, messages, refresh, addMessages } = useSessionState(sessionId);
+
+  // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛴다.
+  useEffect(() => {
+    api
+      .me()
+      .then(() => setScreen((current) => (current === "login" ? "start" : current)))
+      .catch(() => undefined)
+      .finally(() => setAuthChecked(true));
+  }, []);
 
   // 서버가 늦게 떠서 실패했더라도 화면을 옮길 때 다시 불러온다.
   useEffect(() => {
@@ -165,7 +175,21 @@ export default function App() {
     setScreen(next);
   };
 
-  if (screen === "login") return <LoginScreen onLogin={() => toScreen("start")} />;
+  const login = async (loginId: string, password: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.login(loginId, password);
+      setScreen("start");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!authChecked) return null;
+  if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
   if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
 
   if (!session) {
