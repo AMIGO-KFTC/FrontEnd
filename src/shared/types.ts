@@ -169,3 +169,83 @@ export interface LoginResult {
   user: AuthUser;
   expires_at: string;
 }
+
+// 인수인계서 직접 수정·버전 기록(BackEnd /api/sessions/{id}/document)
+export type DocumentOrigin = "ai" | "user" | "restore";
+
+export interface HandoverDocument {
+  markdown: string;
+  version: number;
+  origin: DocumentOrigin;
+  origin_label: string;
+  author_name: string;
+  updated_at: string | null;
+  version_count: number;
+}
+
+export interface DocumentVersionSummary {
+  version: number;
+  origin: DocumentOrigin;
+  origin_label: string;
+  ai_version: number;
+  based_on: number;
+  note: string;
+  author_name: string;
+  char_count: number;
+  is_current: boolean;
+  created_at: string;
+}
+
+export interface DocumentVersion extends DocumentVersionSummary {
+  markdown: string;
+}
+
+export interface DocumentSaved {
+  success: boolean;
+  message: string;
+  saved: boolean;
+  document: DocumentVersion;
+}
+
+// 메일 조회 API(BackEnd /api/mail, 지금은 가상 메일함)
+export interface MailAddress {
+  name: string;
+  email: string;
+}
+
+export interface MailSummary {
+  id: string;
+  folder: "inbox" | "sent";
+  subject: string;
+  sender: MailAddress;
+  to: MailAddress[];
+  sent_at: string;
+  snippet: string;
+  has_attachments: boolean;
+  attachment_count: number;
+  important: boolean;
+  relevance: number;
+  recommended: boolean;
+  imported: boolean;
+}
+
+export interface MailList {
+  message: string;
+  provider: string;
+  mailbox: MailAddress;
+  messages: MailSummary[];
+  total: number;
+  page: number;
+  size: number;
+  has_next: boolean;
+  keywords: string[];
+}
+
+export interface MailImportResult {
+  success: boolean;
+  message: string;
+  session_id: string;
+  files: Source[];
+  skipped: string[];
+  analysis_scheduled: boolean;
+}
