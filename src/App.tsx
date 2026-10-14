@@ -242,6 +242,7 @@ export default function App() {
   if (screen === "upload") {
     return (
       <UploadStepScreen
+        sessionId={session.id}
         sources={session.sources}
         error={error}
         busy={busy}
@@ -250,6 +251,7 @@ export default function App() {
         onUploadFiles={uploadFiles}
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
+        onMailsImported={() => void refresh()}
       />
     );
   }
@@ -276,12 +278,15 @@ export default function App() {
         data={data}
         sessionId={session.id}
         markdown={markdown}
+        version={documentVersion}
         loading={docLoading}
         sourceCount={citationCount(session)}
         failedMessage={session.status === "error" ? session.error : null}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => toScreen("question")}
         onComplete={() => toScreen("complete")}
+        onMarkdownChange={setMarkdown}
+        onSaved={() => void refresh()}
       />
     );
   }
