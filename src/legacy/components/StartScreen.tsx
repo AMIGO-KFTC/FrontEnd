@@ -25,8 +25,8 @@ const EMPTY: SessionCreate = {
   task_name: "",
 };
 const MODES: { key: SessionCreate["mode"]; label: string; hint: string }[] = [
-  { key: "reassignment", label: "인사발령", hint: "전체 양식: 업무 소개·이해관계자·정기·비정기 업무·시스템 접근 계정·부서별 특이사항" },
-  { key: "leave", label: "장기휴가", hint: "Light 양식: 정기·비정기 업무·이해관계자·시스템 접근 계정만" },
+  { key: "reassignment", label: "인사발령", hint: "전체 양식: 업무 단위 요약·정기업무·비정기 업무·시스템 접근 권한·부서별 추가 자료" },
+  { key: "leave", label: "장기휴가", hint: "부재 중 처리할 단위 업무·세부 업무·시스템 접근 권한" },
 ];
 const DEMO: SessionCreate = {
   owner_name: "김민수",

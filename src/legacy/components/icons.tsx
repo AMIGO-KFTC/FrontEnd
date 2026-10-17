@@ -54,6 +54,8 @@ export const SLOT_ICONS: Record<string, LucideIcon> = {
   irregular: ListChecks,
   systems: KeyRound,
   dept_notes: AlertTriangle,
+  leave_units: Briefcase,
+  leave_tasks: Repeat,
 };
 
 export function formatSize(bytes: number): string {

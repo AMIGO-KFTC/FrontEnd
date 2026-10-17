@@ -82,5 +82,11 @@ export const api = {
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 
   document: (id: string) => request<{ markdown: string; version: number }>(`/api/sessions/${id}/document`),
+  editGantt: (id: string, name: string, nth: number, months: number[]) =>
+    request<{ markdown: string; version: number }>(`/api/sessions/${id}/document/gantt`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, nth, months }),
+    }),
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
 };
