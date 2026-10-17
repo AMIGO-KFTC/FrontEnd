@@ -276,6 +276,7 @@ export default function App() {
         data={data}
         sessionId={session.id}
         markdown={markdown}
+        onGanttEdit={(name, nth, months) => api.editGantt(session.id, name, nth, months).then((d) => setMarkdown(d.markdown))}
         loading={docLoading}
         sourceCount={citationCount(session)}
         failedMessage={session.status === "error" ? session.error : null}

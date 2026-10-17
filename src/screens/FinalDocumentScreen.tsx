@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../shared/api";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import type { StartData } from "../shared/handover";
+import { documentRehypePlugins } from "../shared/documentMarkdown";
 import { MermaidDiagram } from "../shared/MermaidDiagram";
+import { GanttAwareTable, GanttContext } from "../shared/GanttTable";
 
 type Props = {
   data: StartData;
   sessionId: string;
   markdown: string;
+  onGanttEdit: (name: string, nth: number, months: number[]) => Promise<void>;
   loading: boolean;
   sourceCount: number;
   failedMessage: string | null;
@@ -30,11 +33,20 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const tasks = data.task.split("\n").filter(Boolean);
+  const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const parsed = splitSections(markdown);
+  const gantt = useMemo(() => ({
+    editable: isEditing,
+    onChange: (name: string, nth: number, months: number[]) => {
+      setSaveState("saving");
+      const done = onGanttEdit(name, nth, months);
+      done.then(() => setSaveState("saved"), () => setSaveState("failed"));
+      return done;
+    },
+  }), [isEditing, onGanttEdit]);
   const sections = parsed.map((section) => section.title);
   const goTo = (index: number) => {
     setActiveSection(index);
@@ -78,12 +90,14 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
           <div className="final-document-toolbar">
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
+              {isEditing && <small className="gantt-hint">월별 일정표는 칸을 끌어서 막대를 늘리거나 줄일 수 있어요.{saveState === "saving" ? " 저장 중…" : saveState === "saved" ? " 저장됨" : saveState === "failed" ? " 저장 실패" : ""}</small>}
             </div>
           </div>
+          <GanttContext.Provider value={gantt}>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
-              <h1>{tasks[0] || "담당 업무"}<br />인수인계서</h1>
+              <h1>업무 인수인계서</h1>
               <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
               <div className="paper-meta">
                 <div><small>인계자</small><strong>{data.name}</strong></div>
@@ -104,7 +118,9 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={documentRehypePlugins}
                   components={{
+                    table: GanttAwareTable,
                     pre: ({ children }) => <>{children}</>,
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
@@ -114,6 +130,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, loading, source
             ))}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / {Math.max(sections.length, 1)}</span></footer>
           </article>
+          </GanttContext.Provider>
         </section>
         <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
       </main>

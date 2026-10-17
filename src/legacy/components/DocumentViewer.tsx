@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../../shared/api";
 import type { SessionDetail } from "../../shared/types";
+import { documentRehypePlugins } from "../../shared/documentMarkdown";
 import { MermaidDiagram } from "../../shared/MermaidDiagram";
 
 export function DocumentViewer({ session, onGenerate }: { session: SessionDetail; onGenerate: () => void }) {
@@ -75,6 +76,7 @@ export function DocumentViewer({ session, onGenerate }: { session: SessionDetail
         ) : (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={documentRehypePlugins}
             components={{
               pre: ({ children }) => <>{children}</>,
               code: ({ className, children }) =>

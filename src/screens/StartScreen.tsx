@@ -67,7 +67,7 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
               <label className="wide-field">인수인계 유형
                 <select value={data.mode} onChange={(e) => setData({ ...data, mode: e.target.value === "leave" ? "leave" : "reassignment" })}>
                   <option value="reassignment">인사발령 (전체 양식)</option>
-                  <option value="leave">장기휴가 (Light: 세부 업무·이해관계자·시스템 접근 계정)</option>
+                  <option value="leave">장기휴가 (부재 중 처리할 단위 업무·세부 업무·시스템 접근 권한)</option>
                 </select>
               </label>
               <label>직책
