@@ -644,6 +644,7 @@ body { background: #faf8f6; }
 .integration-panel mark { padding: 0 1px; border-radius: 2px; background: #fff0a8; color: inherit; }
 .integration-more { margin-top: 5px; padding: 0; border: 0; background: transparent; color: #7658d9; font-size: 7px; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
 .integration-more svg { transform: rotate(90deg); }
+a.integration-more { margin-left: 8px; text-decoration: none; }
 .mm-type { padding: 1px 5px; border-radius: 5px; font: 700 6.5px "Manrope", sans-serif; letter-spacing: .3px; white-space: nowrap; }
 .mm-channel { background: #ece8f8; color: #5e46b8; }
 .mm-private { background: #f4ecdf; color: #8b5a12; }

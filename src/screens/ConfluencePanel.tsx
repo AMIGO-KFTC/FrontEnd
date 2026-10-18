@@ -159,6 +159,9 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
                     <button type="button" className="integration-more" onClick={() => open(page.id)}>
                       {isOpen ? "접기" : "본문 보기"} <Icon name="chevron" size={11} />
                     </button>
+                    <a className="integration-more" href={page.url} target="_blank" rel="noreferrer">
+                      컨플루언스에서 열기
+                    </a>
                     {isOpen && (
                       <div className="cf-body">
                         {bodies[page.id] ? <pre>{highlight(bodies[page.id], terms)}</pre> : <p className="integration-empty">불러오는 중…</p>}
