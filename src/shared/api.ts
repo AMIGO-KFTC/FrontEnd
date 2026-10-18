@@ -113,8 +113,11 @@ export const api = {
     request<void>(`/api/sessions/${id}/sources/${sourceId}`, { method: "DELETE" }),
 
   analyze: (id: string) => post<SessionDetail>(`/api/sessions/${id}/analyze`),
-  chat: (id: string, text: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/chat`, { text }),
-  skip: (id: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/skip`),
+  // 답변 보내기: replyTo 는 화면에 띄운 질문의 메시지 ID. 그사이 질문이 바뀌었으면 409(엉뚱한 질문에 답이 붙지 않게)
+  chat: (id: string, text: string, replyTo?: number) =>
+    post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/chat`, replyTo ? { text, reply_to: replyTo } : { text }),
+  skip: (id: string, replyTo?: number) =>
+    post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/skip${replyTo ? `?reply_to=${replyTo}` : ""}`),
   generate: (id: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/generate`),
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 

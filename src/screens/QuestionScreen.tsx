@@ -18,8 +18,8 @@ type Props = {
   config: AppConfig | null;
   error: string | null;
   onBack: () => void;
-  onSend: (text: string) => void;
-  onSkip: () => void;
+  onSend: (text: string, replyTo?: number) => Promise<boolean>; // 보내지 못하면 false(입력한 답변을 되살린다)
+  onSkip: (replyTo?: number) => void;
   onUploadFiles: (files: File[]) => void;
   onRetry: () => void;
   onComplete: () => void;
@@ -44,7 +44,10 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
     const nextAnswer = value.trim();
     if (!nextAnswer || waiting) return;
     setAnswer("");
-    onSend(nextAnswer);
+    // 어떤 질문에 대한 답인지 함께 보낸다. 그사이 질문이 바뀌어 거절되면 입력한 답변을 그대로 되살린다
+    void onSend(nextAnswer, asking?.id).then((ok) => {
+      if (!ok) setAnswer((current) => current || nextAnswer);
+    });
   };
   const rows = specs.map((spec) => {
     const slot = session.slots[spec.key];
@@ -111,7 +114,7 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
             </div>
           </section>
           <ErrorNote message={extraNote} tone="info" />
-          <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
+          <button className="question-skip" disabled={waiting} onClick={() => onSkip(asking?.id)}>이 질문 건너뛰기</button>
         </section>
         <aside className="question-summary">
           <div className="coverage-head"><strong>항목 충족 현황</strong><span><em>충분 {countOf("full")}</em> · <i>부분 {countOf("part")}</i> · 부족 {countOf("lack")}</span></div>

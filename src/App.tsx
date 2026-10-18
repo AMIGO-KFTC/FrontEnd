@@ -330,8 +330,8 @@ export default function App() {
         config={config}
         error={error}
         onBack={() => toScreen("upload")}
-        onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
-        onSkip={() => sessionId && void run(() => api.skip(sessionId))}
+        onSend={(text, replyTo) => (sessionId ? run(() => api.chat(sessionId, text, replyTo)).then((res) => res !== undefined) : Promise.resolve(false))}
+        onSkip={(replyTo) => sessionId && void run(() => api.skip(sessionId, replyTo))}
         onUploadFiles={uploadFiles}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onComplete={generate}
