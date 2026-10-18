@@ -197,3 +197,11 @@ export interface CitationDetail {
   slot: string;
   item_title: string;
 }
+
+// 내 프로필(BackEnd /api/profile): 처음 한 번 저장해 두면 다음 인수인계 때 기본 정보를 미리 채운다
+export interface UserProfile {
+  department: string;
+  team: string;
+  position: string;
+  name: string;
+}

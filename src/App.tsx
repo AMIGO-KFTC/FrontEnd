@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, ConversationProgress, SessionDetail, Source } from "./shared/types";
+import type { AppConfig, ConversationProgress, SessionDetail, Source, UserProfile } from "./shared/types";
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
@@ -31,6 +31,8 @@ export default function App() {
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountName, setAccountName] = useState(""); // 로그인한 계정의 이름
+  const [profile, setProfile] = useState<UserProfile | null>(null); // 저장해 둔 내 프로필(없으면 null)
   const [recent, setRecent] = useState<ConversationProgress[]>([]); // 시작 화면의 진행 중인 작업 목록
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
   const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
@@ -50,7 +52,10 @@ export default function App() {
   useEffect(() => {
     api
       .me()
-      .then(() => enter())
+      .then((r) => {
+        setAccountName(r.user.name);
+        enter();
+      })
       .catch(() => undefined)
       .finally(() => setAuthChecked(true));
   }, [enter]);
@@ -82,6 +87,19 @@ export default function App() {
       setScreen("start");
     }
   }, [restoreId, session, sessionError]);
+
+  // 시작 화면을 열 때마다 내 프로필을 불러온다(아직 저장한 적이 없으면 404 → 없는 것으로 본다).
+  useEffect(() => {
+    if (screen !== "start") return;
+    let cancelled = false;
+    api
+      .profile()
+      .then((r) => !cancelled && setProfile(r.profile))
+      .catch(() => !cancelled && setProfile(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [screen]);
 
   // 시작 화면을 열 때마다 내 작업 목록을 새로 불러온다(로그인 전이면 비움).
   useEffect(() => {
@@ -165,6 +183,13 @@ export default function App() {
         successor: "",
         handover_date: form.date,
       });
+      // 프로필이 아직 없으면 처음 한 번만 저장한다(이미 있으면 작업마다 다른 값을 넣어도 프로필과 다른 작업을 건드리지 않는다).
+      if (!profile && form.division && form.role) {
+        await api
+          .saveProfile({ name: form.name.trim(), department: form.division, team: form.team, position: form.role })
+          .then((r) => setProfile(r.profile))
+          .catch(() => undefined);
+      }
       setData(form);
       setSessionId(created.id);
       writeHash(created.id);
@@ -258,7 +283,8 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
-      await api.login(loginId, password);
+      const result = await api.login(loginId, password);
+      setAccountName(result.name);
       enter();
     } catch (e) {
       setError((e as Error).message);
@@ -267,9 +293,14 @@ export default function App() {
     }
   };
 
+  const prefill = useMemo(
+    () => (profile ? { name: profile.name, division: profile.department, team: profile.team, role: profile.position } : accountName ? { name: accountName } : null),
+    [profile, accountName],
+  );
+
   if (!authChecked || restoreId) return null;
   if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
-  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} recent={recent} onOpenWork={openWork} onDeleteWork={deleteWork} />;
+  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} prefill={prefill} recent={recent} onOpenWork={openWork} onDeleteWork={deleteWork} />;
 
   if (!session) {
     return null;

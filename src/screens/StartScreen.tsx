@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import { ErrorNote } from "../shared/ErrorNote";
@@ -10,15 +10,30 @@ type Props = {
   onStart: (data: StartData) => void;
   busy?: boolean;
   error?: string | null;
+  prefill?: Partial<Pick<StartData, "name" | "division" | "team" | "role">> | null;
   recent?: ConversationProgress[];
   onOpenWork?: (id: string) => void;
   onDeleteWork?: (item: ConversationProgress) => void;
 };
 
-export function StartScreen({ onStart, busy = false, error = null, recent = [], onOpenWork = () => undefined, onDeleteWork = () => undefined }: Props) {
+export function StartScreen({ onStart, busy = false, error = null, prefill = null, recent = [], onOpenWork = () => undefined, onDeleteWork = () => undefined }: Props) {
   const [data, setData] = useState<StartData>({ mode: "reassignment", name: "김민준", division: "프로덕트본부", team: "플랫폼팀", role: "프로덕트 매니저", task: "B2B 플랫폼 기획 및 운영", date: "2025-03-14" });
   const [taskDraft, setTaskDraft] = useState("");
-  const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
+  // 로그인한 계정의 프로필(없으면 계정 이름)로 기본 정보를 미리 채운다. 사용자가 이미 고치기 시작했으면 덮어쓰지 않는다.
+  const touched = useRef(false);
+  useEffect(() => {
+    if (!prefill || touched.current) return;
+    setData((current) => ({ ...current, ...prefill }));
+  }, [prefill]);
+  const update = (key: Exclude<keyof StartData, "mode">, value: string) => {
+    touched.current = true;
+    setData({ ...data, [key]: value });
+  };
+  // 저장된 값이 고정 목록에 없으면(다른 조직 이름 등) 선택지에 추가해서 그대로 보이게 한다.
+  const withValue = (options: string[], value: string) => (value && !options.includes(value) ? [...options, value] : options);
+  const DIVISIONS = ["프로덕트본부", "기술본부", "사업본부", "고객경험본부", "경영지원본부"];
+  const TEAMS = ["플랫폼팀", "서비스기획팀", "프로덕트디자인팀", "개발팀", "데이터팀", "운영팀"];
+  const ROLES = ["사원", "선임", "책임", "팀장", "실장", "본부장", "프로덕트 매니저"];
   const tasks = data.task.split("\n").filter(Boolean);
   const addTask = () => {
     const nextTask = taskDraft.trim();
@@ -56,22 +71,13 @@ export function StartScreen({ onStart, busy = false, error = null, recent = [], 
                 <label>본부 <i>*</i>
                   <select value={data.division} onChange={(e) => update("division", e.target.value)}>
                     <option value="">본부 선택</option>
-                    <option>프로덕트본부</option>
-                    <option>기술본부</option>
-                    <option>사업본부</option>
-                    <option>고객경험본부</option>
-                    <option>경영지원본부</option>
+                    {withValue(DIVISIONS, data.division).map((o) => <option key={o}>{o}</option>)}
                   </select>
                 </label>
                 <label>팀 <i>*</i>
                   <select value={data.team} onChange={(e) => update("team", e.target.value)}>
                     <option value="">팀 선택</option>
-                    <option>플랫폼팀</option>
-                    <option>서비스기획팀</option>
-                    <option>프로덕트디자인팀</option>
-                    <option>개발팀</option>
-                    <option>데이터팀</option>
-                    <option>운영팀</option>
+                    {withValue(TEAMS, data.team).map((o) => <option key={o}>{o}</option>)}
                   </select>
                 </label>
               </div>
@@ -84,13 +90,7 @@ export function StartScreen({ onStart, busy = false, error = null, recent = [], 
               <label>직책
                 <select value={data.role} onChange={(e) => update("role", e.target.value)}>
                   <option value="">직책 선택</option>
-                  <option>사원</option>
-                  <option>선임</option>
-                  <option>책임</option>
-                  <option>팀장</option>
-                  <option>실장</option>
-                  <option>본부장</option>
-                  <option>프로덕트 매니저</option>
+                  {withValue(ROLES, data.role).map((o) => <option key={o}>{o}</option>)}
                 </select>
               </label>
               <label className="wide-field task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>담당 업무 <i>*</i>

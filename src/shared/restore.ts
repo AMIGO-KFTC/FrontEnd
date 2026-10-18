@@ -30,9 +30,18 @@ export function screenForStage(stage: Stage): RestoredScreen {
   }
 }
 
-// 서버에는 본부·팀을 "본부 · 팀" 한 줄로 저장해 두었으므로 다시 나눈다.
+// 서버에는 본부·팀이 한 줄로 저장돼 있다: 작업을 만들 때는 "본부 · 팀", 프로필을 저장하면 서버가 "본부 팀"(공백)으로 바꾼다.
+function splitOrganization(organization: string): [string, string] {
+  if (organization.includes(" · ")) {
+    const [division, ...rest] = organization.split(" · ");
+    return [division, rest.join(" · ")];
+  }
+  const [division = "", ...rest] = organization.trim().split(/\s+/);
+  return [division, rest.join(" ")];
+}
+
 export function dataFromSession(session: SessionDetail): StartData {
-  const [division = "", team = ""] = session.organization.split(" · ");
+  const [division, team] = splitOrganization(session.organization);
   return {
     mode: session.mode,
     name: session.owner_name,
