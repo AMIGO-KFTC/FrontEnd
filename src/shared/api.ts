@@ -1,5 +1,20 @@
 // BackEnd(FastAPI) 호출 모음. 개발 중에는 Vite 프록시가 /api 를 8000 포트로 넘긴다.
-import type { AppConfig, AuthUser, LoginResult, ChatMessage, SessionCreate, SessionDetail, SessionSummary, Source, UsageTotal } from "./types";
+import type {
+  AppConfig,
+  AuthUser,
+  ChatMessage,
+  ConfluencePage,
+  ConfluenceSearchResult,
+  IntegrationImportResult,
+  LoginResult,
+  MattermostConversation,
+  MattermostConversationDetail,
+  SessionCreate,
+  SessionDetail,
+  SessionSummary,
+  Source,
+  UsageTotal,
+} from "./types";
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 
@@ -89,4 +104,15 @@ export const api = {
       body: JSON.stringify({ name, nth, months }),
     }),
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
+
+  // 가상 Mattermost · Confluence(실제 API 대신 BackEnd 의 예시 데이터)
+  mattermostConversations: (q = "") =>
+    request<{ me: string; total: number; conversations: MattermostConversation[] }>(`/api/integrations/mattermost/conversations?q=${encodeURIComponent(q)}`),
+  mattermostConversation: (conversationId: string) => request<MattermostConversationDetail>(`/api/integrations/mattermost/conversations/${conversationId}`),
+  importMattermost: (id: string, conversationIds: string[]) =>
+    post<IntegrationImportResult>(`/api/sessions/${id}/integrations/mattermost`, { conversation_ids: conversationIds }),
+  confluenceSearch: (q: string, space = "") =>
+    request<ConfluenceSearchResult>(`/api/integrations/confluence/search?q=${encodeURIComponent(q)}&space=${encodeURIComponent(space)}`),
+  confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
+  importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),
 };

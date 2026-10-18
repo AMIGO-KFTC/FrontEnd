@@ -169,3 +169,63 @@ export interface LoginResult {
   user: AuthUser;
   expires_at: string;
 }
+
+// 가상 Mattermost · Confluence 연동(BackEnd /api/integrations). 실제 API 가 아닌 예시 데이터를 돌려준다.
+export interface MattermostConversation {
+  id: string;
+  type: "channel" | "private" | "group" | "dm";
+  name: string;
+  display_name: string;
+  team: string;
+  purpose: string;
+  members: string[];
+  member_count: number;
+  message_count: number;
+  first_post_at: string;
+  last_post_at: string;
+  last_message: { user_name: string; text: string };
+  url: string;
+}
+
+export interface MattermostPost {
+  id: string;
+  user: string;
+  user_name: string;
+  user_org: string;
+  created_at: string;
+  text: string;
+  mine: boolean;
+}
+
+export interface MattermostConversationDetail extends MattermostConversation {
+  posts: MattermostPost[];
+}
+
+export interface ConfluencePage {
+  id: string;
+  title: string;
+  space_key: string;
+  space_name: string;
+  labels: string[];
+  author: string;
+  updated_at: string;
+  version: number;
+  ancestors: string[];
+  url: string;
+  excerpt: string;
+  matched_in?: string[];
+}
+
+export interface ConfluenceSearchResult {
+  query: string;
+  terms: string[];
+  total: number;
+  results: ConfluencePage[];
+  spaces: { key: string; name: string }[];
+}
+
+export interface IntegrationImportResult {
+  message: string;
+  sources: Source[];
+  skipped: string[];
+}

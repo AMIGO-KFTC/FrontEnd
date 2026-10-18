@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
-import type { Source } from "../shared/types";
+import type { IntegrationImportResult, Source } from "../shared/types";
+import { ConfluencePanel } from "./ConfluencePanel";
+import { MattermostPanel } from "./MattermostPanel";
 
 type Props = {
   sources: Source[];
@@ -13,7 +15,11 @@ type Props = {
   onUploadFiles: (files: File[]) => void;
   onAddLink: (url: string) => void;
   onDeleteSource: (source: Source) => void;
+  onImportMattermost: (conversationIds: string[]) => Promise<IntegrationImportResult | undefined>;
+  onImportConfluence: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>;
 };
+
+const INTEGRATION_LABEL: Record<string, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지" };
 
 function sourceStatus(source: Source): string {
   if (source.status === "pending" || source.status === "processing") return " · 읽는 중";
@@ -21,11 +27,13 @@ function sourceStatus(source: Source): string {
   return "";
 }
 
-export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource }: Props) {
+export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
-  const files = sources.filter((source) => source.kind === "file");
-  const links = sources.filter((source) => source.kind === "link");
+  const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
+  const files = sources.filter((source) => source.kind === "file" && !isIntegration(source));
+  const links = sources.filter((source) => source.kind === "link" && !isIntegration(source));
+  const imported = sources.filter(isIntegration);
   const [activeSource, setActiveSource] = useState<"file" | "mail" | "confluence" | "messenger">("file");
   const addFiles = (fileList: FileList | null) => {
     if (!fileList || !fileList.length) return;
@@ -85,12 +93,14 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
             </div>
           </div>
           <button className={activeSource === "messenger" ? "active" : ""} onClick={() => setActiveSource("messenger")}>
-            <span><Icon name="message" size={20} /></span><strong>메신저 &amp; 메타모스트 파일</strong><small>대화 이미지 또는 내보내기 파일</small><small className="source-formats">JPG · PDF · PNG</small>
+            <span><Icon name="message" size={20} /></span><strong>메신저 &amp; 매터모스트</strong><small>최근 대화를 골라 등록하거나 캡처 이미지 업로드</small><small className="source-formats">대화 선택 · JPG · PDF · PNG</small>
           </button>
         </section>
+        {activeSource === "messenger" && <MattermostPanel sources={sources} busy={busy} onImport={onImportMattermost} />}
+        {activeSource === "confluence" && <ConfluencePanel sources={sources} busy={busy} onImport={onImportConfluence} />}
         {activeSource === "messenger" ? (
           <section
-            className="source-action-panel"
+            className="source-action-panel compact"
             onClick={() => inputRef.current?.click()}
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
@@ -99,7 +109,7 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
             }}
           >
             <Icon name="upload" size={18} />
-            <div><strong>대화 캡처 이미지를 여기에 놓아주세요</strong><p>클릭해서 파일을 직접 선택할 수도 있어요.</p></div>
+            <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>여기에 놓거나 클릭해서 파일을 선택하세요.</p></div>
             <button>파일 선택</button>
           </section>
         ) : activeSource === "mail" ? (
@@ -135,6 +145,13 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
               <div className="added-resource" key={item.id}>
                 <span><Icon name="link" size={17} /></span>
                 <div><strong>{item.url || item.name}</strong><small>외부 링크{sourceStatus(item)}</small></div>
+                <button onClick={() => onDeleteSource(item)}><Icon name="close" size={14} /></button>
+              </div>
+            ))}
+            {imported.map((item) => (
+              <div className="added-resource" key={item.id}>
+                <span><Icon name={item.link_type === "mattermost" ? "message" : "folder"} size={17} /></span>
+                <div><strong>{item.name}</strong><small>{INTEGRATION_LABEL[item.link_type]}{sourceStatus(item)}</small></div>
                 <button onClick={() => onDeleteSource(item)}><Icon name="close" size={14} /></button>
               </div>
             ))}
