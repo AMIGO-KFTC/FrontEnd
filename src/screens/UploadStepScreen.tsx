@@ -2,11 +2,13 @@ import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
+import { MailPicker } from "../shared/MailPicker";
 import type { IntegrationImportResult, Source } from "../shared/types";
 import { ConfluencePanel } from "./ConfluencePanel";
 import { MattermostPanel } from "./MattermostPanel";
 
 type Props = {
+  sessionId: string;
   sources: Source[];
   error: string | null;
   busy: boolean;
@@ -15,6 +17,7 @@ type Props = {
   onUploadFiles: (files: File[]) => void;
   onAddLink: (url: string) => void;
   onDeleteSource: (source: Source) => void;
+  onMailsImported: () => void;
   onImportMattermost: (conversationIds: string[]) => Promise<IntegrationImportResult | undefined>;
   onImportConfluence: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>;
 };
@@ -27,7 +30,7 @@ function sourceStatus(source: Source): string {
   return "";
 }
 
-export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
+export function UploadStepScreen({ sessionId, sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource, onMailsImported, onImportMattermost, onImportConfluence }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
@@ -113,31 +116,15 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
             <button>파일 선택</button>
           </section>
         ) : activeSource === "mail" ? (
-        <section className="step-link-area">
-          <div className="step-section-label"><span><Icon name="link" size={15} /></span><div><strong>메일 계정 연결</strong><p>메일함 주소 또는 공유 메일 링크를 입력하세요.</p></div></div>
-          <div className="step-link-input">
-            <input
-              value={link}
-              onChange={(event) => setLink(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addLink();
-                }
-              }}
-              placeholder="메일함 또는 공유 메일 링크를 입력하세요"
-            />
-            <button onClick={addLink}>추가</button>
-          </div>
-        </section>
+          <MailPicker sessionId={sessionId} onImported={onMailsImported} />
         ) : null}
         <section className="step-added-list">
             <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{sources.length}개</span></div>
             {sources.length === 0 && <div className="empty-resource">아직 등록된 자료가 없습니다.</div>}
             {files.map((file) => (
               <div className="added-resource" key={file.id}>
-                <span><Icon name="file" size={17} /></span>
-                <div><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(1)} MB{sourceStatus(file)}</small></div>
+                <span><Icon name={file.link_type === "mail" ? "mail" : "file"} size={17} /></span>
+                <div><strong>{file.name}</strong><small>{file.link_type === "mail" ? "메일 · " : ""}{(file.size / 1024 / 1024).toFixed(1)} MB{sourceStatus(file)}</small></div>
                 <button onClick={() => onDeleteSource(file)}><Icon name="close" size={14} /></button>
               </div>
             ))}

@@ -9,6 +9,12 @@ export function sessionFromHash(): string | null {
   return match ? match[1] : null;
 }
 
+// 비밀번호 재설정 안내 링크: #/reset-password?token=<토큰>
+export function resetTokenFromHash(): string | null {
+  const match = window.location.hash.match(/^#\/reset-password\?token=([A-Za-z0-9_-]{10,200})$/);
+  return match ? match[1] : null;
+}
+
 // 주소만 바꾸고 기록은 쌓지 않는다(뒤로 가기가 이전 해시로 되돌지 않게).
 export function writeHash(sessionId: string | null): void {
   const hash = sessionId ? `#/s/${sessionId}` : "";

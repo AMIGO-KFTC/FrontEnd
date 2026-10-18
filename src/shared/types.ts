@@ -160,7 +160,41 @@ export interface AuthUser {
   id: number;
   login_id: string;
   name: string;
+  email: string;
+  is_admin: boolean; // 관리자 권한(관리자 페이지)
   profile: { department: string; position: string; team: string; name: string } | null;
+}
+
+// 마이페이지(BackEnd /api/me)
+export interface MyPage {
+  message: string;
+  user: AuthUser;
+  created_at: string;
+  last_login_at: string | null;
+  password_changed_at: string | null;
+  stats: { unit_tasks: number; documents: number; document_versions: number };
+}
+
+export interface MyInfoUpdate {
+  name?: string;
+  department?: string;
+  team?: string;
+  position?: string;
+  email?: string;
+}
+
+// 내가 작성한 인수인계서(BackEnd /api/documents)
+export interface MyDocument {
+  session_id: string;
+  task_id: string | null;
+  title: string;
+  task_name: string;
+  stage: string;
+  version: number;
+  origin: "ai" | "user" | "restore";
+  origin_label: string;
+  version_count: number;
+  updated_at: string;
 }
 
 export interface LoginResult {
@@ -168,6 +202,86 @@ export interface LoginResult {
   name: string;
   user: AuthUser;
   expires_at: string;
+}
+
+// 인수인계서 직접 수정·버전 기록(BackEnd /api/sessions/{id}/document)
+export type DocumentOrigin = "ai" | "user" | "restore";
+
+export interface HandoverDocument {
+  markdown: string;
+  version: number;
+  origin: DocumentOrigin;
+  origin_label: string;
+  author_name: string;
+  updated_at: string | null;
+  version_count: number;
+}
+
+export interface DocumentVersionSummary {
+  version: number;
+  origin: DocumentOrigin;
+  origin_label: string;
+  ai_version: number;
+  based_on: number;
+  note: string;
+  author_name: string;
+  char_count: number;
+  is_current: boolean;
+  created_at: string;
+}
+
+export interface DocumentVersion extends DocumentVersionSummary {
+  markdown: string;
+}
+
+export interface DocumentSaved {
+  success: boolean;
+  message: string;
+  saved: boolean;
+  document: DocumentVersion;
+}
+
+// 메일 조회 API(BackEnd /api/mail, 지금은 가상 메일함)
+export interface MailAddress {
+  name: string;
+  email: string;
+}
+
+export interface MailSummary {
+  id: string;
+  folder: "inbox" | "sent";
+  subject: string;
+  sender: MailAddress;
+  to: MailAddress[];
+  sent_at: string;
+  snippet: string;
+  has_attachments: boolean;
+  attachment_count: number;
+  important: boolean;
+  relevance: number;
+  recommended: boolean;
+  imported: boolean;
+}
+
+export interface MailList {
+  message: string;
+  provider: string;
+  mailbox: MailAddress;
+  messages: MailSummary[];
+  total: number;
+  page: number;
+  size: number;
+  has_next: boolean;
+  keywords: string[];
+}
+
+export interface MailImportResult {
+  success: boolean;
+  message: string;
+  session_id: string;
+  files: Source[];
+  skipped: string[];
+  analysis_scheduled: boolean;
 }
 
 // 가상 Mattermost · Confluence 연동(BackEnd /api/integrations). 실제 API 가 아닌 예시 데이터를 돌려준다.
@@ -228,4 +342,99 @@ export interface IntegrationImportResult {
   message: string;
   sources: Source[];
   skipped: string[];
+}
+
+// 관리자: 팀 인수인계 현황(BackEnd /api/admin/teams, /teams/report, /members/{id}/report)
+export interface TeamInfo {
+  department: string;
+  team: string;
+  label: string;
+  member_count: number;
+  task_count: number;
+  document_count: number;
+  completion_rate: number | null;
+}
+
+export interface MemberPerformance {
+  user_id: number;
+  login_id: string;
+  name: string;
+  position: string;
+  is_admin: boolean;
+  last_login_at: string | null;
+  last_activity_at: string | null;
+  task_count: number;
+  document_count: number;
+  completion_rate: number | null;
+  stages: { preparing: number; analyzing: number; answering: number; completed: number };
+  source_count: number;
+  answer_count: number;
+  questions_answered: number;
+  questions_skipped: number;
+  questions_open: number;
+  answer_rate: number | null;
+  coverage_rate: number | null;
+  ai_versions: number;
+  user_versions: number;
+  avg_hours_to_first_document: number | null;
+  cost_usd: number;
+}
+
+export interface TeamReport {
+  message: string;
+  department: string;
+  team: string;
+  label: string;
+  summary: {
+    member_count: number;
+    active_member_count: number;
+    task_count: number;
+    document_count: number;
+    completion_rate: number | null;
+    answer_rate: number | null;
+    coverage_rate: number | null;
+    avg_hours_to_first_document: number | null;
+    user_versions: number;
+    cost_usd: number;
+  };
+  members: MemberPerformance[];
+}
+
+export interface MemberTask {
+  task_id: string;
+  session_id: string;
+  name: string;
+  stage: string;
+  stage_group: "preparing" | "analyzing" | "answering" | "completed";
+  status: string;
+  document_version: number;
+  has_document: boolean;
+  source_count: number;
+  answer_count: number;
+  questions_answered: number;
+  questions_skipped: number;
+  questions_open: number;
+  coverage_rate: number | null;
+  ai_versions: number;
+  user_versions: number;
+  hours_to_first_document: number | null;
+  created_at: string;
+  last_activity_at: string | null;
+}
+
+export interface MemberActivity {
+  kind: string;
+  label: string;
+  at: string | null;
+  task_id: string;
+  task_name: string;
+  detail: string;
+}
+
+export interface MemberReport {
+  member: MemberPerformance;
+  department: string;
+  team: string;
+  tasks: MemberTask[];
+  activity: MemberActivity[];
 }
