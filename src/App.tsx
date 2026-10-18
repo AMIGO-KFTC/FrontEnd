@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
 import type { AppConfig, SessionDetail, Source } from "./shared/types";
-import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
+import { dataFromSession, resetTokenFromHash, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
 import { LoginScreen } from "./screens/LoginScreen";
+import { MyPageScreen } from "./screens/MyPageScreen";
 import { ProcessingScreen } from "./screens/ProcessingScreen";
 import { QuestionScreen } from "./screens/QuestionScreen";
 import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
-type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete" | "mypage";
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
 
@@ -32,6 +33,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
+  const [resetToken, setResetToken] = useState<string | null>(resetTokenFromHash); // 비밀번호 재설정 링크로 들어온 경우
   const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
 
   // 로그인된 상태가 확인되면(앱 시작·로그인 직후) 해시의 작업을 이어서 열고, 없으면 시작 화면으로 간다.
@@ -231,9 +233,55 @@ export default function App() {
     }
   };
 
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      /* 서버 세션이 이미 끝났어도 화면은 로그인으로 */
+    }
+    writeHash(null);
+    setSessionId(null);
+    setData(EMPTY);
+    setMarkdown("");
+    setError(null);
+    setScreen("login");
+  };
+
+  // 마이페이지의 '내 인수인계서'에서 고른 문서를 연다(진행 단계에 맞는 화면으로)
+  const openDocument = (id: string) => {
+    writeHash(id);
+    setError(null);
+    setRestoreId(id);
+    setSessionId(id);
+  };
+
   if (!authChecked || restoreId) return null;
+  if (resetToken) {
+    return (
+      <LoginScreen
+        onLogin={login}
+        busy={busy}
+        error={error}
+        resetToken={resetToken}
+        onResetDone={() => {
+          writeHash(null);
+          setResetToken(null);
+          setScreen("login");
+        }}
+      />
+    );
+  }
   if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
-  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
+  if (screen === "mypage") {
+    return (
+      <MyPageScreen
+        onBack={() => toScreen(session ? screenForStage(session.stage) : "start")}
+        onLogout={() => void logout()}
+        onOpenDocument={openDocument}
+      />
+    );
+  }
+  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} onMyPage={() => toScreen("mypage")} />;
 
   if (!session) {
     return null;
@@ -286,6 +334,7 @@ export default function App() {
         onBack={() => toScreen("question")}
         onComplete={() => toScreen("complete")}
         onMarkdownChange={setMarkdown}
+        onMyPage={() => toScreen("mypage")}
         onSaved={() => void refresh()}
       />
     );

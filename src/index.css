@@ -1050,3 +1050,45 @@ body { background: #faf8f6; }
 .final-paper table.gantt-editable td.gantt-cell:not(.bar):hover { background: #efeafc; }
 .final-paper table.gantt-table { -webkit-user-select: none; user-select: none; }
 .gantt-hint { margin-left: 12px; color: #7a7470; font-size: 11px; }
+
+/* 비밀번호 찾기·재설정 안내 문구 */
+.form-notice { margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: #f1edff; color: #5b45a8; font-size: 12px; line-height: 1.5; }
+.form-links { margin: 18px 0 0; }
+
+/* 마이페이지 */
+.mypage-link { margin-left: auto; height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #e2dce6; border-radius: 9px; background: #fff; color: #5b4d74; font-size: 12px; font-weight: 600; }
+.mypage-actions { margin-left: auto; display: flex; gap: 8px; }
+.mypage-actions button { height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #e2dce6; border-radius: 9px; background: #fff; color: #5b4d74; font-size: 12px; font-weight: 600; }
+.mypage-actions button:first-child svg { transform: rotate(180deg); }
+.mypage-main { width: min(760px, calc(100% - 32px)); margin: 34px auto 60px; }
+.mypage-title span { color: #7658d9; font-size: 11px; font-weight: 800; letter-spacing: 2px; }
+.mypage-title h1 { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; font-size: 28px; letter-spacing: -1px; }
+.mypage-title p { margin: 0; color: #8d8692; font-size: 12px; }
+.admin-badge { padding: 3px 9px; border-radius: 999px; background: #2f2340; color: #fff; font-size: 11px; font-style: normal; font-weight: 700; letter-spacing: 0; }
+.mypage-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 16px; }
+.mypage-stats div { padding: 14px 16px; border: 1px solid #ebe5ea; border-radius: 12px; background: #fff; }
+.mypage-stats strong { display: block; color: #3b2e57; font-size: 22px; }
+.mypage-stats small { color: #8d8692; font-size: 11px; }
+.mypage-card { margin-top: 14px; padding: 20px 22px; border: 1px solid #ebe5ea; border-radius: 14px; background: #fff; }
+.mypage-card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 15px; }
+.mypage-card h2 svg { color: #7658d9; }
+.mypage-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.mypage-form label { display: flex; flex-direction: column; gap: 6px; color: #4b4152; font-size: 12px; font-weight: 700; }
+.mypage-form input { height: 38px; padding: 0 11px; border: 1px solid #e2dce3; border-radius: 9px; font-size: 13px; outline: 0; }
+.mypage-form input:focus { border-color: #8d76d4; box-shadow: 0 0 0 3px rgba(117,88,210,.12); }
+.mypage-form-footer { grid-column: 1 / -1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.mypage-form-footer small { margin-right: auto; color: #9b949e; font-size: 11px; }
+.mypage-form-footer .form-notice { margin: 0; }
+.mypage-form-footer .primary-button { height: 38px; padding: 0 18px; font-size: 13px; }
+.mypage-form > div:last-child:not(.mypage-form-footer) { grid-column: 1 / -1; }
+.mypage-empty { margin: 0; color: #9b949e; font-size: 12px; }
+.mypage-document { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #f0ebef; }
+.mypage-document strong, .mypage-document small { display: block; }
+.mypage-document strong { font-size: 13px; }
+.mypage-document small { margin-top: 3px; color: #8d8692; font-size: 11px; }
+.mypage-document button { height: 32px; display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; border: 1px solid #ddd5ee; border-radius: 8px; background: #f7f4ff; color: #5b45a8; font-size: 12px; font-weight: 700; }
+@media (max-width: 600px) {
+  .mypage-form { grid-template-columns: 1fr; }
+  .mypage-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .mypage-actions button { padding: 0 8px; }
+}

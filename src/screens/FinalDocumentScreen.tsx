@@ -23,6 +23,7 @@ type Props = {
   onComplete: () => void;
   onMarkdownChange: (markdown: string) => void; // 직접 수정·복원으로 바뀐 문서를 화면에 바로 반영
   onSaved: () => void; // 세션 상태(문서 버전) 다시 불러오기
+  onMyPage?: () => void;
 };
 
 type Section = { heading: string; title: string; body: string };
@@ -51,7 +52,7 @@ function formatTime(value: string): string {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, version, loading, sourceCount, failedMessage, onRetry, onBack, onComplete, onMarkdownChange, onSaved }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, version, loading, sourceCount, failedMessage, onRetry, onBack, onComplete, onMarkdownChange, onSaved, onMyPage }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [drafts, setDrafts] = useState<string[]>([]);
@@ -182,6 +183,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
           <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx", preview?.version); }}><Icon name="download" size={15} /> Word</button>
           <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md", preview?.version); }}><Icon name="download" size={15} /> Markdown</button>
           <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
+          {onMyPage && <button title="마이페이지" onClick={onMyPage}><Icon name="user" size={15} /> 마이페이지</button>}
         </div>
       </header>
       <main className="final-document-main">

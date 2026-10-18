@@ -160,7 +160,41 @@ export interface AuthUser {
   id: number;
   login_id: string;
   name: string;
+  email: string;
+  is_admin: boolean; // 관리자 권한(관리자 페이지)
   profile: { department: string; position: string; team: string; name: string } | null;
+}
+
+// 마이페이지(BackEnd /api/me)
+export interface MyPage {
+  message: string;
+  user: AuthUser;
+  created_at: string;
+  last_login_at: string | null;
+  password_changed_at: string | null;
+  stats: { unit_tasks: number; documents: number; document_versions: number };
+}
+
+export interface MyInfoUpdate {
+  name?: string;
+  department?: string;
+  team?: string;
+  position?: string;
+  email?: string;
+}
+
+// 내가 작성한 인수인계서(BackEnd /api/documents)
+export interface MyDocument {
+  session_id: string;
+  task_id: string | null;
+  title: string;
+  task_name: string;
+  stage: string;
+  version: number;
+  origin: "ai" | "user" | "restore";
+  origin_label: string;
+  version_count: number;
+  updated_at: string;
 }
 
 export interface LoginResult {

@@ -10,6 +10,9 @@ import type {
   LoginResult,
   MailImportResult,
   MailList,
+  MyDocument,
+  MyInfoUpdate,
+  MyPage,
   SessionCreate,
   SessionDetail,
   SessionSummary,
@@ -52,7 +55,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     let message = `요청에 실패했습니다 (HTTP ${res.status})`;
     try {
       const data = await res.json();
-      if (typeof data.detail === "string") message = data.detail;
+      if (typeof data.message === "string" && data.message) message = data.message; // BackEnd 가 화면용으로 정리한 문구(입력값 오류 포함)
+      else if (typeof data.detail === "string") message = data.detail;
       else if (Array.isArray(data.detail)) message = data.detail.map((d: { msg: string }) => d.msg).join(", ");
     } catch {
       /* 본문이 JSON 이 아니면 기본 메시지 */
@@ -73,6 +77,18 @@ export const api = {
   login: (loginId: string, password: string) => post<LoginResult>("/api/auth/login", { login_id: loginId, password }),
   logout: () => post<{ message: string }>("/api/auth/logout"),
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
+
+  // 비밀번호 찾기: 아이디와 등록한 이메일이 맞으면 재설정 안내(개발용 설정에서는 reset_token 이 함께 온다)
+  forgotPassword: (loginId: string, email: string) =>
+    post<{ message: string; expires_in_minutes: number; reset_token: string | null }>("/api/auth/password/forgot", { login_id: loginId, email }),
+  resetPassword: (token: string, newPassword: string) => post<{ message: string }>("/api/auth/password/reset", { token, new_password: newPassword }),
+
+  // 마이페이지: 내 정보 조회·수정(보낸 항목만), 비밀번호 바꾸기, 내가 작성한 인수인계서
+  myPage: () => request<MyPage>("/api/me"),
+  updateMe: (body: MyInfoUpdate) => request<MyPage>("/api/me", { method: "PATCH", body: JSON.stringify(body) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>("/api/me/password", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
+  myDocuments: () => request<{ documents: MyDocument[] }>("/api/documents"),
 
   listSessions: () => request<SessionSummary[]>("/api/sessions"),
   createSession: (body: SessionCreate) => post<SessionDetail>("/api/sessions", body),

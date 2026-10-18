@@ -4,7 +4,7 @@ import { Icon } from "../shared/Icon";
 import { ErrorNote } from "../shared/ErrorNote";
 import type { StartData } from "../shared/handover";
 
-export function StartScreen({ onStart, busy = false, error = null }: { onStart: (data: StartData) => void; busy?: boolean; error?: string | null }) {
+export function StartScreen({ onStart, busy = false, error = null, onMyPage }: { onStart: (data: StartData) => void; busy?: boolean; error?: string | null; onMyPage?: () => void }) {
   const [data, setData] = useState<StartData>({ mode: "reassignment", name: "김민준", division: "프로덕트본부", team: "플랫폼팀", role: "프로덕트 매니저", task: "B2B 플랫폼 기획 및 운영", date: "2025-03-14" });
   const [taskDraft, setTaskDraft] = useState("");
   const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
@@ -28,6 +28,7 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
           <span />
           <small>1 / 4</small>
         </div>
+        {onMyPage && <button className="mypage-link" onClick={onMyPage}><Icon name="user" size={14} /> 마이페이지</button>}
       </header>
       <main className="onboarding-main">
         <section className="onboarding-card">
