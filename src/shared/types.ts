@@ -169,3 +169,17 @@ export interface LoginResult {
   user: AuthUser;
   expires_at: string;
 }
+
+// 내 작업 목록(BackEnd /api/conversations): 각 작업이 어디까지 진행됐는지
+export interface ConversationProgress {
+  session_id: string;
+  title: string;
+  stage: Stage;
+  stage_number: number;
+  stage_label: string;
+  status: Status;
+  next_action: string;
+  next_action_label: string;
+  document_version: number;
+  last_activity_at: string;
+}

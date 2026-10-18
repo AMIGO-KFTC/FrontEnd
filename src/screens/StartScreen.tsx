@@ -3,8 +3,19 @@ import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import { ErrorNote } from "../shared/ErrorNote";
 import type { StartData } from "../shared/handover";
+import { RecentWorks } from "../shared/RecentWorks";
+import type { ConversationProgress } from "../shared/types";
 
-export function StartScreen({ onStart, busy = false, error = null }: { onStart: (data: StartData) => void; busy?: boolean; error?: string | null }) {
+type Props = {
+  onStart: (data: StartData) => void;
+  busy?: boolean;
+  error?: string | null;
+  recent?: ConversationProgress[];
+  onOpenWork?: (id: string) => void;
+  onDeleteWork?: (item: ConversationProgress) => void;
+};
+
+export function StartScreen({ onStart, busy = false, error = null, recent = [], onOpenWork = () => undefined, onDeleteWork = () => undefined }: Props) {
   const [data, setData] = useState<StartData>({ mode: "reassignment", name: "김민준", division: "프로덕트본부", team: "플랫폼팀", role: "프로덕트 매니저", task: "B2B 플랫폼 기획 및 운영", date: "2025-03-14" });
   const [taskDraft, setTaskDraft] = useState("");
   const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
@@ -112,6 +123,7 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
             <button className="primary-button onboarding-next" disabled={busy} onClick={() => onStart(data)}>다음 단계로 이동 <Icon name="arrow" size={18} /></button>
           </div>
         </section>
+        <RecentWorks items={recent} onOpen={onOpenWork} onDelete={onDeleteWork} />
       </main>
       <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>

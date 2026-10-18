@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, SessionDetail, Source } from "./shared/types";
+import type { AppConfig, ConversationProgress, SessionDetail, Source } from "./shared/types";
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
@@ -31,6 +31,7 @@ export default function App() {
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<ConversationProgress[]>([]); // 시작 화면의 진행 중인 작업 목록
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
   const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
 
@@ -81,6 +82,19 @@ export default function App() {
       setScreen("start");
     }
   }, [restoreId, session, sessionError]);
+
+  // 시작 화면을 열 때마다 내 작업 목록을 새로 불러온다(로그인 전이면 비움).
+  useEffect(() => {
+    if (screen !== "start") return;
+    let cancelled = false;
+    api
+      .conversations()
+      .then((r) => !cancelled && setRecent(r.conversations))
+      .catch(() => !cancelled && setRecent([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [screen]);
 
   // 서버가 늦게 떠서 실패했더라도 화면을 옮길 때 다시 불러온다.
   useEffect(() => {
@@ -204,6 +218,28 @@ export default function App() {
     if (result) setScreen("document");
   };
 
+  // 목록에서 고른 작업을 이어서 연다(새로고침 복원과 같은 경로).
+  const openWork = (id: string) => {
+    setError(null);
+    writeHash(id);
+    setRestoreId(id);
+    setSessionId(id);
+  };
+
+  const deleteWork = async (item: ConversationProgress) => {
+    if (!window.confirm(`'${item.title}' 작업을 삭제할까요? 올린 자료와 대화 기록이 모두 지워지고 되돌릴 수 없어요.`)) return;
+    try {
+      await api.deleteSession(item.session_id);
+      setRecent((current) => current.filter((x) => x.session_id !== item.session_id));
+      if (item.session_id === sessionId) {
+        writeHash(null);
+        setSessionId(null);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const reset = () => {
     writeHash(null);
     setSessionId(null);
@@ -233,7 +269,7 @@ export default function App() {
 
   if (!authChecked || restoreId) return null;
   if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
-  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
+  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} recent={recent} onOpenWork={openWork} onDeleteWork={deleteWork} />;
 
   if (!session) {
     return null;

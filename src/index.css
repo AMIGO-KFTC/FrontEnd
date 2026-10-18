@@ -1010,3 +1010,25 @@ body { background: #faf8f6; }
 .final-paper table.gantt-editable td.gantt-cell:not(.bar):hover { background: #efeafc; }
 .final-paper table.gantt-table { -webkit-user-select: none; user-select: none; }
 .gantt-hint { margin-left: 12px; color: #7a7470; font-size: 11px; }
+
+/* 시작 화면: 진행 중인 작업 목록(이어서 하기·삭제). 디자인의 카드·칩 색과 글자 크기에 맞춤 */
+.recent-works { margin-top: 44px; padding-top: 26px; border-top: 1px solid #e9e5e2; }
+.recent-works-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.recent-works-title strong { font-size: 11px; color: #3b363f; }
+.recent-works-title small { color: #a29ba3; font-size: 8px; }
+.recent-works ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.recent-works li { position: relative; }
+.recent-work-open { width: 100%; padding: 12px 40px 12px 14px; display: grid; gap: 6px; text-align: left; border: 1px solid #e6e1e4; border-radius: 9px; background: #fff; color: #423d46; }
+.recent-work-open:hover { border-color: #9179dc; box-shadow: 0 0 0 3px rgba(121,88,213,.07); }
+.recent-work-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.recent-work-head strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.recent-work-stage { flex: none; padding: 2px 7px; border-radius: 99px; font-style: normal; font-size: 8px; font-weight: 700; background: #f0ebff; color: #6046ba; }
+.recent-work-stage.done { background: #e5f4ea; color: #2f8a52; }
+.recent-work-stage.error { background: #fdecea; color: #c0392b; }
+.recent-work-meta { color: #8a838d; font-size: 8px; line-height: 1.5; }
+.recent-work-delete { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #a29ba3; }
+.recent-work-delete:hover { background: #f4eff7; color: #c0392b; }
+.recent-works-more { margin-top: 10px; padding: 0; border: 0; background: none; color: #7662c7; font-size: 9px; font-weight: 600; }
+@media (max-width: 540px) {
+  .recent-works { margin-top: 28px; padding: 24px 20px 8px; } /* 입력 카드(.onboarding-card)와 같은 좌우 여백 */
+}
