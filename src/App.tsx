@@ -7,13 +7,14 @@ import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
 import { LoginScreen } from "./screens/LoginScreen";
+import { AdminScreen } from "./screens/AdminScreen";
 import { MyPageScreen } from "./screens/MyPageScreen";
 import { ProcessingScreen } from "./screens/ProcessingScreen";
 import { QuestionScreen } from "./screens/QuestionScreen";
 import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
-type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete" | "mypage";
+type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete" | "mypage" | "admin";
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
 
@@ -294,9 +295,11 @@ export default function App() {
         onBack={() => toScreen(session ? screenForStage(session.stage) : "start")}
         onLogout={() => void logout()}
         onOpenDocument={openDocument}
+        onAdmin={() => toScreen("admin")}
       />
     );
   }
+  if (screen === "admin") return <AdminScreen onBack={() => toScreen("mypage")} onLogout={() => void logout()} />;
   if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} onMyPage={() => toScreen("mypage")} />;
 
   if (!session) {

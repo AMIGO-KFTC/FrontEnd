@@ -15,6 +15,7 @@ import type {
   MailList,
   MattermostConversation,
   MattermostConversationDetail,
+  MemberReport,
   MyDocument,
   MyInfoUpdate,
   MyPage,
@@ -22,6 +23,8 @@ import type {
   SessionDetail,
   SessionSummary,
   Source,
+  TeamInfo,
+  TeamReport,
   UsageTotal,
 } from "./types";
 
@@ -93,6 +96,12 @@ export const api = {
   updateMe: (body: MyInfoUpdate) => request<MyPage>("/api/me", { method: "PATCH", body: JSON.stringify(body) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>("/api/me/password", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
+  // 관리자: 팀 목록 → 팀원별 인수인계 작성 현황 → 팀원 상세(관리자가 아니면 403)
+  adminTeams: () => request<{ teams: TeamInfo[] }>("/api/admin/teams"),
+  adminTeamReport: (department: string, team: string, dateFrom = "", dateTo = "") =>
+    request<TeamReport>(`/api/admin/teams/report?${new URLSearchParams({ department, team, ...(dateFrom ? { date_from: dateFrom } : {}), ...(dateTo ? { date_to: dateTo } : {}) })}`),
+  adminMemberReport: (userId: number, dateFrom = "", dateTo = "") =>
+    request<MemberReport>(`/api/admin/members/${userId}/report?${new URLSearchParams({ ...(dateFrom ? { date_from: dateFrom } : {}), ...(dateTo ? { date_to: dateTo } : {}) })}`),
   myDocuments: () => request<{ documents: MyDocument[] }>("/api/documents"),
 
   listSessions: () => request<SessionSummary[]>("/api/sessions"),

@@ -10,6 +10,7 @@ type Props = {
   onBack: () => void;
   onLogout: () => void;
   onOpenDocument: (sessionId: string) => void;
+  onAdmin: () => void; // 관리자 페이지(관리자만 버튼이 보인다)
 };
 
 type InfoForm = { name: string; department: string; team: string; position: string; email: string };
@@ -25,7 +26,7 @@ function formOf(page: MyPage): InfoForm {
   return { name: page.user.name, department: p?.department ?? "", team: p?.team ?? "", position: p?.position ?? "", email: page.user.email };
 }
 
-export function MyPageScreen({ onBack, onLogout, onOpenDocument }: Props) {
+export function MyPageScreen({ onBack, onLogout, onOpenDocument, onAdmin }: Props) {
   const [page, setPage] = useState<MyPage | null>(null);
   const [documents, setDocuments] = useState<MyDocument[]>([]);
   const [form, setForm] = useState<InfoForm>({ name: "", department: "", team: "", position: "", email: "" });
@@ -104,6 +105,7 @@ export function MyPageScreen({ onBack, onLogout, onOpenDocument }: Props) {
       <header className="onboarding-header">
         <Brand />
         <div className="mypage-actions">
+          {page?.user.is_admin && <button className="admin-entry" onClick={onAdmin}><Icon name="shield" size={14} /> 관리자 페이지</button>}
           <button onClick={onBack}><Icon name="arrow" size={14} /> 작업으로 돌아가기</button>
           <button onClick={onLogout}>로그아웃</button>
         </div>

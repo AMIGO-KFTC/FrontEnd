@@ -343,3 +343,98 @@ export interface IntegrationImportResult {
   sources: Source[];
   skipped: string[];
 }
+
+// 관리자: 팀 인수인계 현황(BackEnd /api/admin/teams, /teams/report, /members/{id}/report)
+export interface TeamInfo {
+  department: string;
+  team: string;
+  label: string;
+  member_count: number;
+  task_count: number;
+  document_count: number;
+  completion_rate: number | null;
+}
+
+export interface MemberPerformance {
+  user_id: number;
+  login_id: string;
+  name: string;
+  position: string;
+  is_admin: boolean;
+  last_login_at: string | null;
+  last_activity_at: string | null;
+  task_count: number;
+  document_count: number;
+  completion_rate: number | null;
+  stages: { preparing: number; analyzing: number; answering: number; completed: number };
+  source_count: number;
+  answer_count: number;
+  questions_answered: number;
+  questions_skipped: number;
+  questions_open: number;
+  answer_rate: number | null;
+  coverage_rate: number | null;
+  ai_versions: number;
+  user_versions: number;
+  avg_hours_to_first_document: number | null;
+  cost_usd: number;
+}
+
+export interface TeamReport {
+  message: string;
+  department: string;
+  team: string;
+  label: string;
+  summary: {
+    member_count: number;
+    active_member_count: number;
+    task_count: number;
+    document_count: number;
+    completion_rate: number | null;
+    answer_rate: number | null;
+    coverage_rate: number | null;
+    avg_hours_to_first_document: number | null;
+    user_versions: number;
+    cost_usd: number;
+  };
+  members: MemberPerformance[];
+}
+
+export interface MemberTask {
+  task_id: string;
+  session_id: string;
+  name: string;
+  stage: string;
+  stage_group: "preparing" | "analyzing" | "answering" | "completed";
+  status: string;
+  document_version: number;
+  has_document: boolean;
+  source_count: number;
+  answer_count: number;
+  questions_answered: number;
+  questions_skipped: number;
+  questions_open: number;
+  coverage_rate: number | null;
+  ai_versions: number;
+  user_versions: number;
+  hours_to_first_document: number | null;
+  created_at: string;
+  last_activity_at: string | null;
+}
+
+export interface MemberActivity {
+  kind: string;
+  label: string;
+  at: string | null;
+  task_id: string;
+  task_name: string;
+  detail: string;
+}
+
+export interface MemberReport {
+  member: MemberPerformance;
+  department: string;
+  team: string;
+  tasks: MemberTask[];
+  activity: MemberActivity[];
+}
