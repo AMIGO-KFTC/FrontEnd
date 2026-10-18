@@ -2,7 +2,7 @@
 
 export type Stage = "setup" | "analyzing" | "summary" | "qna" | "composing" | "review";
 export type Status = "idle" | "running" | "waiting" | "error";
-export type HandoverMode = "reassignment" | "leave"; // 인사발령 / 장기휴가(Light)
+export type HandoverMode = "reassignment" | "leave"; // 인사발령 / 장기휴가
 export type Coverage = "sufficient" | "partial" | "missing";
 
 export interface Source {

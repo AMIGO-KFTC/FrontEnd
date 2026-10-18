@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../shared/api";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import type { StartData } from "../shared/handover";
+import { documentRehypePlugins } from "../shared/documentMarkdown";
+import { GanttAwareTable, GanttContext } from "../shared/GanttTable";
 import { MermaidDiagram } from "../shared/MermaidDiagram";
 import type { DocumentVersion, DocumentVersionSummary } from "../shared/types";
 
@@ -41,6 +43,9 @@ function joinDocument(preamble: string, sections: Section[], bodies: string[]): 
   return head + sections.map((section, index) => `## ${section.heading}\n\n${bodies[index].trim()}\n`).join("\n");
 }
 
+// 월별 일정표(이름 · 1~12월 · 비고)가 든 장은 글상자 대신 표에서 막대를 끌어 고친다.
+const hasGantt = (body: string) => /<th>\s*1월\s*<\/th>/.test(body);
+
 function formatTime(value: string): string {
   const date = new Date(value);
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -58,7 +63,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
   const [versions, setVersions] = useState<DocumentVersionSummary[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [preview, setPreview] = useState<DocumentVersion | null>(null);
-  const tasks = data.task.split("\n").filter(Boolean);
+  const [ganttState, setGanttState] = useState<"" | "saving" | "saved" | "failed">("");
   const shown = preview?.markdown ?? markdown;
   const { preamble, sections: parsed } = splitDocument(shown);
   const sections = parsed.map((section) => section.title);
@@ -69,6 +74,28 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
   };
 
   useEffect(() => setBaseVersion(version), [version]);
+
+  // 월별 막대를 끌어 고치면 바로 서버에 저장된다. AI 초안이면 같은 버전을 고치고, 직접 고친 문서면 막대만 옮긴 새 버전이 생긴다.
+  const gantt = useMemo(
+    () => ({
+      editable: isEditing,
+      onChange: async (name: string, nth: number, months: number[]) => {
+        setGanttState("saving");
+        try {
+          const doc = await api.editGantt(sessionId, name, nth, months);
+          onMarkdownChange(doc.markdown);
+          setBaseVersion(doc.version);
+          setEditBase(doc.version);
+          setGanttState("saved");
+          onSaved();
+        } catch (e) {
+          setGanttState("failed");
+          throw e;
+        }
+      },
+    }),
+    [isEditing, sessionId, onMarkdownChange, onSaved],
+  );
 
   const loadVersions = useCallback(async () => {
     try {
@@ -86,6 +113,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
     const { sections: currentSections } = splitDocument(markdown);
     setPreview(null);
     setDrafts(currentSections.map((section) => section.body));
+    setGanttState("");
     setEditBase(baseVersion);
     setSaveError(null);
     setNotice(null);
@@ -93,7 +121,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
   };
 
   const saveEdits = async () => {
-    const next = joinDocument(preamble, parsed, drafts);
+    const next = joinDocument(preamble, parsed, parsed.map((section, index) => (hasGantt(section.body) ? section.body : drafts[index] ?? section.body)));
     if (next.trim() === markdown.trim()) {
       setIsEditing(false);
       return;
@@ -188,6 +216,11 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
                   <Icon name="clock" size={14} /> 버전 기록 {versions.length ? versions.length : ""}
                 </button>
               )}
+              {isEditing && (
+                <small className="gantt-hint">
+                  월별 일정표는 칸을 끌어서 막대를 고쳐요(바로 저장).{ganttState === "saving" ? " 저장 중…" : ganttState === "saved" ? " 저장됨" : ganttState === "failed" ? " 저장 실패" : ""}
+                </small>
+              )}
               {isEditing && <button className="doc-tool" disabled={saving} onClick={() => setIsEditing(false)}>취소</button>}
               <button
                 className={`edit-toggle doc-tool ${isEditing ? "editing" : ""}`}
@@ -214,10 +247,11 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
               {versions.length === 0 && <small>저장된 버전이 없습니다.</small>}
             </div>
           )}
+          <GanttContext.Provider value={gantt}>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
-              <h1>{tasks[0] || "담당 업무"}<br />인수인계서</h1>
+              <h1>업무 인수인계서</h1>
               <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
               <div className="paper-meta">
                 <div><small>인계자</small><strong>{data.name}</strong></div>
@@ -236,7 +270,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
             {parsed.map((section, index) => (
               <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${index}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
-                {isEditing ? (
+                {isEditing && !hasGantt(section.body) ? (
                   <textarea
                     className="paper-section-editor"
                     aria-label={`${section.title} 내용 수정`}
@@ -247,7 +281,9 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
                 ) : (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={documentRehypePlugins}
                   components={{
+                    table: GanttAwareTable,
                     pre: ({ children }) => <>{children}</>,
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
@@ -258,6 +294,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, version, loadin
             ))}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / {Math.max(sections.length, 1)}</span></footer>
           </article>
+          </GanttContext.Provider>
         </section>
         <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
       </main>

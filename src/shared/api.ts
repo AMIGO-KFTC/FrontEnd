@@ -113,4 +113,6 @@ export const api = {
   mails: (sessionId: string, q = "", page = 1) =>
     request<MailList>(`/api/mail/messages?${new URLSearchParams({ session_id: sessionId, q, page: String(page), size: "20" })}`),
   importMails: (sessionId: string, messageIds: string[]) => post<MailImportResult>(`/api/sessions/${sessionId}/mails`, { message_ids: messageIds }),
+  editGantt: (id: string, name: string, nth: number, months: number[]) =>
+    request<HandoverDocument>(`/api/sessions/${id}/document/gantt`, { method: "PUT", body: JSON.stringify({ name, nth, months }) }),
 };
