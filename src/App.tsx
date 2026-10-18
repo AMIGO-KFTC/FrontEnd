@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, SessionDetail, Source } from "./shared/types";
+import type { AppConfig, IntegrationImportResult, SessionDetail, Source } from "./shared/types";
 import { dataFromSession, resetTokenFromHash, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { CompletionScreen } from "./screens/CompletionScreen";
@@ -133,6 +133,22 @@ export default function App() {
       }
     },
     [addMessages, refresh],
+  );
+
+  // 가상 Mattermost·Confluence 에서 고른 항목을 자료로 등록한다. 결과 안내는 패널 안에서 보여 주므로 run() 의 대화 메시지 처리는 거치지 않는다.
+  const importIntegration = useCallback(
+    async (action: () => Promise<IntegrationImportResult>): Promise<IntegrationImportResult | undefined> => {
+      setError(null);
+      try {
+        return await action();
+      } catch (e) {
+        setError((e as Error).message);
+        return undefined;
+      } finally {
+        void refresh();
+      }
+    },
+    [refresh],
   );
 
   const start = async (form: StartData) => {
@@ -300,6 +316,8 @@ export default function App() {
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
         onMailsImported={() => void refresh()}
+        onImportMattermost={(ids) => (sessionId ? importIntegration(() => api.importMattermost(sessionId, ids)) : Promise.resolve(undefined))}
+        onImportConfluence={(ids) => (sessionId ? importIntegration(() => api.importConfluence(sessionId, ids)) : Promise.resolve(undefined))}
       />
     );
   }

@@ -3,13 +3,18 @@ import type {
   AppConfig,
   AuthUser,
   ChatMessage,
+  ConfluencePage,
+  ConfluenceSearchResult,
   DocumentSaved,
   DocumentVersion,
   DocumentVersionSummary,
   HandoverDocument,
+  IntegrationImportResult,
   LoginResult,
   MailImportResult,
   MailList,
+  MattermostConversation,
+  MattermostConversationDetail,
   MyDocument,
   MyInfoUpdate,
   MyPage,
@@ -131,4 +136,15 @@ export const api = {
   importMails: (sessionId: string, messageIds: string[]) => post<MailImportResult>(`/api/sessions/${sessionId}/mails`, { message_ids: messageIds }),
   editGantt: (id: string, name: string, nth: number, months: number[]) =>
     request<HandoverDocument>(`/api/sessions/${id}/document/gantt`, { method: "PUT", body: JSON.stringify({ name, nth, months }) }),
+
+  // 가상 Mattermost · Confluence(실제 API 대신 BackEnd 의 예시 데이터)
+  mattermostConversations: (q = "") =>
+    request<{ me: string; total: number; conversations: MattermostConversation[] }>(`/api/integrations/mattermost/conversations?q=${encodeURIComponent(q)}`),
+  mattermostConversation: (conversationId: string) => request<MattermostConversationDetail>(`/api/integrations/mattermost/conversations/${conversationId}`),
+  importMattermost: (id: string, conversationIds: string[]) =>
+    post<IntegrationImportResult>(`/api/sessions/${id}/integrations/mattermost`, { conversation_ids: conversationIds }),
+  confluenceSearch: (q: string, space = "") =>
+    request<ConfluenceSearchResult>(`/api/integrations/confluence/search?q=${encodeURIComponent(q)}&space=${encodeURIComponent(space)}`),
+  confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
+  importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),
 };
