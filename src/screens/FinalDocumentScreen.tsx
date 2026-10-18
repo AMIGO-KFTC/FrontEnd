@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "../shared/api";
@@ -6,7 +6,10 @@ import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import type { StartData } from "../shared/handover";
 import { documentRehypePlugins } from "../shared/documentMarkdown";
+import { rehypeCitationRefs } from "../shared/citationRefs";
+import { CitationPanel } from "../shared/CitationPanel";
 import { MermaidDiagram } from "../shared/MermaidDiagram";
+import type { CitationDetail } from "../shared/types";
 import { GanttAwareTable, GanttContext } from "../shared/GanttTable";
 
 type Props = {
@@ -16,6 +19,7 @@ type Props = {
   onGanttEdit: (name: string, nth: number, months: number[]) => Promise<void>;
   loading: boolean;
   sourceCount: number;
+  slotTitles?: Record<string, string>;
   failedMessage: string | null;
   onRetry: () => void;
   onBack: () => void;
@@ -33,11 +37,35 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, slotTitles = {}, failedMessage, onRetry, onBack, onComplete }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
+  const [citations, setCitations] = useState<CitationDetail[]>([]);
+  const [panel, setPanel] = useState<{ selected: number | null } | null>(null);
   const parsed = splitSections(markdown);
+
+  // 문서가 바뀔 때마다(처음·다시 생성·일정표 수정) 근거 번호별 원문을 새로 불러온다.
+  useEffect(() => {
+    if (!markdown) return;
+    let cancelled = false;
+    api
+      .citations(sessionId)
+      .then((r) => !cancelled && setCitations(r.citations))
+      .catch(() => !cancelled && setCitations([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, markdown]);
+  const rehypePlugins = useMemo(
+    () => [...documentRehypePlugins, [rehypeCitationRefs, { numbers: new Set(citations.map((c) => c.number)) }]] as typeof documentRehypePlugins,
+    [citations],
+  );
+  const openCitation = (target: EventTarget | null) => {
+    if (isEditing) return; // 직접 수정하는 동안에는 눌러도 패널을 열지 않는다
+    const ref = (target as HTMLElement | null)?.closest?.("[data-cite]");
+    if (ref) setPanel({ selected: Number(ref.getAttribute("data-cite")) });
+  };
   const gantt = useMemo(() => ({
     editable: isEditing,
     onChange: (name: string, nth: number, months: number[]) => {
@@ -82,7 +110,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
               </button>
             ))}
           </nav>
-          <div className="document-source-info"><Icon name="link" size={15} /><div><strong>출처 {sourceCount}개 연결됨</strong><small>AI가 어떤 자료를 참고했는지 직접 확인해 보세요.</small></div></div>
+          <div className="document-source-info clickable" role="button" tabIndex={0} onClick={() => setPanel({ selected: null })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setPanel({ selected: null })}><Icon name="link" size={15} /><div><strong>출처 {citations.length || sourceCount}개 연결됨</strong><small>AI가 어떤 자료를 참고했는지 직접 확인해 보세요.</small></div></div>
           <button className="finish-handover" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
           <button className="document-back" onClick={onBack}><Icon name="arrow" size={15} /> 질의응답으로 돌아가기</button>
         </aside>
@@ -94,7 +122,13 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             </div>
           </div>
           <GanttContext.Provider value={gantt}>
-          <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
+          <article
+            className={`final-paper ${isEditing ? "is-editing" : ""}`}
+            contentEditable={isEditing}
+            suppressContentEditableWarning
+            onClick={(event) => openCitation(event.target)}
+            onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && (event.target as HTMLElement).closest?.("[data-cite]") && (event.preventDefault(), openCitation(event.target))}
+          >
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
@@ -118,7 +152,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  rehypePlugins={documentRehypePlugins}
+                  rehypePlugins={rehypePlugins}
                   components={{
                     table: GanttAwareTable,
                     pre: ({ children }) => <>{children}</>,
@@ -132,6 +166,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
           </article>
           </GanttContext.Provider>
         </section>
+        {panel && <CitationPanel citations={citations} selected={panel.selected} slotTitles={slotTitles} onClose={() => setPanel(null)} />}
         <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
       </main>
     </div>

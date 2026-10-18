@@ -183,3 +183,17 @@ export interface ConversationProgress {
   document_version: number;
   last_activity_at: string;
 }
+
+// 인수인계서 본문의 근거 번호([1], [2] …)별 원문(BackEnd /api/sessions/{id}/citations)
+export interface CitationDetail {
+  number: number;
+  label: string; // 사람이 읽는 출처 표기. 예: 업무정의서.pdf p.3
+  quote: string; // 근거로 쓴 문장 일부
+  kind: "document" | "answer"; // 올린 자료 / 인계자 답변
+  source_id: string;
+  source_name: string;
+  chunk_id: string;
+  text: string; // 근거가 나온 조각 원문(Markdown)
+  slot: string;
+  item_title: string;
+}

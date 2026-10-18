@@ -315,6 +315,7 @@ export default function App() {
         onGanttEdit={(name, nth, months) => api.editGantt(session.id, name, nth, months).then((d) => setMarkdown(d.markdown))}
         loading={docLoading}
         sourceCount={citationCount(session)}
+        slotTitles={Object.fromEntries((config?.slots ?? []).map((s) => [s.key, s.title]))}
         failedMessage={session.status === "error" ? session.error : null}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => toScreen("question")}

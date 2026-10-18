@@ -1,5 +1,5 @@
 // BackEnd(FastAPI) 호출 모음. 개발 중에는 Vite 프록시가 /api 를 8000 포트로 넘긴다.
-import type { AppConfig, AuthUser, ConversationProgress, LoginResult, ChatMessage, SessionCreate, SessionDetail, SessionSummary, Source, UsageTotal } from "./types";
+import type { AppConfig, AuthUser, CitationDetail, ConversationProgress, LoginResult, ChatMessage, SessionCreate, SessionDetail, SessionSummary, Source, UsageTotal } from "./types";
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 
@@ -82,6 +82,7 @@ export const api = {
   generate: (id: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/generate`),
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 
+  citations: (id: string) => request<{ document_version: number; citations: CitationDetail[] }>(`/api/sessions/${id}/citations`),
   document: (id: string) => request<{ markdown: string; version: number }>(`/api/sessions/${id}/document`),
   editGantt: (id: string, name: string, nth: number, months: number[]) =>
     request<{ markdown: string; version: number }>(`/api/sessions/${id}/document/gantt`, {
