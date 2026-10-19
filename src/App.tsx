@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, IntegrationImportResult, SessionDetail, Source } from "./shared/types";
+import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
@@ -10,12 +10,19 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
+import { CompletedDocumentsScreen } from "./screens/home/CompletedDocumentsScreen";
+import { DashboardScreen } from "./screens/home/DashboardScreen";
+import { OngoingHandoverScreen } from "./screens/home/OngoingHandoverScreen";
+import { ReceivedHandoverScreen } from "./screens/home/ReceivedHandoverScreen";
+import type { HomeNav, SessionList } from "./screens/home/types";
 import { ProcessingScreen } from "./screens/ProcessingScreen";
 import { QuestionScreen } from "./screens/QuestionScreen";
 import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
-type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type HomeScreen = "dashboard" | "handover" | "documents" | "received"; // 홈 셸(사이드바가 있는 화면)
+type Screen = "login" | HomeScreen | "start" | "upload" | "processing" | "question" | "document" | "complete";
+const HOME_SCREENS: Screen[] = ["dashboard", "handover", "documents", "received"];
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
@@ -46,18 +53,35 @@ function AppScreens() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
+  const [sessions, setSessions] = useState<SessionSummary[] | null>(null); // 홈 화면의 서버 작업 목록(실패하면 null)
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
   const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
 
-  // 로그인된 상태가 확인되면(앱 시작·로그인 직후) 해시의 작업을 이어서 열고, 없으면 시작 화면으로 간다.
+  // 로그인된 상태가 확인되면(앱 시작·로그인 직후) 해시의 작업을 이어서 열고, 없으면 홈 대시보드로 간다.
   const enter = useCallback(() => {
     const id = sessionFromHash();
     if (id) {
       setRestoreId(id);
       setSessionId(id);
     } else {
-      setScreen("start");
+      setScreen("dashboard");
     }
   }, []);
+
+  // 홈 화면의 작업 목록. 실패하면 목록을 비우고(null) 오류를 남겨 "0건"으로 보이지 않게 한다.
+  const loadSessions = useCallback(async () => {
+    try {
+      setSessions(await api.listSessions());
+      setSessionsError(null);
+    } catch (e) {
+      setSessions(null);
+      setSessionsError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (HOME_SCREENS.includes(screen)) void loadSessions();
+  }, [screen, loadSessions]);
 
   // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛰고, 서버가 준 사용자 정보로 프로필을 채운다.
   useEffect(() => {
@@ -95,7 +119,7 @@ function AppScreens() {
       setSessionId(null);
       setRestoreId(null);
       setError("이전 작업을 불러오지 못했어요. 새로 시작해 주세요.");
-      setScreen("start");
+      setScreen("dashboard");
     }
   }, [restoreId, session, sessionError]);
 
@@ -237,13 +261,38 @@ function AppScreens() {
     if (result) setScreen("document");
   };
 
-  const reset = () => {
+  // 현재 작업을 화면에서 내려놓는다(서버에는 남는다).
+  const clearSession = () => {
     writeHash(null);
     setSessionId(null);
     setData(EMPTY);
     setMarkdown("");
     setError(null);
+  };
+
+  const reset = () => {
+    clearSession();
     setScreen("start");
+  };
+
+  // 홈 목록에서 "이어서 작성"·"문서 열기": 세션을 불러온 뒤 서버에 저장된 단계의 화면으로 간다(해시 복원과 같은 경로).
+  const openSession = (id: string) => {
+    setError(null);
+    setRestoreId(id);
+    setSessionId(id);
+    writeHash(id);
+  };
+
+  // 홈 목록에서 삭제. 성공하면 목록을 다시 불러오고, 실패하면 오류 문구를 돌려준다.
+  const deleteSession = async (id: string): Promise<string | null> => {
+    try {
+      await api.deleteSession(id);
+    } catch (e) {
+      return (e as Error).message;
+    }
+    if (id === sessionId) clearSession();
+    await loadSessions();
+    return null;
   };
 
   const toScreen = (next: Screen) => {
@@ -277,11 +326,20 @@ function AppScreens() {
     setScreen("login");
   };
 
-  // 단계 화면의 "홈으로 돌아가기". 홈 대시보드(3단계)가 생기기 전까지는 시작 화면으로 보낸다. 작업은 서버에 남아 있다.
+  // 단계 화면의 "홈으로 돌아가기". 작업은 서버에 남고 홈 목록에서 다시 열 수 있다.
   const goHome = () => {
-    setError(null);
-    reset();
+    clearSession();
+    setScreen("dashboard");
   };
+
+  const nav: HomeNav = {
+    onHome: () => toScreen("dashboard"),
+    onHandover: () => toScreen("handover"),
+    onDocuments: () => toScreen("documents"),
+    onReceived: () => toScreen("received"),
+    onLogout: logout,
+  };
+  const list: SessionList = { sessions, error: sessionsError, reload: () => void loadSessions(), open: openSession, remove: deleteSession };
 
   if (!authChecked || restoreId) return null;
   if (screen === "login") {
@@ -293,6 +351,10 @@ function AppScreens() {
       </>
     );
   }
+  if (screen === "dashboard") return <DashboardScreen {...nav} list={list} onNew={reset} />;
+  if (screen === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={reset} />;
+  if (screen === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
+  if (screen === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
   if (screen === "start") return <StartScreen onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
 
   if (!session) {
@@ -361,6 +423,7 @@ function AppScreens() {
       citationCount={citationCount(session)}
       onViewDocument={() => toScreen("document")}
       onNew={reset}
+      onHome={goHome}
     />
   );
 }

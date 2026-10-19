@@ -1,7 +1,9 @@
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 
-export function CompletionScreen({ sourceCount, questionCount, citationCount, onViewDocument, onNew }: { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void }) {
+type Props = { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
+
+export function CompletionScreen({ sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
   return (
     <div className="completion-page">
       <header className="completion-header"><Brand /></header>
@@ -25,6 +27,7 @@ export function CompletionScreen({ sourceCount, questionCount, citationCount, on
         </section>
         <div className="completion-actions">
           <button className="secondary-completion" onClick={onViewDocument}><Icon name="file" size={16} /> 완성 문서 다시 보기</button>
+          <button className="secondary-completion" onClick={onHome}><Icon name="home" size={16} /> 홈으로 돌아가기</button>
           <button className="primary-button new-handover" onClick={onNew}>새 인수인계 시작하기 <Icon name="arrow" size={17} /></button>
         </div>
         <div className="completion-note"><Icon name="sparkle" size={14} /> 문서는 언제든 다시 열어 수정하거나 내려받을 수 있어요.</div>

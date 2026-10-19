@@ -1,14 +1,17 @@
 // 홈 화면(대시보드 · 진행 중 · 완성 문서 · 받은 인수인계)의 왼쪽 사이드바.
-// 진행 중 개수는 3단계에서 서버 세션 목록으로 채운다. "최근 작업"과 받은 인수인계 개수는 아직 예시 값이다.
+// 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 예시 화면이라 개수를 표시하지 않는다.
 import { useRef, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
 import { useProfile } from "@/shared/profile";
+import { ongoingSessions, recentSessions, sessionTitle, sessionTone } from "@/shared/sessions";
+import type { SessionSummary } from "@/shared/types";
 
 export function AppSidebar({
   active = "home",
-  ongoingCount = 0,
+  sessions,
+  onOpenSession,
   onLogout,
   onHome,
   onHandover,
@@ -16,7 +19,8 @@ export function AppSidebar({
   onReceived,
 }: {
   active?: "home" | "handover" | "received" | "documents";
-  ongoingCount?: number;
+  sessions: SessionSummary[] | null;
+  onOpenSession: (id: string) => void;
   onLogout?: () => void;
   onHome?: () => void;
   onHandover?: () => void;
@@ -29,6 +33,8 @@ export function AppSidebar({
   const [profile, setProfile] = useProfile();
   const [profileDraft, setProfileDraft] = useState(profile);
   const profilePhotoRef = useRef<HTMLInputElement>(null);
+  const ongoingCount = sessions ? ongoingSessions(sessions).length : null;
+  const recent = sessions ? recentSessions(sessions, 2) : [];
   const openProfileEdit = () => {
     setProfileDraft(profile);
     setProfileOpen(false);
@@ -54,16 +60,19 @@ export function AppSidebar({
       </div>
       <nav className="sidebar-nav">
         <button className={active === "home" ? "active" : ""} onClick={onHome}><Icon name="home" size={17} /><span>홈</span></button>
-        <button className={active === "handover" ? "active" : ""} onClick={onHandover}><Icon name="message" size={17} /><span>진행 중인 인수인계</span><small>{ongoingCount}</small></button>
+        <button className={active === "handover" ? "active" : ""} onClick={onHandover}><Icon name="message" size={17} /><span>진행 중인 인수인계</span>{ongoingCount !== null && <small>{ongoingCount}</small>}</button>
       </nav>
-      <div className="sidebar-section">
-        <p>최근 작업</p>
-        <button><span className="project-dot coral" />플랫폼 운영 인수인계</button>
-        <button><span className="project-dot blue" />Q1 프로젝트 정리</button>
-      </div>
+      {recent.length > 0 && (
+        <div className="sidebar-section">
+          <p>최근 작업</p>
+          {recent.map((session) => (
+            <button key={session.id} onClick={() => onOpenSession(session.id)} title={sessionTitle(session)}><span className={`project-dot ${sessionTone(session.id)}`} /><span className="sidebar-recent-title">{sessionTitle(session)}</span></button>
+          ))}
+        </div>
+      )}
       <nav className="sidebar-nav sidebar-nav-secondary">
         <button className={active === "documents" ? "active" : ""} onClick={onDocuments}><Icon name="file" size={17} /><span>완성 문서</span></button>
-        <button className={active === "received" ? "active" : ""} onClick={onReceived}><Icon name="download" size={17} /><span>받은 인수인계</span><small>2</small></button>
+        <button className={active === "received" ? "active" : ""} onClick={onReceived}><Icon name="download" size={17} /><span>받은 인수인계</span></button>
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile">

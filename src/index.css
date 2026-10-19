@@ -2671,6 +2671,17 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
   .copyright { display: none; }
 }
 
+/* 홈 셸: 예시 표시, 목록 안내(빈 목록·오류), 불러오기 실패 숫자 */
+.example-badge { display: inline-flex; align-items: center; margin-left: 6px; padding: 2px 6px; border-radius: 6px; background: #fff0dc; color: #ae701d; font: 700 7px "Manrope", sans-serif; font-style: normal; letter-spacing: .4px; vertical-align: middle; white-space: nowrap; }
+.list-notice { margin: 0; align-self: start; padding: 15px 18px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; border: 1px dashed #ddd6dd; border-radius: 12px; background: #fff; color: #8a838c; font-size: 9px; }
+.list-notice.error { border-color: #efc4c0; background: #fff8f7; color: #b24a41; }
+.list-notice button { height: 28px; padding: 0 11px; border: 1px solid #ddd6dd; border-radius: 8px; background: #fff; color: #6246c9; font-size: 8px; font-weight: 700; }
+.list-notice.error button { border-color: #efc4c0; color: #b24a41; }
+.dashboard-stat strong.unavailable { color: #b24a41; font-size: 11px; }
+.dashboard-stats .list-notice { grid-column: 1 / -1; padding: 10px 14px; }
+.sidebar-section button .sidebar-recent-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.received-help { cursor: default; }
+
 /* 자료 등록: 메일 카드 안내 문구, 메신저 탭의 작은 드롭존 */
 .source-grid > button .mail-upload-note { color: #c05f49; font-size: 7px; line-height: 1.45; }
 .source-action-panel.compact { min-height: 50px; margin-top: 10px; padding: 9px 13px; }
