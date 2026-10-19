@@ -2690,6 +2690,32 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .leave-theme .step-added-list, .leave-theme .integration-panel { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(20,90,120,.08); }
 .leave-theme .integration-panel { margin-top: 10px; }
 
+/* 문서 생성 중: 서버가 퍼센트를 주지 않으므로 흐르는 막대로 진행 중임을 보이고, 실패하면 멈춘다 */
+.generation-track > span.indeterminate { width: 38%; animation: generation-slide 1.4s ease-in-out infinite; }
+.generation-track > span.stopped { width: 100%; background: #e2b4ae; }
+@keyframes generation-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(270%); } }
+.generation-step-list > div.failed { color: #b24a41; }
+.generation-step-list > div.failed > span { background: #fae9e6; }
+.generation-actions { width: 100%; margin-top: 12px; display: grid; justify-items: center; gap: 4px; }
+.generation-actions > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.generation-actions .onboarding-next { margin-top: 8px; }
+
+/* 문서 화면: AMIGO 에게 수정 요청 */
+.revision-compose { margin: 14px auto 0; width: min(720px, calc(100% - 48px)); padding: 14px 16px; border: 1px solid #d9d0ec; border-radius: 13px; background: #faf8ff; box-shadow: 0 8px 24px rgba(57,46,63,.06); }
+.revision-compose > div:first-child strong, .revision-compose > div:first-child small { display: block; }
+.revision-compose > div:first-child strong { font-size: 10px; color: #3a3340; }
+.revision-compose > div:first-child small { margin-top: 3px; color: #8a828e; font-size: 8px; }
+.revision-compose textarea { width: 100%; height: 62px; margin-top: 10px; padding: 9px 11px; resize: none; border: 1px solid #ddd6e5; border-radius: 9px; outline: 0; background: #fff; color: #373139; font-size: 10px; }
+.revision-compose textarea:focus { border-color: #9c86da; box-shadow: 0 0 0 3px rgba(118,88,208,.07); }
+.revision-compose > div:last-child { margin-top: 9px; display: flex; justify-content: flex-end; gap: 7px; }
+.revision-compose > div:last-child button { height: 30px; padding: 0 11px; display: flex; align-items: center; gap: 5px; border: 1px solid #ded8dd; border-radius: 8px; background: #fff; color: #685d71; font-size: 8px; font-weight: 700; }
+.revision-compose .revision-send { border-color: #6d52c8; background: #6d52c8; color: #fff; }
+.revision-compose .revision-send:disabled { opacity: .5; cursor: default; }
+.revision-error { width: min(720px, calc(100% - 48px)); margin: 10px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.revision-error p { margin: 0 !important; }
+.revision-error button { height: 28px; padding: 0 10px; border: 1px solid #efc4c0; border-radius: 8px; background: #fff; color: #b24a41; font-size: 8px; font-weight: 700; }
+.final-document-toolbar .amigo-revision-button:disabled { opacity: .55; cursor: default; }
+
 /* 분석 실패 시 자료 등록으로 되돌아가는 보조 버튼 */
 .processing-back { margin: 10px auto 0; display: flex; align-items: center; gap: 6px; border: 0; background: transparent; color: #8a838c; font-size: 9px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .processing-back svg { transform: rotate(180deg); }

@@ -12,6 +12,7 @@ import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
 import { CompletionScreen } from "./screens/handover/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/handover/FinalDocumentScreen";
+import { GeneratingDocumentScreen } from "./screens/handover/GeneratingDocumentScreen";
 import { HandoverTypeScreen } from "./screens/handover/HandoverTypeScreen";
 import { CompletedDocumentsScreen } from "./screens/home/CompletedDocumentsScreen";
 import { DashboardScreen } from "./screens/home/DashboardScreen";
@@ -24,7 +25,7 @@ import { StartScreen } from "./screens/handover/StartScreen";
 import { UploadStepScreen } from "./screens/handover/UploadStepScreen";
 
 type HomeScreen = "dashboard" | "handover" | "documents" | "received"; // 홈 셸(사이드바가 있는 화면)
-type Screen = "login" | HomeScreen | "admin" | "handoverType" | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type Screen = "login" | HomeScreen | "admin" | "handoverType" | "start" | "upload" | "processing" | "question" | "generating" | "document" | "complete";
 const HOME_SCREENS: Screen[] = ["dashboard", "handover", "documents", "received"];
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
@@ -55,7 +56,9 @@ function AppScreens() {
   const [markdown, setMarkdown] = useState("");
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
+  const [acting, setActing] = useState(false);
+  const [targetVersion, setTargetVersion] = useState(1); // 생성 중 화면이 기다리는 문서 버전
+  const awaitingStart = useRef(false); // 생성·수정 요청을 보낸 뒤 서버가 "처리 중"으로 바뀌는 것을 아직 못 본 상태 // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
   const [error, setError] = useState<string | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null); // 홈 화면의 서버 작업 목록(실패하면 null)
@@ -117,7 +120,9 @@ function AppScreens() {
     if (!restoreId) return;
     if (session && session.id === restoreId) {
       setData(dataFromSession(session));
-      setScreen(screenForStage(session.stage));
+      const next = screenForStage(session.stage);
+      if (next === "generating") setTargetVersion(session.document_version + 1);
+      setScreen(next);
       setRestoreId(null);
     } else if (sessionError) {
       writeHash(null);
@@ -134,16 +139,30 @@ function AppScreens() {
     api.config().then(setConfig).catch(() => setConfig(null));
   }, [config, screen]);
 
-  // AI 단계가 끝나면 화면을 이어서 넘긴다: 분석 완료 → 질의응답, 문서 작성 시작 → 문서
+  // AI 단계가 끝나면 화면을 이어서 넘긴다: 질의응답 중 문서 작성이 시작되면 생성 중 화면, 기다리던 버전이 나오면 문서 화면
   const stage = session?.stage;
+  const status = session?.status;
   const documentVersion = session?.document_version ?? 0;
   const prevStage = useRef(stage);
   useEffect(() => {
     const changed = prevStage.current !== stage;
     prevStage.current = stage;
     if (!stage || !changed) return;
-    if (screen === "question" && (stage === "composing" || stage === "review")) setScreen("document");
-  }, [screen, stage]);
+    if (screen === "question" && stage === "composing") {
+      setTargetVersion(documentVersion + 1);
+      setScreen("generating");
+    } else if (screen === "question" && stage === "review") {
+      setScreen("document");
+    }
+  }, [screen, stage, documentVersion]);
+
+  // 생성 중 → 문서: 기다리던 버전이 나왔거나, (요청 직후가 아닌데) 서버가 검토 단계로 돌아와 있으면 문서 화면으로.
+  // 두 번째 조건은 새로고침 복원처럼 버전 계산이 어긋난 경우를 위한 안전장치다.
+  useEffect(() => {
+    if (status === "running" || stage === "composing") awaitingStart.current = false;
+    if (screen !== "generating" || status === "running") return;
+    if (documentVersion >= targetVersion || (!awaitingStart.current && stage === "review" && documentVersion > 0)) setScreen("document");
+  }, [screen, documentVersion, targetVersion, status, stage]);
 
   useEffect(() => {
     if (screen !== "document" || !sessionId || documentVersion === 0) return;
@@ -263,10 +282,27 @@ function AppScreens() {
     if (result) setScreen("processing");
   };
 
+  // 문서 생성·수정 요청: 서버가 202 로 받으면 생성 중 화면에서 기다리던 버전이 나올 때까지 폴링 결과를 보여 준다.
   const generate = async () => {
-    if (!sessionId) return;
+    if (!sessionId || acting) return;
+    const next = (session?.document_version ?? 0) + 1;
     const result = await run(() => api.generate(sessionId));
-    if (result) setScreen("document");
+    if (result) {
+      awaitingStart.current = true;
+      setTargetVersion(next);
+      setScreen("generating");
+    }
+  };
+
+  const revise = async (text: string) => {
+    if (!sessionId || acting) return;
+    const next = (session?.document_version ?? 0) + 1;
+    const result = await run(() => api.chat(sessionId, text));
+    if (result) {
+      awaitingStart.current = true;
+      setTargetVersion(next);
+      setScreen("generating");
+    }
   };
 
   // 현재 작업을 화면에서 내려놓는다(서버에는 남는다).
@@ -412,6 +448,19 @@ function AppScreens() {
       />
     );
   }
+  if (screen === "generating") {
+    return (
+      <GeneratingDocumentScreen
+        mode={data.mode}
+        session={session}
+        targetVersion={targetVersion}
+        onRetry={() => sessionId && void run(() => api.retry(sessionId))}
+        onBack={() => toScreen("question")}
+        onLogout={logout}
+        onHome={goHome}
+      />
+    );
+  }
   if (screen === "document") {
     return (
       <FinalDocumentScreen
@@ -422,6 +471,8 @@ function AppScreens() {
         loading={docLoading}
         sourceCount={citationCount(session)}
         failedMessage={session.status === "error" ? session.error : null}
+        revising={acting || session.status === "running"}
+        onRevise={(text) => void revise(text)}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => toScreen("question")}
         onComplete={() => toScreen("complete")}

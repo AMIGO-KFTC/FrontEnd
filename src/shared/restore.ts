@@ -2,7 +2,7 @@
 import type { StartData } from "./handover";
 import type { SessionDetail, Stage } from "./types";
 
-export type RestoredScreen = "upload" | "processing" | "question" | "document";
+export type RestoredScreen = "upload" | "processing" | "question" | "generating" | "document";
 
 export function sessionFromHash(): string | null {
   const match = window.location.hash.match(/^#\/s\/([0-9a-f]{8,64})$/);
@@ -25,8 +25,10 @@ export function screenForStage(stage: Stage): RestoredScreen {
     case "summary":
     case "qna":
       return "question";
+    case "composing":
+      return "generating";
     default:
-      return "document"; // composing, review
+      return "document"; // review
   }
 }
 
