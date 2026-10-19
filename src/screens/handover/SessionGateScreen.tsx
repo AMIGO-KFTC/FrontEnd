@@ -10,7 +10,7 @@ export type GateState =
 export function SessionGateScreen({ state, onRetry, onHome }: { state: GateState; onRetry: () => void; onHome: () => void }) {
   return (
     <div className="session-gate-page">
-      <header className="onboarding-header"><Brand /></header>
+      <header className="onboarding-header"><Brand onClick={onHome} /></header>
       <main className="session-gate-main">
         {state.kind === "loading" && (
           <>

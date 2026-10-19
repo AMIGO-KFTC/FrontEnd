@@ -56,7 +56,7 @@ export function AppSidebar({
     <>
     <aside className="app-sidebar">
       <div className="sidebar-top">
-        <Brand />
+        <Brand onClick={onHome} />
       </div>
       <nav className="sidebar-nav">
         <button className={active === "home" ? "active" : ""} onClick={onHome}><Icon name="home" size={17} /><span>홈</span></button>

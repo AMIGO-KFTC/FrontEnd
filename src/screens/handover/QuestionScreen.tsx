@@ -82,7 +82,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
     <div className={`question-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span className="active" />

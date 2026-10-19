@@ -9,7 +9,7 @@ export function CompletionScreen({ mode, sourceCount, questionCount, citationCou
   return (
     <div className={`completion-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
-      <header className="completion-header"><Brand /></header>
+      <header className="completion-header"><Brand onClick={onHome} /></header>
       <main className="completion-main">
         <div className="completion-visual">
           <span><Icon name="check" size={30} /></span>

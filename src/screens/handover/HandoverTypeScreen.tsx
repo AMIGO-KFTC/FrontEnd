@@ -14,7 +14,7 @@ export function HandoverTypeScreen({ onSelect, onLogout, onHome }: { onSelect: (
   return (
     <div className="handover-type-page">
       <header className="handover-type-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="type-header-profile">
           <button className="type-profile-avatar" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} aria-label="내 프로필 열기">{profile.name.slice(0, 1)}</button>
           {profileOpen && (

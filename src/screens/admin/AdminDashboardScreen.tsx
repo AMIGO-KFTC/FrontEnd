@@ -23,7 +23,7 @@ export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand"><Brand /><span>PREVIEW</span></div>
+        <div className="admin-sidebar-brand"><Brand onClick={onExit} /><span>PREVIEW</span></div>
         <div className="admin-workspace-label"><span><Icon name="shield" size={15} /></span><div><small>WORKSPACE</small><strong>관리자 미리보기</strong></div></div>
         <nav className="admin-nav">
           <small>관리 메뉴</small>

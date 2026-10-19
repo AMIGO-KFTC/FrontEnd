@@ -33,7 +33,7 @@ export function GeneratingDocumentScreen({ mode, session, targetVersion, onRetry
     <div className={`generation-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span className="active" />
