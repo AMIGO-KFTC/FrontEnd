@@ -100,7 +100,7 @@ export function AppSidebar({
           <button className="profile-more" onClick={() => setProfileOpen((current) => !current)} aria-label="내 프로필 열기" aria-expanded={profileOpen}><Icon name="more" size={16} /></button>
           {profileOpen && (
             <div className="profile-popover">
-              <header><span>{profile.photo ? <img src={profile.photo} alt="" /> : profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>아이디 {profile.employeeId}</small></div></header>
+              <header><span>{profile.photo ? <img src={profile.photo} alt="" /> : profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId}</small></div></header>
               <dl>
                 <div><dt>소속</dt><dd>{profile.division} · {profile.team}</dd></div>
                 <div><dt>직책</dt><dd>{profile.role}</dd></div>
@@ -129,7 +129,7 @@ export function AppSidebar({
               <input ref={profilePhotoRef} type="file" accept="image/png,image/jpeg" onChange={(event) => changeProfilePhoto(event.target.files?.[0])} />
             </div>
             <label>이름<input value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} /></label>
-            <label>아이디<input value={profileDraft.employeeId} disabled /></label>
+            <label>사번<input value={profileDraft.employeeId} disabled /></label>
             <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
             <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
             <label className="profile-role-field">직책<input value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })} /></label>
