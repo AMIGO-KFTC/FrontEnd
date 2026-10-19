@@ -1,6 +1,5 @@
-// 홈 캘린더. 일정은 아직 서버와 연결되지 않은 예시이며 앱이 떠 있는 동안만 유지된다.
+// 홈 캘린더. 일정은 아직 서버와 연결되지 않아 앱이 떠 있는 동안만 유지된다.
 import { useState } from "react";
-import { ExampleBadge } from "@/shared/ExampleBadge";
 import { Icon } from "@/shared/Icon";
 
 export function DashboardCalendar() {
@@ -56,7 +55,7 @@ export function DashboardCalendar() {
     <section className="dashboard-calendar">
       <div className="calendar-main">
           <header>
-            <div><span>MY SCHEDULE <ExampleBadge /></span><h2>{monthLabel}</h2></div>
+            <div><span>MY SCHEDULE</span><h2>{monthLabel}</h2></div>
             <div>
               <button onClick={() => moveMonth(-1)} aria-label="이전 달"><Icon name="chevron" size={14} /></button>
               <button onClick={() => moveMonth(1)} aria-label="다음 달"><Icon name="chevron" size={14} /></button>

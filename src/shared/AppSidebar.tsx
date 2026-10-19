@@ -1,5 +1,5 @@
 // 홈 화면(대시보드 · 진행 중 · 완성 문서 · 받은 인수인계)의 왼쪽 사이드바.
-// 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 예시 화면이라 개수를 표시하지 않는다.
+// 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 서버 API 가 없어 개수를 표시하지 않는다.
 import { useRef, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";

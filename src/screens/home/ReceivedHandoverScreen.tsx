@@ -1,7 +1,6 @@
-// 받은 인수인계. BackEnd 에 인수자 쪽 API 가 아직 없어 화면 전체가 예시 데이터다.
+// 받은 인수인계. BackEnd 에 인수자 쪽 API 가 아직 없어 화면 안의 값으로만 동작한다.
 import { useState } from "react";
 import { AppSidebar } from "@/shared/AppSidebar";
-import { ExampleBadge } from "@/shared/ExampleBadge";
 import { Icon } from "@/shared/Icon";
 import type { HomeNav, SessionList } from "./types";
 
@@ -62,12 +61,12 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
       <AppSidebar active="received" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} />
       <main className="received-main">
         <header className="dashboard-header received-header">
-          <div><span>MY WORKSPACE</span><strong>받은 인수인계 <ExampleBadge /></strong></div>
-          <span className="received-help"><Icon name="shield" size={14} /> 아직 서버와 연결되지 않은 예시 화면입니다</span>
+          <div><span>MY WORKSPACE</span><strong>받은 인수인계</strong></div>
+          <button className="received-help"><Icon name="download" size={14} /> 전체 내려받기</button>
         </header>
         <div className="received-content">
           <section className="received-title">
-            <div><span>RECEIVED HANDOVERS <ExampleBadge label="예시 데이터" /></span><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요. 아래 내용은 예시입니다.</p></div>
+            <div><span>RECEIVED HANDOVERS</span><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
             <div className="received-counts">
               <div><strong>3</strong><small>전체</small></div>
               <i />

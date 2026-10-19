@@ -1,7 +1,6 @@
-// 홈 대시보드. 진행 중·완료 건수는 서버 세션 목록, 받은 인수인계·알림·캘린더는 아직 예시 데이터다.
+// 홈 대시보드. 진행 중·완료 건수는 서버 세션 목록에서 가져온다. 받은 인수인계·알림·캘린더는 아직 서버와 연결되지 않았다.
 import { useState } from "react";
 import { AppSidebar } from "@/shared/AppSidebar";
-import { ExampleBadge } from "@/shared/ExampleBadge";
 import { Icon, type IconName } from "@/shared/Icon";
 import { useProfile } from "@/shared/profile";
 import { completedSessions, formatRelativeTime, ongoingSessions } from "@/shared/sessions";
@@ -31,7 +30,6 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
       note: ongoing ? (ongoing[0] ? `최근 수정 ${formatRelativeTime(ongoing[0].updated_at)}` : "진행 중인 작업이 없어요") : "목록을 불러오지 못했어요",
       icon: "message" as IconName,
       tone: "violet",
-      example: false,
     },
     {
       label: "완료한 인수인계",
@@ -39,9 +37,8 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
       note: completed ? (completed[0] ? `최근 완성 ${formatRelativeTime(completed[0].updated_at)}` : "완성된 문서가 아직 없어요") : "목록을 불러오지 못했어요",
       icon: "check" as IconName,
       tone: "green",
-      example: false,
     },
-    { label: "받은 인수인계", value: "3", note: "예시 데이터 · 확인 필요 1건", icon: "download" as IconName, tone: "blue", example: true },
+    { label: "받은 인수인계", value: "3", note: "확인 필요 1건", icon: "download" as IconName, tone: "blue" },
   ];
   return (
     <div className="app-shell dashboard-page">
@@ -53,10 +50,10 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
             <strong>홈</strong>
           </div>
           <div className="dashboard-header-actions">
-            <button className="header-icon-button" title="알림 (예시)" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((current) => !current)}><Icon name="bell" size={16} /><i /></button>
+            <button className="header-icon-button" title="알림" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((current) => !current)}><Icon name="bell" size={16} /><i /></button>
             {notificationsOpen && (
               <div className="notification-popover">
-                <header><div><span>NOTIFICATIONS</span><strong>새로운 알림 <ExampleBadge /></strong></div><button onClick={() => setNotificationsOpen(false)} aria-label="알림 닫기"><Icon name="close" size={14} /></button></header>
+                <header><div><span>NOTIFICATIONS</span><strong>새로운 알림</strong></div><button onClick={() => setNotificationsOpen(false)} aria-label="알림 닫기"><Icon name="close" size={14} /></button></header>
                 <div className="notification-list">
                   <button onClick={onReceived}>
                     <span className="notification-icon violet"><Icon name="download" size={15} /></span>
@@ -99,7 +96,7 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
             {stats.map((stat) => (
               <article className="dashboard-stat" key={stat.label}>
                 <span className={`stat-icon ${stat.tone}`}><Icon name={stat.icon} size={17} /></span>
-                <div><small>{stat.label}{stat.example && <ExampleBadge />}</small><strong className={stat.value === unavailable ? "unavailable" : ""}>{stat.value}</strong><p>{stat.note}</p></div>
+                <div><small>{stat.label}</small><strong className={stat.value === unavailable ? "unavailable" : ""}>{stat.value}</strong><p>{stat.note}</p></div>
               </article>
             ))}
             {list.error && (
@@ -116,7 +113,7 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
         <div className="all-notifications-overlay" role="presentation" onClick={() => setAllNotificationsOpen(false)}>
           <section className="all-notifications-modal" role="dialog" aria-modal="true" aria-labelledby="all-notifications-title" onClick={(event) => event.stopPropagation()}>
             <header>
-              <div><span>NOTIFICATIONS</span><h2 id="all-notifications-title">전체 알림 <ExampleBadge /></h2><p>업무와 인수인계 관련 소식을 확인하세요. 아직 서버와 연결되지 않은 예시입니다.</p></div>
+              <div><span>NOTIFICATIONS</span><h2 id="all-notifications-title">전체 알림</h2><p>업무와 인수인계 관련 소식을 확인하세요.</p></div>
               <button onClick={() => setAllNotificationsOpen(false)} aria-label="전체 알림 닫기"><Icon name="close" size={17} /></button>
             </header>
             <div className="all-notifications-list">
