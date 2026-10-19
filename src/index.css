@@ -2747,15 +2747,6 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .picked-chip button { width: 14px; height: 14px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #7658d9; }
 .picked-chip button:hover { background: #e4dbf8; }
 
-/* 선택 창(새 탭): 자료 등록 화면의 패널을 넓게 보여 준다. 패널 글자가 작게 잡혀 있어 이 화면에서만 키운다. */
-.integration-picker-page { min-height: 100vh; background: #fbfaf8; color: #201e23; }
-.integration-picker-header { height: 60px; display: flex; align-items: center; gap: 18px; padding: 0 clamp(20px, 4vw, 56px); border-bottom: 1px solid #e9e5e2; background: rgba(255,254,252,.92); position: sticky; top: 0; z-index: 5; }
-.integration-picker-header strong { display: block; font-size: 14px; }
-.integration-picker-header p { margin: 2px 0 0; color: #8e878f; font-size: 11px; }
-.integration-picker-header button { margin-left: auto; height: 32px; padding: 0 14px; border: 1px solid #ddd8dc; border-radius: 8px; background: #fff; color: #5b555d; font-size: 11px; font-weight: 600; }
-.integration-picker-header button:hover { background: #f4f1f3; }
-.integration-picker-page main { max-width: 980px; margin: 0 auto; padding: 8px clamp(20px, 4vw, 56px) 40px; zoom: 1.7; }
-@media (max-width: 700px) { .integration-picker-page main { zoom: 1.25; } }
 .source-action-panel.compact { min-height: 50px; margin-top: 10px; padding: 9px 13px; }
 
 /* 자료 등록: 새 디자인은 화면 높이에 맞춰 가운데 정렬하고 넘치는 내용을 잘라 낸다(overflow: hidden).
