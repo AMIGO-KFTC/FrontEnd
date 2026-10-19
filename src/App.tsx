@@ -5,6 +5,8 @@ import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary,
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
+import { ADMIN_PREVIEW } from "./shared/adminPreview";
+import { AdminDashboardScreen } from "./screens/admin/AdminDashboardScreen";
 import { ForgotPasswordScreen } from "./screens/auth/ForgotPasswordScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
@@ -21,7 +23,7 @@ import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
 type HomeScreen = "dashboard" | "handover" | "documents" | "received"; // 홈 셸(사이드바가 있는 화면)
-type Screen = "login" | HomeScreen | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type Screen = "login" | HomeScreen | "admin" | "start" | "upload" | "processing" | "question" | "document" | "complete";
 const HOME_SCREENS: Screen[] = ["dashboard", "handover", "documents", "received"];
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
@@ -351,7 +353,8 @@ function AppScreens() {
       </>
     );
   }
-  if (screen === "dashboard") return <DashboardScreen {...nav} list={list} onNew={reset} />;
+  if (screen === "dashboard") return <DashboardScreen {...nav} list={list} onNew={reset} onAdmin={() => ADMIN_PREVIEW && toScreen("admin")} />;
+  if (screen === "admin") return ADMIN_PREVIEW ? <AdminDashboardScreen onExit={() => toScreen("dashboard")} /> : <DashboardScreen {...nav} list={list} onNew={reset} onAdmin={() => undefined} />;
   if (screen === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={reset} />;
   if (screen === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
   if (screen === "received") return <ReceivedHandoverScreen {...nav} list={list} />;

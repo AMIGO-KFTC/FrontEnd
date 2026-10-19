@@ -1,5 +1,6 @@
 // 홈 대시보드. 진행 중·완료 건수는 서버 세션 목록에서 가져온다. 받은 인수인계·알림·캘린더는 아직 서버와 연결되지 않았다.
 import { useState } from "react";
+import { ADMIN_PREVIEW } from "@/shared/adminPreview";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon, type IconName } from "@/shared/Icon";
 import { useProfile } from "@/shared/profile";
@@ -14,9 +15,9 @@ function greeting(): string {
   return "GOOD EVENING";
 }
 
-type Props = HomeNav & { list: SessionList; onNew: () => void };
+type Props = HomeNav & { list: SessionList; onNew: () => void; onAdmin: () => void };
 
-export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onDocuments, onReceived }: Props) {
+export function DashboardScreen({ list, onNew, onAdmin, onLogout, onHome, onHandover, onDocuments, onReceived }: Props) {
   const [profile] = useProfile();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [allNotificationsOpen, setAllNotificationsOpen] = useState(false);
@@ -50,6 +51,7 @@ export function DashboardScreen({ list, onNew, onLogout, onHome, onHandover, onD
             <strong>홈</strong>
           </div>
           <div className="dashboard-header-actions">
+            {ADMIN_PREVIEW && <button className="admin-mode-entry" onClick={onAdmin}><Icon name="shield" size={14} /> 관리자 모드 (미리보기)</button>}
             <button className="header-icon-button" title="알림" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((current) => !current)}><Icon name="bell" size={16} /><i /></button>
             {notificationsOpen && (
               <div className="notification-popover">
