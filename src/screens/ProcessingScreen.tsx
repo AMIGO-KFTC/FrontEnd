@@ -1,8 +1,11 @@
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
+import { StepUserMenu } from "../shared/StepUserMenu";
 import type { SessionDetail } from "../shared/types";
 
-export function ProcessingScreen({ session, onNext, onRetry }: { session: SessionDetail; onNext: () => void; onRetry: () => void }) {
+type Props = { session: SessionDetail; onNext: () => void; onRetry: () => void; onLogout: () => void; onHome: () => void };
+
+export function ProcessingScreen({ session, onNext, onRetry, onLogout, onHome }: Props) {
   const { stage, status, progress, sources } = session;
   const total = sources.length;
   const finished = stage !== "setup" && stage !== "analyzing" && status !== "running" && status !== "error";
@@ -24,6 +27,7 @@ export function ProcessingScreen({ session, onNext, onRetry }: { session: Sessio
           <span />
           <small>2 / 4</small>
         </div>
+        <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
       <main className="processing-main">
         <div className={`processing-visual ${finished ? "complete" : ""}`}>

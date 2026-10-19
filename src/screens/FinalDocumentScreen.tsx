@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { api } from "../shared/api";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
+import { StepUserMenu } from "../shared/StepUserMenu";
 import type { StartData } from "../shared/handover";
 import { documentRehypePlugins } from "../shared/documentMarkdown";
 import { MermaidDiagram } from "../shared/MermaidDiagram";
@@ -20,6 +21,8 @@ type Props = {
   onRetry: () => void;
   onBack: () => void;
   onComplete: () => void;
+  onLogout: () => void;
+  onHome: () => void;
 };
 
 // 생성된 Markdown 을 "## 제목" 기준으로 장(章)으로 나눈다. 첫 "## " 앞의 표지 부분은 화면의 표지가 대신한다.
@@ -33,7 +36,7 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete, onLogout, onHome }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
@@ -64,11 +67,14 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
           <span className="active" />
           <small>4 / 4</small>
         </div>
-        <div className="document-export">
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx"); }}><Icon name="download" size={15} /> Word</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md"); }}><Icon name="download" size={15} /> Markdown</button>
-          <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
+        <div className="final-header-actions">
+          <div className="document-export">
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx"); }}><Icon name="download" size={15} /> Word</button>
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md"); }}><Icon name="download" size={15} /> Markdown</button>
+            <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
+          </div>
+          <StepUserMenu onLogout={onLogout} onHome={onHome} />
         </div>
       </header>
       <main className="final-document-main">

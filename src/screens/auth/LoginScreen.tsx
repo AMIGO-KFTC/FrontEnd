@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Brand } from "../shared/Brand";
-import { ErrorNote } from "../shared/ErrorNote";
-import { Icon } from "../shared/Icon";
+import { Brand } from "@/shared/Brand";
+import { ErrorNote } from "@/shared/ErrorNote";
+import { Icon } from "@/shared/Icon";
+import { AuthVisual } from "./AuthVisual";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
 
@@ -13,12 +14,19 @@ function savedLoginId(): string {
   }
 }
 
-type Props = { onLogin: (loginId: string, password: string) => Promise<void>; busy?: boolean; error?: string | null };
+type Props = {
+  onLogin: (loginId: string, password: string) => Promise<void>;
+  onSignup: () => void;
+  onForgot: () => void;
+  busy?: boolean;
+  error?: string | null;
+};
 
-export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
+export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error = null }: Props) {
   const [id, setId] = useState(savedLoginId);
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
+  const [notice, setNotice] = useState<string | null>(null); // SSO 등 아직 없는 기능 안내
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!id.trim() || !password.trim() || busy) return;
@@ -28,28 +36,13 @@ export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
     } catch {
       /* 저장소를 못 쓰는 브라우저는 저장만 건너뛴다 */
     }
+    setNotice(null);
     await onLogin(id.trim(), password);
   };
 
   return (
     <main className="login-page">
-      <div className="login-art">
-        <div className="art-grid" />
-        <div className="art-content">
-          <Brand />
-          <div className="art-copy">
-            <span className="eyebrow light"><Icon name="sparkle" size={15} /> ASK ME INTERACTIVELY</span>
-            <h1>업무의 맥락까지,<br />온전히 이어지도록.</h1>
-            <p>Grounding으로 근거를 찾고, Orchestration으로 흐름을 연결해<br />빈틈없는 인수인계서를 완성합니다.</p>
-          </div>
-          <div className="art-proof">
-            <div className="proof-avatars"><span>김</span><span>이</span><span>박</span></div>
-            <div><strong>누적 1,248건</strong><small>이어봄과 함께 인수인계를 완료했어요</small></div>
-          </div>
-        </div>
-        <div className="orb orb-one" />
-        <div className="orb orb-two" />
-      </div>
+      <AuthVisual />
       <section className="login-panel">
         <div className="mobile-brand"><Brand /></div>
         <form className="login-form" onSubmit={submit}>
@@ -64,11 +57,16 @@ export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
           </label>
           <div className="login-options">
             <label className="check-label"><input type="checkbox" checked={saveId} onChange={(e) => setSaveId(e.target.checked)} /> <span>아이디 저장</span></label>
-            <button type="button" className="text-button">비밀번호 찾기</button>
+            <div className="login-links">
+              <button type="button" className="text-button" onClick={onForgot}>비밀번호 재설정</button>
+              <span />
+              <button type="button" className="text-button" onClick={onSignup}>회원가입</button>
+            </div>
           </div>
-          {error && <div style={{ marginBottom: 14 }}><ErrorNote message={error} /></div>}
+          {(error || notice) && <div style={{ marginBottom: 14 }}><ErrorNote message={error ?? notice} tone={error ? "error" : "info"} /></div>}
           <button className="primary-button login-button" type="submit" disabled={busy}>로그인 <Icon name="arrow" size={18} /></button>
-          <p className="security-note"><Icon name="shield" size={14} /> 모든 자료는 암호화되어 안전하게 보호됩니다.</p>
+          <div className="login-divider"><span />OR<span /></div>
+          <button className="sso-button" type="button" onClick={() => setNotice("SSO 로그인은 준비 중이에요. 아이디와 비밀번호로 로그인해 주세요.")}><Icon name="key" size={16} /> Use SSO Sign-In</button>
         </form>
       </section>
     </main>

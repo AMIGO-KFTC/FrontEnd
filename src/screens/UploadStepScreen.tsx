@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
+import { StepUserMenu } from "../shared/StepUserMenu";
 import type { IntegrationImportResult, Source } from "../shared/types";
 import { ConfluencePanel } from "./ConfluencePanel";
 import { MattermostPanel } from "./MattermostPanel";
@@ -12,6 +13,8 @@ type Props = {
   busy: boolean;
   onBack: () => void;
   onNext: () => void;
+  onLogout: () => void;
+  onHome: () => void;
   onUploadFiles: (files: File[]) => void;
   onAddLink: (url: string) => void;
   onDeleteSource: (source: Source) => void;
@@ -27,7 +30,7 @@ function sourceStatus(source: Source): string {
   return "";
 }
 
-export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
+export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
@@ -57,6 +60,7 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
           <span />
           <small>2 / 4</small>
         </div>
+        <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
       <main className="upload-step-main">
         <div className="upload-step-title">

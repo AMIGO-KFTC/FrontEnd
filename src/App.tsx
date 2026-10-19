@@ -4,15 +4,19 @@ import type { StartData } from "./shared/handover";
 import type { AppConfig, IntegrationImportResult, SessionDetail, Source } from "./shared/types";
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
+import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
+import { ForgotPasswordScreen } from "./screens/auth/ForgotPasswordScreen";
+import { LoginScreen } from "./screens/auth/LoginScreen";
+import { SignupScreen } from "./screens/auth/SignupScreen";
 import { CompletionScreen } from "./screens/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
-import { LoginScreen } from "./screens/LoginScreen";
 import { ProcessingScreen } from "./screens/ProcessingScreen";
 import { QuestionScreen } from "./screens/QuestionScreen";
 import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
 type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창(둘 다 아직 준비 중)
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
 
@@ -22,7 +26,17 @@ function citationCount(session: SessionDetail | null): number {
 }
 
 export default function App() {
+  return (
+    <ProfileProvider>
+      <AppScreens />
+    </ProfileProvider>
+  );
+}
+
+function AppScreens() {
   const [screen, setScreen] = useState<Screen>("login");
+  const [authPanel, setAuthPanel] = useState<AuthPanel>(null);
+  const [, setProfile] = useProfile();
   const [authChecked, setAuthChecked] = useState(false); // 로그인 상태 확인이 끝나기 전에는 로그인 화면을 깜빡이지 않는다
   const [data, setData] = useState<StartData>(EMPTY);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -45,14 +59,17 @@ export default function App() {
     }
   }, []);
 
-  // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛴다.
+  // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛰고, 서버가 준 사용자 정보로 프로필을 채운다.
   useEffect(() => {
     api
       .me()
-      .then(() => enter())
+      .then(({ user }) => {
+        setProfile(profileFromUser(user));
+        enter();
+      })
       .catch(() => undefined)
       .finally(() => setAuthChecked(true));
-  }, [enter]);
+  }, [enter, setProfile]);
 
   // 같은 탭에서 주소의 해시만 다른 작업으로 바뀌면(링크 붙여넣기 등) 그 작업을 이어서 연다.
   useEffect(() => {
@@ -238,7 +255,8 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
-      await api.login(loginId, password);
+      const result = await api.login(loginId, password);
+      setProfile(profileFromUser(result.user));
       enter();
     } catch (e) {
       setError((e as Error).message);
@@ -247,9 +265,35 @@ export default function App() {
     }
   };
 
+  // 서버 세션을 끝내고 로그인 화면으로. 서버 호출이 실패해도(이미 만료 등) 화면은 로그인으로 보낸다.
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      /* 쿠키가 이미 없으면 그대로 진행 */
+    }
+    reset();
+    setProfile(EMPTY_PROFILE);
+    setScreen("login");
+  };
+
+  // 단계 화면의 "홈으로 돌아가기". 홈 대시보드(3단계)가 생기기 전까지는 시작 화면으로 보낸다. 작업은 서버에 남아 있다.
+  const goHome = () => {
+    setError(null);
+    reset();
+  };
+
   if (!authChecked || restoreId) return null;
-  if (screen === "login") return <LoginScreen onLogin={login} busy={busy} error={error} />;
-  if (screen === "start") return <StartScreen onStart={start} busy={busy} error={error} />;
+  if (screen === "login") {
+    return (
+      <>
+        <LoginScreen onLogin={login} onSignup={() => setAuthPanel("signup")} onForgot={() => setAuthPanel("forgot")} busy={busy} error={error} />
+        {authPanel === "signup" && <SignupScreen onBack={() => setAuthPanel(null)} />}
+        {authPanel === "forgot" && <ForgotPasswordScreen onBack={() => setAuthPanel(null)} />}
+      </>
+    );
+  }
+  if (screen === "start") return <StartScreen onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
 
   if (!session) {
     return null;
@@ -263,6 +307,8 @@ export default function App() {
         busy={busy}
         onBack={() => toScreen("start")}
         onNext={analyze}
+        onLogout={logout}
+        onHome={goHome}
         onUploadFiles={uploadFiles}
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
@@ -271,7 +317,7 @@ export default function App() {
       />
     );
   }
-  if (screen === "processing") return <ProcessingScreen session={session} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} />;
+  if (screen === "processing") return <ProcessingScreen session={session} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} onLogout={logout} onHome={goHome} />;
   if (screen === "question") {
     return (
       <QuestionScreen
@@ -285,6 +331,8 @@ export default function App() {
         onUploadFiles={uploadFiles}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onComplete={generate}
+        onLogout={logout}
+        onHome={goHome}
       />
     );
   }
@@ -301,6 +349,8 @@ export default function App() {
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => toScreen("question")}
         onComplete={() => toScreen("complete")}
+        onLogout={logout}
+        onHome={goHome}
       />
     );
   }

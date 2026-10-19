@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
+import { StepUserMenu } from "../shared/StepUserMenu";
 import { ErrorNote } from "../shared/ErrorNote";
 import type { IconName } from "../shared/Icon";
 import type { AppConfig, ChatMessage, Coverage, SessionDetail } from "../shared/types";
@@ -23,9 +24,11 @@ type Props = {
   onUploadFiles: (files: File[]) => void;
   onRetry: () => void;
   onComplete: () => void;
+  onLogout: () => void;
+  onHome: () => void;
 };
 
-export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete }: Props) {
+export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [answer, setAnswer] = useState("");
   const [expandedCoverage, setExpandedCoverage] = useState<number | null>(null);
@@ -68,6 +71,7 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
           <span />
           <small>3 / 4</small>
         </div>
+        <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
       <main className="question-main">
         {/* 새 디자인은 왼쪽 열(215px)에 질문 목록 패널을 둔다. 4단계에서 서버 질문 목록으로 바꾸기 전까지 항목 충족 현황을 그 자리에 둔다. */}
