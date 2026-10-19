@@ -15,9 +15,9 @@ function greeting(): string {
   return "GOOD EVENING";
 }
 
-type Props = HomeNav & { list: SessionList; onNew: () => void; onAdmin: () => void };
+type Props = HomeNav & { list: SessionList; notice?: string | null; onDismissNotice?: () => void; onNew: () => void; onAdmin: () => void };
 
-export function DashboardScreen({ list, onNew, onAdmin, onLogout, onHome, onHandover, onDocuments, onReceived }: Props) {
+export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, onAdmin, onLogout, onHome, onHandover, onDocuments, onReceived }: Props) {
   const [profile] = useProfile();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [allNotificationsOpen, setAllNotificationsOpen] = useState(false);
@@ -101,6 +101,12 @@ export function DashboardScreen({ list, onNew, onAdmin, onLogout, onHome, onHand
                 <div><small>{stat.label}</small><strong className={stat.value === unavailable ? "unavailable" : ""}>{stat.value}</strong><p>{stat.note}</p></div>
               </article>
             ))}
+            {notice && (
+              <div className="list-notice" role="status">
+                {notice}
+                {onDismissNotice && <button onClick={onDismissNotice}>닫기</button>}
+              </div>
+            )}
             {list.error && (
               <div className="list-notice error" role="alert">
                 작업 목록을 불러오지 못했어요: {list.error}

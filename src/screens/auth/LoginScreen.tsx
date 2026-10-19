@@ -20,9 +20,10 @@ type Props = {
   onForgot: () => void;
   busy?: boolean;
   error?: string | null;
+  notice?: string | null; // 로그인 만료 등 오류가 아닌 안내
 };
 
-export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error = null }: Props) {
+export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error = null, notice = null }: Props) {
   const [id, setId] = useState(savedLoginId);
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
@@ -61,7 +62,7 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
               <button type="button" className="text-button" onClick={onSignup}>회원가입</button>
             </div>
           </div>
-          {error && <div style={{ marginBottom: 14 }}><ErrorNote message={error} /></div>}
+          {(error || notice) && <div style={{ marginBottom: 14 }}><ErrorNote message={error ?? notice} tone={error ? "error" : "info"} /></div>}
           <button className="primary-button login-button" type="submit" disabled={busy}>로그인 <Icon name="arrow" size={18} /></button>
           <div className="login-divider"><span />OR<span /></div>
           <button className="sso-button" type="button"><Icon name="key" size={16} /> Use SSO Sign-In</button>

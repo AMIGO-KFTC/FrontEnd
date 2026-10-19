@@ -23,7 +23,7 @@ export function GeneratingDocumentScreen({ mode, session, targetVersion, onRetry
   const readySources = session.sources.filter((source) => source.status === "ready").length;
   const steps = [
     { label: `등록 자료 ${readySources}건 정리`, state: "done" as const },
-    { label: `답변 ${session.question_count}건 반영`, state: "done" as const },
+    { label: `확인 질문 ${session.question_count}건 진행`, state: "done" as const },
     { label: `인수인계서 작성 (v${targetVersion})`, state: failed ? ("failed" as const) : done ? ("done" as const) : ("active" as const) },
   ];
   const headline = failed ? "문서를 만들지 못했어요" : done ? "인수인계서가 완성됐어요" : "인수인계서를 생성하고 있어요";

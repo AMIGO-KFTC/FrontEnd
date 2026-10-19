@@ -1,7 +1,7 @@
 // 세션 상태 폴링 훅: /state?after=<마지막 메시지 ID> 를 주기적으로 불러 새 메시지만 이어 붙인다.
 // AI 가 처리 중이거나 자료를 적재 중이면 1초, 그 외에는 4초 간격.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import type { ChatMessage, SessionDetail, UsageTotal } from "./types";
 
 export function isBusy(session: SessionDetail | null): boolean {
@@ -14,6 +14,7 @@ export function useSessionState(sessionId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [usageTotal, setUsageTotal] = useState<UsageTotal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null); // 401=로그인 만료, 404/403=없거나 내 작업 아님, 0=연결 실패, 그 외=서버 오류
   const cursor = useRef(0);
   const timer = useRef<number | undefined>(undefined);
   const busyRef = useRef(false);
@@ -40,8 +41,11 @@ export function useSessionState(sessionId: string | null) {
       addMessages(data.messages);
       busyRef.current = isBusy(data.session);
       setError(null);
+      setErrorStatus(null);
     } catch (e) {
-      if (alive.current) setError((e as Error).message);
+      if (!alive.current) return;
+      setError((e as Error).message);
+      setErrorStatus(e instanceof ApiError ? e.status : -1);
     }
   }, [sessionId, addMessages]);
 
@@ -66,6 +70,7 @@ export function useSessionState(sessionId: string | null) {
     setSession(null);
     setMessages([]);
     setError(null);
+    setErrorStatus(null);
     if (sessionId) {
       void poll().then(() => alive.current && schedule());
     }
@@ -75,5 +80,5 @@ export function useSessionState(sessionId: string | null) {
     };
   }, [sessionId, poll, schedule]);
 
-  return { session, messages, usageTotal, error, refresh, addMessages };
+  return { session, messages, usageTotal, error, errorStatus, refresh, addMessages };
 }

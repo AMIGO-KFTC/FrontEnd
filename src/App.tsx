@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "./shared/api";
+import { api, ApiError } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, HandoverMode, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
-import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
+import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
+import { dataFromSession } from "./shared/restore";
+import { HOME, resolveStep, useHashRoute, type Route, type StepScreen } from "./shared/router";
 import { useSessionState } from "./shared/useSessionState";
 import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
 import { ADMIN_PREVIEW } from "./shared/adminPreview";
@@ -14,22 +15,21 @@ import { CompletionScreen } from "./screens/handover/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/handover/FinalDocumentScreen";
 import { GeneratingDocumentScreen } from "./screens/handover/GeneratingDocumentScreen";
 import { HandoverTypeScreen } from "./screens/handover/HandoverTypeScreen";
+import { ProcessingScreen } from "./screens/handover/ProcessingScreen";
+import { QuestionScreen } from "./screens/handover/QuestionScreen";
+import { SessionGateScreen, type GateState } from "./screens/handover/SessionGateScreen";
+import { StartScreen } from "./screens/handover/StartScreen";
+import { UploadStepScreen } from "./screens/handover/UploadStepScreen";
 import { CompletedDocumentsScreen } from "./screens/home/CompletedDocumentsScreen";
 import { DashboardScreen } from "./screens/home/DashboardScreen";
 import { OngoingHandoverScreen } from "./screens/home/OngoingHandoverScreen";
 import { ReceivedHandoverScreen } from "./screens/home/ReceivedHandoverScreen";
 import type { HomeNav, SessionList } from "./screens/home/types";
-import { ProcessingScreen } from "./screens/handover/ProcessingScreen";
-import { QuestionScreen } from "./screens/handover/QuestionScreen";
-import { StartScreen } from "./screens/handover/StartScreen";
-import { UploadStepScreen } from "./screens/handover/UploadStepScreen";
 
-type HomeScreen = "dashboard" | "handover" | "documents" | "received"; // 홈 셸(사이드바가 있는 화면)
-type Screen = "login" | HomeScreen | "admin" | "handoverType" | "start" | "upload" | "processing" | "question" | "generating" | "document" | "complete";
-const HOME_SCREENS: Screen[] = ["dashboard", "handover", "documents", "received"];
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
+const EXPIRED = "로그인이 만료됐어요. 다시 로그인해 주세요.";
 
 function citationCount(session: SessionDetail | null): number {
   if (!session) return 0;
@@ -44,37 +44,37 @@ export default function App() {
   );
 }
 
+// 화면은 주소(route)와 서버 상태로 정해진다. 화면 사이를 오가는 것은 주소만 바꾸는 일이라 뒤로·앞으로 가기로 API 가 다시 불리지 않는다.
 function AppScreens() {
-  const [screen, setScreen] = useState<Screen>("login");
-  const [authPanel, setAuthPanel] = useState<AuthPanel>(null);
-  const [, setProfile] = useProfile();
+  const { route, navigate } = useHashRoute();
   const [authChecked, setAuthChecked] = useState(false); // 로그인 상태 확인이 끝나기 전에는 로그인 화면을 깜빡이지 않는다
-  const [data, setData] = useState<StartData>(EMPTY);
-  const [newMode, setNewMode] = useState<HandoverMode>("reassignment"); // 유형 선택 화면에서 고른 값. 기본 정보 화면이 세션을 만들 때 쓴다
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [authPanel, setAuthPanel] = useState<AuthPanel>(null);
+  const [loginNotice, setLoginNotice] = useState<string | null>(null); // 로그인 만료 안내
+  const [homeNotice, setHomeNotice] = useState<string | null>(null); // 홈에서 보여 줄 안내(열 수 없는 작업 등)
+  const [, setProfile] = useProfile();
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [docLoading, setDocLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [acting, setActing] = useState(false);
+  const [busy, setBusy] = useState(false); // 세션 생성·분석 시작처럼 화면을 바꾸는 요청
+  const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
   const [targetVersion, setTargetVersion] = useState(1); // 생성 중 화면이 기다리는 문서 버전
-  const awaitingStart = useRef(false); // 생성·수정 요청을 보낸 뒤 서버가 "처리 중"으로 바뀌는 것을 아직 못 본 상태 // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
+  const awaitingStart = useRef(false); // 생성·수정 요청을 보낸 뒤 서버가 "처리 중"으로 바뀌는 것을 아직 못 본 상태
   const [error, setError] = useState<string | null>(null);
-  const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null); // 홈 화면의 서버 작업 목록(실패하면 null)
   const [sessionsError, setSessionsError] = useState<string | null>(null);
-  const { session, messages, error: sessionError, refresh, addMessages } = useSessionState(sessionId);
 
-  // 로그인된 상태가 확인되면(앱 시작·로그인 직후) 해시의 작업을 이어서 열고, 없으면 홈 대시보드로 간다.
-  const enter = useCallback(() => {
-    const id = sessionFromHash();
-    if (id) {
-      setRestoreId(id);
-      setSessionId(id);
-    } else {
-      setScreen("dashboard");
-    }
-  }, []);
+  // 주소가 작업을 가리키고 로그인돼 있을 때만 세션을 불러온다(주소가 같은 작업 안에서 바뀌면 폴링은 그대로 이어진다).
+  const sessionId = loggedIn && route.kind === "session" ? route.id : null;
+  const { session, messages, error: sessionError, errorStatus: sessionErrorStatus, refresh, addMessages } = useSessionState(sessionId);
+  const data: StartData = session ? dataFromSession(session) : EMPTY;
+
+  // 로그인이 만료되면(401) 로그인 화면으로 보내고, 다시 로그인하면 보던 주소로 돌아온다.
+  const expire = useCallback(() => {
+    setLoggedIn(false);
+    setProfile(EMPTY_PROFILE);
+    setLoginNotice(EXPIRED);
+  }, [setProfile]);
 
   // 홈 화면의 작업 목록. 실패하면 목록을 비우고(null) 오류를 남겨 "0건"으로 보이지 않게 한다.
   const loadSessions = useCallback(async () => {
@@ -82,14 +82,19 @@ function AppScreens() {
       setSessions(await api.listSessions());
       setSessionsError(null);
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        expire();
+        return;
+      }
       setSessions(null);
       setSessionsError((e as Error).message);
     }
-  }, []);
+  }, [expire]);
 
+  const screenKey = route.kind === "home" ? route.page : route.kind;
   useEffect(() => {
-    if (HOME_SCREENS.includes(screen)) void loadSessions();
-  }, [screen, loadSessions]);
+    if (loggedIn && route.kind === "home") void loadSessions();
+  }, [loggedIn, screenKey, route.kind, loadSessions]);
 
   // 이미 로그인된 쿠키가 있으면 로그인 화면을 건너뛰고, 서버가 준 사용자 정보로 프로필을 채운다.
   useEffect(() => {
@@ -97,47 +102,38 @@ function AppScreens() {
       .me()
       .then(({ user }) => {
         setProfile(profileFromUser(user));
-        enter();
+        setLoggedIn(true);
       })
       .catch(() => undefined)
       .finally(() => setAuthChecked(true));
-  }, [enter, setProfile]);
+  }, [setProfile]);
 
-  // 같은 탭에서 주소의 해시만 다른 작업으로 바뀌면(링크 붙여넣기 등) 그 작업을 이어서 연다.
+  // 세션을 불러오다 401 이 나오면 로그인 만료로 본다(404·403·서버 오류는 SessionGateScreen 이 구분해 보여 준다).
   useEffect(() => {
-    const onHash = () => {
-      const id = sessionFromHash();
-      if (!id || id === sessionId || !authChecked || screen === "login") return;
-      setRestoreId(id);
-      setSessionId(id);
-    };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, [sessionId, authChecked, screen]);
-
-  // 이어서 열기: 작업을 불러오면 진행 단계에 맞는 화면으로, 불러오지 못하면(없거나 내 작업이 아니면) 시작 화면으로
-  useEffect(() => {
-    if (!restoreId) return;
-    if (session && session.id === restoreId) {
-      setData(dataFromSession(session));
-      const next = screenForStage(session.stage);
-      if (next === "generating") setTargetVersion(session.document_version + 1);
-      setScreen(next);
-      setRestoreId(null);
-    } else if (sessionError) {
-      writeHash(null);
-      setSessionId(null);
-      setRestoreId(null);
-      setError("이전 작업을 불러오지 못했어요. 새로 시작해 주세요.");
-      setScreen("dashboard");
-    }
-  }, [restoreId, session, sessionError]);
+    if (sessionErrorStatus === 401) expire();
+  }, [sessionErrorStatus, expire]);
 
   // 서버가 늦게 떠서 실패했더라도 화면을 옮길 때 다시 불러온다.
   useEffect(() => {
-    if (config) return;
+    if (config || !loggedIn) return;
     api.config().then(setConfig).catch(() => setConfig(null));
-  }, [config, screen]);
+  }, [config, loggedIn, screenKey]);
+
+  // 현재 작업 화면. 주소의 step 이 서버 단계와 맞지 않으면 단계 기본 화면으로 돌리고 주소도 그에 맞춘다(뒤로·앞으로 가기가 일관되게).
+  const step: StepScreen | null = session && route.kind === "session" ? resolveStep(route.step, session) : null;
+  useEffect(() => {
+    if (!session || route.kind !== "session" || !step || route.step === step) return;
+    navigate({ kind: "session", id: route.id, step }, { replace: true });
+  }, [session, route, step, navigate]);
+
+  const goStep = useCallback(
+    (next: StepScreen, options: { replace?: boolean } = {}) => {
+      if (route.kind !== "session") return;
+      setError(null);
+      navigate({ kind: "session", id: route.id, step: next }, options);
+    },
+    [route, navigate],
+  );
 
   // AI 단계가 끝나면 화면을 이어서 넘긴다: 질의응답 중 문서 작성이 시작되면 생성 중 화면, 기다리던 버전이 나오면 문서 화면
   const stage = session?.stage;
@@ -148,24 +144,29 @@ function AppScreens() {
     const changed = prevStage.current !== stage;
     prevStage.current = stage;
     if (!stage || !changed) return;
-    if (screen === "question" && stage === "composing") {
+    if (step === "question" && stage === "composing") {
       setTargetVersion(documentVersion + 1);
-      setScreen("generating");
-    } else if (screen === "question" && stage === "review") {
-      setScreen("document");
+      goStep("generating", { replace: true });
+    } else if (step === "question" && stage === "review") {
+      goStep("document", { replace: true });
     }
-  }, [screen, stage, documentVersion]);
+  }, [step, stage, documentVersion, goStep]);
 
   // 생성 중 → 문서: 기다리던 버전이 나왔거나, (요청 직후가 아닌데) 서버가 검토 단계로 돌아와 있으면 문서 화면으로.
   // 두 번째 조건은 새로고침 복원처럼 버전 계산이 어긋난 경우를 위한 안전장치다.
   useEffect(() => {
     if (status === "running" || stage === "composing") awaitingStart.current = false;
-    if (screen !== "generating" || status === "running") return;
-    if (documentVersion >= targetVersion || (!awaitingStart.current && stage === "review" && documentVersion > 0)) setScreen("document");
-  }, [screen, documentVersion, targetVersion, status, stage]);
+    if (step !== "generating" || status === "running") return;
+    if (documentVersion >= targetVersion || (!awaitingStart.current && stage === "review" && documentVersion > 0)) goStep("document", { replace: true });
+  }, [step, documentVersion, targetVersion, status, stage, goStep]);
+
+  // 새로고침·직접 접속으로 생성 중 화면에 들어오면 다음 버전을 기다린다.
+  useEffect(() => {
+    if (step === "generating" && stage === "composing") setTargetVersion((current) => Math.max(current, documentVersion + 1));
+  }, [step, stage, documentVersion]);
 
   useEffect(() => {
-    if (screen !== "document" || !sessionId || documentVersion === 0) return;
+    if (step !== "document" || !sessionId || documentVersion === 0) return;
     let cancelled = false;
     setDocLoading(true);
     api
@@ -176,7 +177,7 @@ function AppScreens() {
     return () => {
       cancelled = true;
     };
-  }, [screen, sessionId, documentVersion]);
+  }, [step, sessionId, documentVersion]);
 
   const run = useCallback(
     async <T,>(action: () => Promise<T>): Promise<T | undefined> => {
@@ -190,6 +191,7 @@ function AppScreens() {
         }
         return result;
       } catch (e) {
+        if (e instanceof ApiError && e.status === 401) expire();
         setError((e as Error).message);
         return undefined;
       } finally {
@@ -197,7 +199,7 @@ function AppScreens() {
         void refresh();
       }
     },
-    [addMessages, refresh],
+    [addMessages, refresh, expire],
   );
 
   // 가상 Mattermost·Confluence 에서 고른 항목을 자료로 등록한다. 결과 안내는 패널 안에서 보여 주므로 run() 의 대화 메시지 처리는 거치지 않는다.
@@ -216,8 +218,9 @@ function AppScreens() {
     [refresh],
   );
 
+  // 기본 정보 → 세션 생성 → 자료 등록. busy 동안 다시 부르지 않아 두 번 눌러도 세션이 두 개 생기지 않는다.
   const start = async (form: StartData) => {
-    if (busy) return; // 두 번 눌러도 세션을 두 개 만들지 않는다
+    if (busy) return;
     if (!form.name.trim()) {
       setError("성명을 입력해 주세요.");
       return;
@@ -235,11 +238,10 @@ function AppScreens() {
         successor: "",
         handover_date: form.date,
       });
-      setData(form);
-      setSessionId(created.id);
-      writeHash(created.id);
-      setScreen("upload");
+      setMarkdown("");
+      navigate({ kind: "session", id: created.id, step: "upload" });
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) expire();
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -266,7 +268,7 @@ function AppScreens() {
   };
 
   const analyze = async () => {
-    if (!sessionId || !session) return;
+    if (!sessionId || !session || busy) return;
     if (session.sources.some((s) => s.status === "pending" || s.status === "processing")) {
       setError("자료를 읽고 있어요. 잠시 후 다시 눌러 주세요.");
       return;
@@ -279,7 +281,7 @@ function AppScreens() {
     const result = await run(() => api.analyze(sessionId));
     if (result) await refresh(); // 재분석이면 이전 단계 값이 남아 있으므로 새 상태를 받은 뒤 화면을 넘긴다
     setBusy(false);
-    if (result) setScreen("processing");
+    if (result) goStep("processing");
   };
 
   // 문서 생성·수정 요청: 서버가 202 로 받으면 생성 중 화면에서 기다리던 버전이 나올 때까지 폴링 결과를 보여 준다.
@@ -290,7 +292,7 @@ function AppScreens() {
     if (result) {
       awaitingStart.current = true;
       setTargetVersion(next);
-      setScreen("generating");
+      goStep("generating");
     }
   };
 
@@ -301,48 +303,27 @@ function AppScreens() {
     if (result) {
       awaitingStart.current = true;
       setTargetVersion(next);
-      setScreen("generating");
+      goStep("generating");
     }
   };
 
-  // 현재 작업을 화면에서 내려놓는다(서버에는 남는다).
-  const clearSession = () => {
-    writeHash(null);
-    setSessionId(null);
-    setData(EMPTY);
-    setMarkdown("");
+  const go = (next: Route) => {
     setError(null);
+    navigate(next);
   };
-
-  // 새 인수인계: 유형 선택부터 시작한다.
-  const reset = () => {
-    clearSession();
-    setScreen("handoverType");
-  };
-
-  // 홈 목록에서 "이어서 작성"·"문서 열기": 세션을 불러온 뒤 서버에 저장된 단계의 화면으로 간다(해시 복원과 같은 경로).
-  const openSession = (id: string) => {
-    setError(null);
-    setRestoreId(id);
-    setSessionId(id);
-    writeHash(id);
-  };
+  const goHome = () => go(HOME);
+  const startNew = () => go({ kind: "new", mode: null }); // 새 인수인계는 유형 선택부터
 
   // 홈 목록에서 삭제. 성공하면 목록을 다시 불러오고, 실패하면 오류 문구를 돌려준다.
   const deleteSession = async (id: string): Promise<string | null> => {
     try {
       await api.deleteSession(id);
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) expire();
       return (e as Error).message;
     }
-    if (id === sessionId) clearSession();
     await loadSessions();
     return null;
-  };
-
-  const toScreen = (next: Screen) => {
-    setError(null);
-    setScreen(next);
   };
 
   const login = async (loginId: string, password: string) => {
@@ -351,7 +332,8 @@ function AppScreens() {
     try {
       const result = await api.login(loginId, password);
       setProfile(profileFromUser(result.user));
-      enter();
+      setLoginNotice(null);
+      setLoggedIn(true); // 주소는 그대로이므로 보던 작업·화면으로 바로 돌아간다
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -366,56 +348,83 @@ function AppScreens() {
     } catch {
       /* 쿠키가 이미 없으면 그대로 진행 */
     }
-    reset();
+    setMarkdown("");
+    setError(null);
+    setLoginNotice(null);
     setProfile(EMPTY_PROFILE);
-    setScreen("login");
-  };
-
-  // 단계 화면의 "홈으로 돌아가기". 작업은 서버에 남고 홈 목록에서 다시 열 수 있다.
-  const goHome = () => {
-    clearSession();
-    setScreen("dashboard");
+    setLoggedIn(false);
+    navigate(HOME, { replace: true });
   };
 
   const nav: HomeNav = {
-    onHome: () => toScreen("dashboard"),
-    onHandover: () => toScreen("handover"),
-    onDocuments: () => toScreen("documents"),
-    onReceived: () => toScreen("received"),
+    onHome: goHome,
+    onHandover: () => go({ kind: "home", page: "handover" }),
+    onDocuments: () => go({ kind: "home", page: "documents" }),
+    onReceived: () => go({ kind: "home", page: "received" }),
     onLogout: logout,
   };
-  const list: SessionList = { sessions, error: sessionsError, reload: () => void loadSessions(), open: openSession, remove: deleteSession };
+  const list: SessionList = {
+    sessions,
+    error: sessionsError,
+    reload: () => void loadSessions(),
+    open: (id) => go({ kind: "session", id, step: null }), // 서버 단계로 복원
+    remove: deleteSession,
+  };
 
-  if (!authChecked || restoreId) return null;
-  if (screen === "login") {
+  if (!authChecked) return null;
+  if (!loggedIn) {
     return (
       <>
-        <LoginScreen onLogin={login} onSignup={() => setAuthPanel("signup")} onForgot={() => setAuthPanel("forgot")} busy={busy} error={error} />
+        <LoginScreen onLogin={login} onSignup={() => setAuthPanel("signup")} onForgot={() => setAuthPanel("forgot")} busy={busy} error={error} notice={loginNotice} />
         {authPanel === "signup" && <SignupScreen onBack={() => setAuthPanel(null)} />}
         {authPanel === "forgot" && <ForgotPasswordScreen onBack={() => setAuthPanel(null)} />}
       </>
     );
   }
-  if (screen === "dashboard") return <DashboardScreen {...nav} list={list} onNew={reset} onAdmin={() => ADMIN_PREVIEW && toScreen("admin")} />;
-  if (screen === "admin") return ADMIN_PREVIEW ? <AdminDashboardScreen onExit={() => toScreen("dashboard")} /> : <DashboardScreen {...nav} list={list} onNew={reset} onAdmin={() => undefined} />;
-  if (screen === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={reset} />;
-  if (screen === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
-  if (screen === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
-  if (screen === "handoverType") return <HandoverTypeScreen onSelect={(mode) => { setNewMode(mode); toScreen("start"); }} onLogout={logout} onHome={goHome} />;
-  if (screen === "start") return <StartScreen key={newMode} mode={newMode} onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
 
-  if (!session) {
-    return null;
+  if (route.kind === "admin") {
+    if (ADMIN_PREVIEW) return <AdminDashboardScreen onExit={goHome} />;
+    return <DashboardScreen {...nav} list={list} onNew={startNew} onAdmin={() => undefined} />;
+  }
+  if (route.kind === "home") {
+    if (route.page === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={startNew} />;
+    if (route.page === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
+    if (route.page === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
+    return <DashboardScreen {...nav} list={list} notice={homeNotice} onDismissNotice={() => setHomeNotice(null)} onNew={startNew} onAdmin={() => ADMIN_PREVIEW && go({ kind: "admin" })} />;
+  }
+  if (route.kind === "new") {
+    if (!route.mode) return <HandoverTypeScreen onSelect={(mode) => go({ kind: "new", mode })} onLogout={logout} onHome={goHome} />;
+    return <StartScreen key={route.mode} mode={route.mode} onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
   }
 
-  if (screen === "upload") {
+  // route.kind === "session": 세션을 불러오는 동안·실패했을 때는 원인별 안내 화면.
+  // 작업 중 다른 곳에서 삭제돼 404 가 오면 이전에 받아 둔 상태가 있어도 안내 화면으로 바꾼다.
+  const gone = sessionErrorStatus === 404 || sessionErrorStatus === 403;
+  if (!session || !step || gone) {
+    let gate: GateState = { kind: "loading" };
+    if (sessionError && sessionErrorStatus !== 401) {
+      gate = gone ? { kind: "missing" } : { kind: "server", message: sessionError };
+    }
+    return (
+      <SessionGateScreen
+        state={gate}
+        onRetry={() => void refresh()}
+        onHome={() => {
+          if (gate.kind === "missing") setHomeNotice("열 수 없는 작업이었어요. 삭제됐거나 내 계정의 작업이 아니에요.");
+          goHome();
+        }}
+      />
+    );
+  }
+
+  if (step === "upload") {
     return (
       <UploadStepScreen
         mode={data.mode}
         sources={session.sources}
         error={error}
         busy={busy}
-        onBack={() => toScreen("start")}
+        onBack={() => go({ kind: "new", mode: session.mode })}
         onNext={analyze}
         onLogout={logout}
         onHome={goHome}
@@ -427,8 +436,10 @@ function AppScreens() {
       />
     );
   }
-  if (screen === "processing") return <ProcessingScreen mode={data.mode} session={session} onBack={() => toScreen("upload")} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} onLogout={logout} onHome={goHome} />;
-  if (screen === "question") {
+  if (step === "processing") {
+    return <ProcessingScreen mode={data.mode} session={session} onBack={() => goStep("upload")} onNext={() => goStep("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} onLogout={logout} onHome={goHome} />;
+  }
+  if (step === "question") {
     return (
       <QuestionScreen
         mode={data.mode}
@@ -437,7 +448,7 @@ function AppScreens() {
         config={config}
         error={error}
         busy={acting}
-        onBack={() => toScreen("upload")}
+        onBack={() => goStep("upload")}
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}
         onUploadFiles={uploadFiles}
@@ -448,20 +459,20 @@ function AppScreens() {
       />
     );
   }
-  if (screen === "generating") {
+  if (step === "generating") {
     return (
       <GeneratingDocumentScreen
         mode={data.mode}
         session={session}
         targetVersion={targetVersion}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
-        onBack={() => toScreen("question")}
+        onBack={() => goStep("question")}
         onLogout={logout}
         onHome={goHome}
       />
     );
   }
-  if (screen === "document") {
+  if (step === "document") {
     return (
       <FinalDocumentScreen
         data={data}
@@ -474,8 +485,8 @@ function AppScreens() {
         revising={acting || session.status === "running"}
         onRevise={(text) => void revise(text)}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
-        onBack={() => toScreen("question")}
-        onComplete={() => toScreen("complete")}
+        onBack={() => goStep("question")}
+        onComplete={() => goStep("complete")}
         onLogout={logout}
         onHome={goHome}
       />
@@ -487,8 +498,8 @@ function AppScreens() {
       sourceCount={session.sources.length}
       questionCount={session.question_count}
       citationCount={citationCount(session)}
-      onViewDocument={() => toScreen("document")}
-      onNew={reset}
+      onViewDocument={() => goStep("document")}
+      onNew={startNew}
       onHome={goHome}
     />
   );

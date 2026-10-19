@@ -2716,6 +2716,18 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .revision-error button { height: 28px; padding: 0 10px; border: 1px solid #efc4c0; border-radius: 8px; background: #fff; color: #b24a41; font-size: 8px; font-weight: 700; }
 .final-document-toolbar .amigo-revision-button:disabled { opacity: .55; cursor: default; }
 
+/* 작업 불러오기 화면(로딩·없음·서버 오류) */
+.session-gate-page { min-height: 100vh; display: grid; grid-template-rows: 60px minmax(0, 1fr); background: #fbfaf8; color: #201e23; }
+.session-gate-main { width: min(520px, calc(100% - 40px)); margin: 0 auto; padding: 90px 0 60px; text-align: center; }
+.session-gate-visual { width: 74px; height: 74px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 22px; background: #eee8fc; color: #6a4dc6; animation: processing-breathe 1.8s ease-in-out infinite; }
+.session-gate-visual > span { display: grid; place-items: center; }
+.session-gate-visual.missing { background: #f1eef2; color: #8d858f; animation: none; }
+.session-gate-visual.failed { background: #fae9e6; color: #bd5f56; animation: none; }
+.session-gate-main h1 { margin: 10px 0 8px; font-size: 26px; letter-spacing: -1.2px; }
+.session-gate-main p { margin: 0 auto; max-width: 420px; color: #89828c; font-size: 9px; line-height: 1.75; }
+.session-gate-actions { margin-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.session-gate-actions .onboarding-next { height: 40px; padding: 0 18px; }
+
 /* 분석 실패 시 자료 등록으로 되돌아가는 보조 버튼 */
 .processing-back { margin: 10px auto 0; display: flex; align-items: center; gap: 6px; border: 0; background: transparent; color: #8a838c; font-size: 9px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .processing-back svg { transform: rotate(180deg); }

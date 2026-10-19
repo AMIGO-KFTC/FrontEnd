@@ -24,7 +24,7 @@ export function CompletionScreen({ mode, sourceCount, questionCount, citationCou
         <section className="completion-summary">
           <div><span><Icon name="file" size={18} /></span><strong>{sourceCount}</strong><small>분석한 자료</small></div>
           <i />
-          <div><span><Icon name="message" size={18} /></span><strong>{questionCount}</strong><small>완료한 확인</small></div>
+          <div><span><Icon name="message" size={18} /></span><strong>{questionCount}</strong><small>진행한 확인 질문</small></div>
           <i />
           <div><span><Icon name="link" size={18} /></span><strong>{citationCount}</strong><small>연결된 출처</small></div>
         </section>
