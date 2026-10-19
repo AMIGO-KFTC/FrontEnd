@@ -2,10 +2,11 @@ import { useCallback, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { PICK_KIND_LABEL, sendPick, usePicked, type PickItem, type PickKind } from "@/shared/pickBridge";
 import { ConfluencePanel } from "./ConfluencePanel";
-import { MattermostPanel } from "./MattermostPanel";
+import { MattermostWorkspace } from "./MattermostWorkspace";
 
 // 새 탭으로 여는 선택 창(#/pick/mattermost · #/pick/confluence).
-// 자료 등록 화면과 같은 패널을 넓게 보여 주고, 고른 항목은 등록하지 않고 원래 창으로 넘긴다(등록은 세션을 아는 원래 창이 한다).
+// 고른 항목은 등록하지 않고 원래 창으로 넘긴다(등록은 세션을 아는 원래 창이 한다).
+// Mattermost 는 실제 Mattermost 처럼 보이는 전용 화면을, 컨플루언스는 자료 등록 화면과 같은 패널을 넓게 보여 준다.
 export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
   const picked = usePicked();
   const [warning, setWarning] = useState<string | null>(null);
@@ -26,6 +27,10 @@ export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
     [kind],
   );
 
+  if (kind === "mattermost") {
+    return <MattermostWorkspace picked={picked} onSend={send} warning={warning} onClose={() => window.close()} />;
+  }
+
   return (
     <div className="integration-picker-page">
       <header className="integration-picker-header">
@@ -38,11 +43,7 @@ export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
       </header>
       <main>
         {warning && <p className="integration-error" role="alert">{warning}</p>}
-        {kind === "mattermost" ? (
-          <MattermostPanel sources={[]} busy={false} picked={picked} onSend={send} />
-        ) : (
-          <ConfluencePanel sources={[]} busy={false} picked={picked} onSend={send} />
-        )}
+        <ConfluencePanel sources={[]} busy={false} picked={picked} onSend={send} />
       </main>
     </div>
   );
