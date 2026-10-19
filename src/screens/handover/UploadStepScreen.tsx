@@ -2,12 +2,14 @@ import { useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
-import type { IntegrationImportResult, Source } from "@/shared/types";
+import type { HandoverMode, IntegrationImportResult, Source } from "@/shared/types";
 import { ConfluencePanel } from "./ConfluencePanel";
 import { MattermostPanel } from "./MattermostPanel";
 
 type Props = {
+  mode: HandoverMode;
   sources: Source[];
   error: string | null;
   busy: boolean;
@@ -30,7 +32,7 @@ function sourceStatus(source: Source): string {
   return "";
 }
 
-export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
+export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
@@ -50,7 +52,8 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogou
   };
 
   return (
-    <div className="upload-step-page">
+    <div className={`upload-step-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header upload-step-header">
         <Brand />
         <div className="onboarding-progress">
@@ -67,6 +70,7 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogou
           <span>STEP 02 · 자료 등록</span>
           <h1>업무 자료를 모아주세요</h1>
           <p>AMIGO가 자료의 내용을 분석해 인수인계 항목과 질문을 준비합니다.</p>
+          <div className="upload-richness-note"><Icon name="sparkle" size={14} /><strong>자료가 풍부할수록 인수인계 문서가 더 정확해져요</strong></div>
         </div>
         <input className="source-file-input" ref={inputRef} type="file" multiple onChange={(event) => addFiles(event.target.files)} />
         <section className="source-grid">
@@ -74,7 +78,7 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogou
             <span><Icon name="upload" size={20} /></span><strong>파일 업로드</strong><small>업무 매뉴얼부터 기안문서까지, 인수인계에 필요한 모든 자료 업로드</small><small className="source-formats">PDF · HWP · Word · PPT · Excel · JPG</small>
           </button>
           <button className={activeSource === "mail" ? "active" : ""} onClick={() => setActiveSource("mail")}>
-            <span><Icon name="mail" size={20} /></span><strong>메일 연결</strong><small>업무 메일 검색 및 선택</small><small className="mail-upload-note">메일 연동을 원하지 않는 경우, 메일 화면을 캡처하여 이미지로 직접 업로드 가능</small>
+            <span><Icon name="mail" size={20} /></span><strong>메일 연결 <em className="source-pending">준비 중</em></strong><small>업무 메일 검색 및 선택</small><small className="mail-upload-note">메일 연동 API 가 준비되기 전까지는 메일 화면을 캡처해 이미지로 올려 주세요</small>
           </button>
           <div className={`source-card link-source-card ${activeSource === "confluence" ? "active" : ""}`}>
             <button className="source-card-heading" onClick={() => setActiveSource("confluence")}>
@@ -102,39 +106,38 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onLogou
         </section>
         {activeSource === "messenger" && <MattermostPanel sources={sources} busy={busy} onImport={onImportMattermost} />}
         {activeSource === "confluence" && <ConfluencePanel sources={sources} busy={busy} onImport={onImportConfluence} />}
-        {activeSource === "messenger" ? (
-          <section
-            className="source-action-panel compact"
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.preventDefault();
-              addFiles(event.dataTransfer.files);
-            }}
-          >
-            <Icon name="upload" size={18} />
-            <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>여기에 놓거나 클릭해서 파일을 선택하세요.</p></div>
-            <button>파일 선택</button>
-          </section>
-        ) : activeSource === "mail" ? (
-        <section className="step-link-area">
-          <div className="step-section-label"><span><Icon name="link" size={15} /></span><div><strong>메일 계정 연결</strong><p>메일함 주소 또는 공유 메일 링크를 입력하세요.</p></div></div>
-          <div className="step-link-input">
-            <input
-              value={link}
-              onChange={(event) => setLink(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addLink();
-                }
+        <div className="source-action-slot">
+          {activeSource === "messenger" ? (
+            <section
+              className="source-action-panel compact"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                addFiles(event.dataTransfer.files);
               }}
-              placeholder="메일함 또는 공유 메일 링크를 입력하세요"
-            />
-            <button onClick={addLink}>추가</button>
-          </div>
-        </section>
-        ) : null}
+            >
+              <Icon name="upload" size={18} />
+              <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>여기에 놓거나 클릭해서 파일을 선택하세요.</p></div>
+              <button>파일 선택</button>
+            </section>
+          ) : activeSource === "mail" ? (
+            // 메일 연결 API 가 BackEnd 에 아직 없다. 메일 화면 캡처를 파일로 올리는 길만 열어 둔다.
+            <section
+              className="source-action-panel mail-connected-panel"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                addFiles(event.dataTransfer.files);
+              }}
+            >
+              <Icon name="mail" size={18} />
+              <div><strong>메일 연결은 준비 중이에요</strong><p>메일함 연동 API 가 생기면 여기서 바로 검색해 고를 수 있어요. 지금은 메일 화면 캡처(JPG · PNG · PDF)를 올려 주세요.</p></div>
+              <button>캡처 올리기</button>
+            </section>
+          ) : null}
+        </div>
         <section className="step-added-list">
             <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{sources.length}개</span></div>
             {sources.length === 0 && <div className="empty-resource">아직 등록된 자료가 없습니다.</div>}

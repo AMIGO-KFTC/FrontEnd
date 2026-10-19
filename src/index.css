@@ -2686,7 +2686,17 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .dashboard-stats .list-notice { grid-column: 1 / -1; padding: 10px 14px; }
 .sidebar-section button .sidebar-recent-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* 자료 등록: 메일 카드 안내 문구, 메신저 탭의 작은 드롭존 */
+/* 장기휴가 테마의 자료 등록: 바다 위에 놓이는 자료 목록·연동 패널은 흰 바탕을 깔아 읽히게 한다 */
+.leave-theme .step-added-list, .leave-theme .integration-panel { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(20,90,120,.08); }
+.leave-theme .integration-panel { margin-top: 10px; }
+
+/* 분석 실패 시 자료 등록으로 되돌아가는 보조 버튼 */
+.processing-back { margin: 10px auto 0; display: flex; align-items: center; gap: 6px; border: 0; background: transparent; color: #8a838c; font-size: 9px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.processing-back svg { transform: rotate(180deg); }
+.processing-back:hover { color: #5e46b6; }
+
+/* 자료 등록: 메일 카드 안내 문구·준비 중 표시, 메신저 탭의 작은 드롭존 */
+.source-grid > button .source-pending { margin-left: 5px; padding: 2px 6px; border-radius: 6px; background: #fff0dc; color: #ae701d; font: 700 7px "Manrope", sans-serif; font-style: normal; vertical-align: middle; }
 .source-grid > button .mail-upload-note { color: #c05f49; font-size: 7px; line-height: 1.45; }
 .source-action-panel.compact { min-height: 50px; margin-top: 10px; padding: 9px 13px; }
 

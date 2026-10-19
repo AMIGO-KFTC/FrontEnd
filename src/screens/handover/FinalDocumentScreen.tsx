@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
 import type { StartData } from "@/shared/handover";
 import { documentRehypePlugins } from "@/shared/documentMarkdown";
@@ -57,7 +58,8 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
   };
 
   return (
-    <div className="final-document-page">
+    <div className={`final-document-page ${data.mode === "leave" ? "leave-theme" : ""}`}>
+      {data.mode === "leave" && <LeaveSeasideBackground />}
       <header className="final-document-header">
         <Brand />
         <div className="onboarding-progress">

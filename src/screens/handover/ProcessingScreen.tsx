@@ -1,11 +1,12 @@
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
-import type { SessionDetail } from "@/shared/types";
+import type { HandoverMode, SessionDetail } from "@/shared/types";
 
-type Props = { session: SessionDetail; onNext: () => void; onRetry: () => void; onLogout: () => void; onHome: () => void };
+type Props = { mode: HandoverMode; session: SessionDetail; onNext: () => void; onRetry: () => void; onBack: () => void; onLogout: () => void; onHome: () => void };
 
-export function ProcessingScreen({ session, onNext, onRetry, onLogout, onHome }: Props) {
+export function ProcessingScreen({ mode, session, onNext, onRetry, onBack, onLogout, onHome }: Props) {
   const { stage, status, progress, sources } = session;
   const total = sources.length;
   const finished = stage !== "setup" && stage !== "analyzing" && status !== "running" && status !== "error";
@@ -17,7 +18,8 @@ export function ProcessingScreen({ session, onNext, onRetry, onLogout, onHome }:
   const failed = status === "error";
   const progressValue = percent;
   return (
-    <div className="processing-page">
+    <div className={`processing-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
         <Brand />
         <div className="onboarding-progress">
@@ -38,16 +40,16 @@ export function ProcessingScreen({ session, onNext, onRetry, onLogout, onHome }:
           <i className="processing-particle particle-two" />
           <i className="processing-particle particle-three" />
         </div>
-        <span className="processing-kicker">{finished ? "ANALYSIS COMPLETE" : "ANALYZING YOUR FILES"}</span>
-        <h1>{finished ? "자료를 모두 읽었어요" : "AMIGO가 자료를 분석하고 있어요"}</h1>
-        <p>{failed ? "분석 중 문제가 생겼어요. 다시 시도해 주세요." : finished ? "자료 분석을 마쳤어요. 이제 빈틈을 채워볼까요?" : "자료의 양에 따라 잠시 시간이 걸릴 수 있어요. 창을 닫아도 분석은 계속됩니다."}</p>
+        <span className="processing-kicker">{failed ? "ANALYSIS PAUSED" : finished ? "ANALYSIS COMPLETE" : "ANALYZING YOUR FILES"}</span>
+        <h1>{failed ? "분석을 끝내지 못했어요" : finished ? "자료를 모두 읽었어요" : "AMIGO가 자료를 분석하고 있어요"}</h1>
+        <p>{failed ? "분석 중 문제가 생겼어요. 다시 시도하거나, 자료 등록으로 돌아가 자료를 확인한 뒤 다시 시작할 수 있어요." : finished ? "자료 분석을 마쳤어요. 이제 빈틈을 채워볼까요?" : "자료의 양에 따라 잠시 시간이 걸릴 수 있어요. 창을 닫아도 분석은 계속됩니다."}</p>
         <section className="processing-status">
           <div className="processing-status-head"><span>{currentTask}</span><strong>{progressValue}%</strong></div>
           <div className="processing-track"><span style={{ width: `${progressValue}%` }} /></div>
           <div className="processing-file">
             <span><Icon name="file" size={16} /></span>
-            <div><small>{finished ? "분석 완료" : "현재 분석 중"}</small><strong>{currentFile}</strong></div>
-            {finished ? <Icon name="check" size={16} /> : <i />}
+            <div><small>{failed ? "중단된 자료" : finished ? "분석 완료" : "현재 분석 중"}</small><strong>{currentFile}</strong></div>
+            {finished ? <Icon name="check" size={16} /> : failed ? <Icon name="close" size={16} /> : <i />}
           </div>
         </section>
         <div className="processing-stats">
@@ -56,6 +58,7 @@ export function ProcessingScreen({ session, onNext, onRetry, onLogout, onHome }:
           <div><strong>{analyzed}</strong><span>분석 완료한 자료</span></div>
         </div>
         <button className="primary-button processing-next" disabled={!finished && !failed} onClick={failed ? onRetry : onNext}>{failed ? "다시 시도" : finished ? "질의응답 시작" : "분석 중"} <Icon name="arrow" size={18} /></button>
+        {failed && <button className="processing-back" onClick={onBack}><Icon name="arrow" size={14} /> 자료를 다시 확인하고 분석 시작하기</button>}
       </main>
     </div>
   );

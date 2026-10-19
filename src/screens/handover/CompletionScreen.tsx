@@ -1,11 +1,14 @@
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
+import type { HandoverMode } from "@/shared/types";
 
-type Props = { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
+type Props = { mode: HandoverMode; sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
 
-export function CompletionScreen({ sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
+export function CompletionScreen({ mode, sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
   return (
-    <div className="completion-page">
+    <div className={`completion-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="completion-header"><Brand /></header>
       <main className="completion-main">
         <div className="completion-visual">

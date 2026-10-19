@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
 import { ErrorNote } from "@/shared/ErrorNote";
 import type { IconName } from "@/shared/Icon";
-import type { AppConfig, ChatMessage, Coverage, SessionDetail } from "@/shared/types";
+import type { AppConfig, ChatMessage, Coverage, HandoverMode, SessionDetail } from "@/shared/types";
 
 const SLOT_ICON: Record<string, IconName> = { duties: "file", recurring: "arrow", projects: "check", contacts: "user", systems: "shield", issues: "sparkle" };
 const COVERAGE_VIEW: Record<Coverage, { status: string; label: string }> = {
@@ -14,6 +15,7 @@ const COVERAGE_VIEW: Record<Coverage, { status: string; label: string }> = {
 };
 
 type Props = {
+  mode: HandoverMode;
   session: SessionDetail;
   messages: ChatMessage[];
   config: AppConfig | null;
@@ -28,7 +30,7 @@ type Props = {
   onHome: () => void;
 };
 
-export function QuestionScreen({ session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
+export function QuestionScreen({ mode, session, messages, config, error, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [answer, setAnswer] = useState("");
   const [expandedCoverage, setExpandedCoverage] = useState<number | null>(null);
@@ -61,7 +63,8 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
   const countOf = (status: string) => rows.filter((row) => row.status === status).length;
 
   return (
-    <div className="question-page">
+    <div className={`question-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
         <Brand />
         <div className="onboarding-progress">

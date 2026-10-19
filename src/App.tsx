@@ -372,6 +372,7 @@ function AppScreens() {
   if (screen === "upload") {
     return (
       <UploadStepScreen
+        mode={data.mode}
         sources={session.sources}
         error={error}
         busy={busy}
@@ -387,10 +388,11 @@ function AppScreens() {
       />
     );
   }
-  if (screen === "processing") return <ProcessingScreen session={session} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} onLogout={logout} onHome={goHome} />;
+  if (screen === "processing") return <ProcessingScreen mode={data.mode} session={session} onBack={() => toScreen("upload")} onNext={() => toScreen("question")} onRetry={() => sessionId && void run(() => api.retry(sessionId))} onLogout={logout} onHome={goHome} />;
   if (screen === "question") {
     return (
       <QuestionScreen
+        mode={data.mode}
         session={session}
         messages={messages}
         config={config}
@@ -426,6 +428,7 @@ function AppScreens() {
   }
   return (
     <CompletionScreen
+      mode={data.mode}
       sourceCount={session.sources.length}
       questionCount={session.question_count}
       citationCount={citationCount(session)}
