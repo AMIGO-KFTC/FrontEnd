@@ -2,20 +2,24 @@ import { useMemo, useState } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { highlight, shortDate } from "@/shared/highlight";
+import type { Picked, PickItem } from "@/shared/pickBridge";
 import type { ConfluencePage, ConfluenceSearchResult, IntegrationImportResult, Source } from "@/shared/types";
+import { PickedChips } from "./PickedChips";
 
 type Props = {
   sources: Source[]; // 이미 등록된 자료(등록된 페이지는 체크 해제 불가)
   busy: boolean;
-  onImport: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>;
+  picked: Picked; // 고른 페이지(다른 탭에서 보내 온 것 포함). 화면이 들고 있어 패널을 닫아도 남는다.
+  onImport?: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>; // 자료 등록(원래 창)
+  onSend?: (items: PickItem[]) => Promise<string | undefined>; // 원래 창으로 보내기(새 탭 선택 창). 있으면 onImport 대신 쓴다.
+  onPopOut?: () => void; // 새 탭에서 열기(원래 창에서만)
 };
 
-export function ConfluencePanel({ sources, busy, onImport }: Props) {
+export function ConfluencePanel({ sources, busy, picked, onImport, onSend, onPopOut }: Props) {
   const [query, setQuery] = useState("");
   const [space, setSpace] = useState("");
   const [result, setResult] = useState<ConfluenceSearchResult | null>(null);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [opened, setOpened] = useState<string | null>(null);
   const [bodies, setBodies] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -26,7 +30,7 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
   const terms = result?.terms ?? [];
   const pages: ConfluencePage[] = result?.results ?? [];
   const selectable = pages.filter((page) => !registered.has(page.url));
-  const allChecked = selectable.length > 0 && selectable.every((page) => selected.has(page.id));
+  const allChecked = selectable.length > 0 && selectable.every((page) => picked.has(page.id));
 
   const search = async (nextSpace = space) => {
     const q = query.trim();
@@ -46,21 +50,11 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
       setSearching(false);
     }
   };
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const toItem = (page: ConfluencePage): PickItem => ({ id: page.id, title: page.title, url: page.url });
+  const toggle = (page: ConfluencePage) => picked.toggle(toItem(page));
   const toggleAll = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (allChecked) selectable.forEach((page) => next.delete(page.id));
-      else selectable.forEach((page) => next.add(page.id));
-      return next;
-    });
+    if (allChecked) picked.removeMany(selectable.map((page) => page.id));
+    else picked.addMany(selectable.map(toItem));
   };
   const open = (id: string) => {
     if (opened === id) {
@@ -76,16 +70,23 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
     }
   };
   const submit = async () => {
-    const ids = Array.from(selected);
-    if (!ids.length) return;
+    if (!picked.items.length) return;
     setImporting(true);
     setNotice(null);
-    const imported = await onImport(ids);
-    setImporting(false);
-    if (imported) {
-      setSelected(new Set());
-      setNotice(imported.message);
+    if (onSend) {
+      const message = await onSend(picked.items);
+      if (message) {
+        picked.clear();
+        setNotice(message);
+      }
+    } else if (onImport) {
+      const imported = await onImport(picked.items.map((item) => item.id));
+      if (imported) {
+        picked.clear();
+        setNotice(imported.message);
+      }
     }
+    setImporting(false);
   };
 
   return (
@@ -96,6 +97,11 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
           <strong>컨플루언스 페이지 검색</strong>
           <p>가상 위키예요. 단어를 검색하면 제목·본문·라벨에 그 단어가 들어간 페이지를 찾아요.</p>
         </div>
+        {onPopOut && (
+          <button type="button" className="integration-popout" onClick={onPopOut} title="이 검색을 새 탭에서 열어요. 거기서 고른 페이지는 이 창으로 넘어와요.">
+            <Icon name="chevron" size={11} /> 새 탭에서 열기
+          </button>
+        )}
       </div>
       <form
         className="integration-search"
@@ -133,11 +139,11 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
           <ul className="integration-list">
             {pages.map((page) => {
               const done = registered.has(page.url);
-              const checked = done || selected.has(page.id);
+              const checked = done || picked.has(page.id);
               const isOpen = opened === page.id;
               return (
                 <li key={page.id} className={`integration-row${checked ? " checked" : ""}${done ? " registered" : ""}`}>
-                  <input type="checkbox" checked={checked} disabled={done} onChange={() => toggle(page.id)} aria-label={`${page.title} 선택`} />
+                  <input type="checkbox" checked={checked} disabled={done} onChange={() => toggle(page)} aria-label={`${page.title} 선택`} />
                   <div className="integration-row-body">
                     <div className="integration-row-title">
                       <span className="cf-space">{page.space_name}</span>
@@ -173,15 +179,16 @@ export function ConfluencePanel({ sources, busy, onImport }: Props) {
             })}
             {!pages.length && <li className="integration-empty">'{result.query}' 이(가) 들어간 페이지가 없어요. 다른 단어로 찾아보세요.</li>}
           </ul>
-          <div className="integration-foot">
-            <span>{selected.size ? `${selected.size}개 선택됨` : "페이지를 선택해 주세요"}</span>
-            {notice && <em className="integration-notice">{notice}</em>}
-            <button type="button" className="integration-submit" disabled={!selected.size || busy || importing} onClick={submit}>
-              <Icon name="check" size={13} /> 선택한 페이지 자료로 등록
-            </button>
-          </div>
         </>
       )}
+      <PickedChips picked={picked} />
+      <div className="integration-foot">
+        <span>{picked.items.length ? `${picked.items.length}개 선택됨` : "페이지를 선택해 주세요"}</span>
+        {notice && <em className="integration-notice">{notice}</em>}
+        <button type="button" className="integration-submit" disabled={!picked.items.length || busy || importing} onClick={submit}>
+          <Icon name="check" size={13} /> {onSend ? "선택한 페이지 원래 창으로 보내기" : "선택한 페이지 자료로 등록"}
+        </button>
+      </div>
     </section>
   );
 }

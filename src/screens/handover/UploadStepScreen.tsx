@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
+import { openPickerTab, usePicked, usePickReceiver, type PickAck, type PickItem, type PickKind } from "@/shared/pickBridge";
 import type { HandoverMode, IntegrationImportResult, Source } from "@/shared/types";
 import { ConfluencePanel } from "./ConfluencePanel";
 import { MattermostPanel } from "./MattermostPanel";
@@ -40,6 +41,22 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   const links = sources.filter((source) => source.kind === "link" && !isIntegration(source));
   const imported = sources.filter(isIntegration);
   const [activeSource, setActiveSource] = useState<"file" | "mail" | "confluence" | "messenger">("file");
+  // 고른 대화·페이지는 여기서 들고 있다. 다른 탭(선택 창)에서 보내 온 항목도 같은 곳에 들어오고, 등록은 이 창에서 한다.
+  const mattermostPicked = usePicked();
+  const confluencePicked = usePicked();
+  const { addMany: addMattermost } = mattermostPicked;
+  const { addMany: addConfluence } = confluencePicked;
+  const acceptPicks = useCallback(
+    (kind: PickKind, items: PickItem[]): PickAck => {
+      const registered = new Set(sources.filter((source) => source.link_type === kind).map((source) => source.url));
+      const fresh = items.filter((item) => !registered.has(item.url));
+      (kind === "mattermost" ? addMattermost : addConfluence)(fresh);
+      setActiveSource(kind === "mattermost" ? "messenger" : "confluence");
+      return { added: fresh.length, skipped: items.length - fresh.length };
+    },
+    [sources, addMattermost, addConfluence],
+  );
+  usePickReceiver(acceptPicks);
   const addFiles = (fileList: FileList | null) => {
     if (!fileList || !fileList.length) return;
     onUploadFiles(Array.from(fileList));
@@ -104,8 +121,8 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
             <span><Icon name="message" size={20} /></span><strong>메신저 &amp; 매터모스트</strong><small>최근 대화를 골라 등록하거나 캡처 이미지 업로드</small><small className="source-formats">대화 선택 · JPG · PDF · PNG</small>
           </button>
         </section>
-        {activeSource === "messenger" && <MattermostPanel sources={sources} busy={busy} onImport={onImportMattermost} />}
-        {activeSource === "confluence" && <ConfluencePanel sources={sources} busy={busy} onImport={onImportConfluence} />}
+        {activeSource === "messenger" && <MattermostPanel sources={sources} busy={busy} picked={mattermostPicked} onImport={onImportMattermost} onPopOut={() => openPickerTab("mattermost")} />}
+        {activeSource === "confluence" && <ConfluencePanel sources={sources} busy={busy} picked={confluencePicked} onImport={onImportConfluence} onPopOut={() => openPickerTab("confluence")} />}
         <div className="source-action-slot">
           {activeSource === "messenger" ? (
             <section

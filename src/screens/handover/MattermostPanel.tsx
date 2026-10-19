@@ -2,21 +2,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { highlight, shortDate } from "@/shared/highlight";
+import { PickedChips } from "./PickedChips";
+import type { Picked, PickItem } from "@/shared/pickBridge";
 import type { IntegrationImportResult, MattermostConversation, MattermostPost, Source } from "@/shared/types";
 
 type Props = {
   sources: Source[]; // 이미 등록된 자료(등록된 대화는 체크 해제 불가)
   busy: boolean;
-  onImport: (conversationIds: string[]) => Promise<IntegrationImportResult | undefined>;
+  picked: Picked; // 고른 대화(다른 탭에서 보내 온 것 포함). 화면이 들고 있어 패널을 닫아도 남는다.
+  onImport?: (conversationIds: string[]) => Promise<IntegrationImportResult | undefined>; // 자료 등록(원래 창)
+  onSend?: (items: PickItem[]) => Promise<string | undefined>; // 원래 창으로 보내기(새 탭 선택 창). 있으면 onImport 대신 쓴다.
+  onPopOut?: () => void; // 새 탭에서 열기(원래 창에서만)
 };
 
 const TYPE_LABEL: Record<MattermostConversation["type"], string> = { channel: "채널", private: "비공개", group: "그룹", dm: "DM" };
 
-export function MattermostPanel({ sources, busy, onImport }: Props) {
+export function MattermostPanel({ sources, busy, picked, onImport, onSend, onPopOut }: Props) {
   const [rows, setRows] = useState<MattermostConversation[] | null>(null);
   const [me, setMe] = useState("");
   const [filter, setFilter] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [opened, setOpened] = useState<string | null>(null);
   const [posts, setPosts] = useState<Record<string, MattermostPost[]>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -53,23 +57,13 @@ export function MattermostPanel({ sources, busy, onImport }: Props) {
   const visible = rows ?? [];
 
   const selectable = visible.filter((row) => !registered.has(row.url));
-  const allChecked = selectable.length > 0 && selectable.every((row) => selected.has(row.id));
+  const allChecked = selectable.length > 0 && selectable.every((row) => picked.has(row.id));
 
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const toItem = (row: MattermostConversation): PickItem => ({ id: row.id, title: row.display_name, url: row.url });
+  const toggle = (row: MattermostConversation) => picked.toggle(toItem(row));
   const toggleAll = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (allChecked) selectable.forEach((row) => next.delete(row.id));
-      else selectable.forEach((row) => next.add(row.id));
-      return next;
-    });
+    if (allChecked) picked.removeMany(selectable.map((row) => row.id));
+    else picked.addMany(selectable.map(toItem));
   };
   const open = (id: string) => {
     if (opened === id) {
@@ -85,16 +79,23 @@ export function MattermostPanel({ sources, busy, onImport }: Props) {
     }
   };
   const submit = async () => {
-    const ids = Array.from(selected);
-    if (!ids.length) return;
+    if (!picked.items.length) return;
     setImporting(true);
     setNotice(null);
-    const result = await onImport(ids);
-    setImporting(false);
-    if (result) {
-      setSelected(new Set());
-      setNotice(result.message);
+    if (onSend) {
+      const message = await onSend(picked.items);
+      if (message) {
+        picked.clear();
+        setNotice(message);
+      }
+    } else if (onImport) {
+      const result = await onImport(picked.items.map((item) => item.id));
+      if (result) {
+        picked.clear();
+        setNotice(result.message);
+      }
     }
+    setImporting(false);
   };
 
   return (
@@ -106,6 +107,11 @@ export function MattermostPanel({ sources, busy, onImport }: Props) {
           <p>{me ? `${me} 계정 · ` : ""}가상 데이터예요. 인수인계에 쓸 대화를 체크하면 자료로 등록돼요.</p>
         </div>
         <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="대화·참여자·내용 찾기" aria-label="대화 찾기" />
+        {onPopOut && (
+          <button type="button" className="integration-popout" onClick={onPopOut} title="이 목록을 새 탭에서 열어요. 거기서 고른 대화는 이 창으로 넘어와요.">
+            <Icon name="chevron" size={11} /> 새 탭에서 열기
+          </button>
+        )}
       </div>
       {loadError && <p className="integration-error" role="alert">{loadError}</p>}
       {rows === null && !loadError && <p className="integration-empty">대화 목록을 불러오는 중…</p>}
@@ -118,11 +124,11 @@ export function MattermostPanel({ sources, busy, onImport }: Props) {
           <ul className="integration-list">
             {visible.map((row) => {
               const done = registered.has(row.url);
-              const checked = done || selected.has(row.id);
+              const checked = done || picked.has(row.id);
               const isOpen = opened === row.id;
               return (
                 <li key={row.id} className={`integration-row${checked ? " checked" : ""}${done ? " registered" : ""}`}>
-                  <input type="checkbox" checked={checked} disabled={done} onChange={() => toggle(row.id)} aria-label={`${row.display_name} 선택`} />
+                  <input type="checkbox" checked={checked} disabled={done} onChange={() => toggle(row)} aria-label={`${row.display_name} 선택`} />
                   <div className="integration-row-body">
                     <div className="integration-row-title">
                       <span className={`mm-type mm-${row.type}`}>{TYPE_LABEL[row.type]}</span>
@@ -156,11 +162,12 @@ export function MattermostPanel({ sources, busy, onImport }: Props) {
             })}
             {!visible.length && <li className="integration-empty">'{filter}' 이(가) 들어간 대화가 없어요.</li>}
           </ul>
+          <PickedChips picked={picked} />
           <div className="integration-foot">
-            <span>{selected.size ? `${selected.size}개 선택됨` : "대화를 선택해 주세요"}</span>
+            <span>{picked.items.length ? `${picked.items.length}개 선택됨` : "대화를 선택해 주세요"}</span>
             {notice && <em className="integration-notice">{notice}</em>}
-            <button type="button" className="integration-submit" disabled={!selected.size || busy || importing} onClick={submit}>
-              <Icon name="check" size={13} /> 선택한 대화 자료로 등록
+            <button type="button" className="integration-submit" disabled={!picked.items.length || busy || importing} onClick={submit}>
+              <Icon name="check" size={13} /> {onSend ? "선택한 대화 원래 창으로 보내기" : "선택한 대화 자료로 등록"}
             </button>
           </div>
         </>
