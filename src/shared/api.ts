@@ -9,9 +9,12 @@ import type {
   LoginResult,
   MattermostConversation,
   MattermostConversationDetail,
+  ProfileInput,
+  ProfileResult,
   SessionCreate,
   SessionDetail,
   SessionSummary,
+  SignupResult,
   Source,
   UsageTotal,
 } from "./types";
@@ -72,6 +75,8 @@ export const api = {
   login: (loginId: string, password: string) => post<LoginResult>("/api/auth/login", { login_id: loginId, password }),
   logout: () => post<{ message: string }>("/api/auth/logout"),
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
+  signup: (loginId: string, password: string, name: string) => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name }),
+  saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
 
   listSessions: () => request<SessionSummary[]>("/api/sessions"),
   createSession: (body: SessionCreate) => post<SessionDetail>("/api/sessions", body),

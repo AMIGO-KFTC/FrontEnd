@@ -163,6 +163,24 @@ export interface AuthUser {
   profile: { department: string; position: string; team: string; name: string } | null;
 }
 
+// 회원가입(POST /api/auth/signup)과 프로필 저장(PUT /api/profile) 응답. message 는 화면에 그대로 띄운다.
+export interface SignupResult {
+  message: string;
+  user: AuthUser;
+}
+
+export interface ProfileInput {
+  department: string;
+  position: string;
+  team: string;
+  name: string;
+}
+
+export interface ProfileResult {
+  message: string;
+  profile: ProfileInput;
+}
+
 export interface LoginResult {
   message: string;
   name: string;

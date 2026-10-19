@@ -1,15 +1,25 @@
-// 회원가입(새 디자인). BackEnd 에 회원가입 API 가 아직 없어 화면 안에서만 동작한다.
+// 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번(login_id)·비밀번호·이름을 보낸다.
+// 사번은 숫자 7자리(서버의 login_id 규칙인 영문·숫자 3~50자 안에 든다), 비밀번호는 8자 이상. 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
+// 스마트보안카드 인증번호는 화면 흐름만 있고 서버 검증 API 는 아직 없다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
 import { useEffect, useState, type FormEvent } from "react";
+import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 
-export function SignupScreen({ onBack }: { onBack: () => void }) {
+const EMPLOYEE_ID = /^\d{7}$/;
+const CODE_SECONDS = 30;
+
+type Props = { onBack: () => void; onRegistered?: (message: string) => void };
+
+export function SignupScreen({ onBack, onRegistered }: Props) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
-  const [securityCard, setSecurityCard] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [securityCard, setSecurityCard] = useState("");
   const [codeRequested, setCodeRequested] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [completed, setCompleted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [completed, setCompleted] = useState<string | null>(null); // 서버가 준 완료 안내
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -18,10 +28,30 @@ export function SignupScreen({ onBack }: { onBack: () => void }) {
     return () => window.clearInterval(timer);
   }, [codeRequested, timeLeft]);
 
-  const submit = (event: FormEvent) => {
+  const requestCode = () => {
+    setCodeRequested(true);
+    setSecurityCard("");
+    setTimeLeft(CODE_SECONDS);
+    setError("");
+  };
+
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim() || !id.trim() || !password.trim()) {
+    const loginId = id.trim();
+    if (!name.trim() || !loginId || !password) {
       setError("이름, 사번, 비밀번호를 입력해 주세요.");
+      return;
+    }
+    if (!EMPLOYEE_ID.test(loginId)) {
+      setError("사번은 숫자 7자리여야 해요.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("비밀번호는 8자 이상이어야 해요.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError("비밀번호 확인이 일치하지 않아요.");
       return;
     }
     if (!codeRequested) {
@@ -36,53 +66,61 @@ export function SignupScreen({ onBack }: { onBack: () => void }) {
       setError("6자리 인증번호를 입력해 주세요.");
       return;
     }
-    setCompleted(true);
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api.signup(loginId, password, name.trim());
+      setCompleted(result.message || "회원가입이 완료되었습니다. 로그인해 주세요.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const finish = () => {
+    if (completed) onRegistered?.(completed);
+    onBack();
   };
 
   return (
-    <div className="signup-overlay" role="presentation" onClick={onBack}>
+    <div className="signup-overlay" role="presentation" onClick={completed ? finish : onBack}>
       <section className="signup-modal" role="dialog" aria-modal="true" aria-labelledby="signup-title" onClick={(event) => event.stopPropagation()}>
-        <button className="signup-close" type="button" onClick={onBack} aria-label="회원가입 닫기"><Icon name="close" size={18} /></button>
+        <button className="signup-close" type="button" onClick={completed ? finish : onBack} aria-label="회원가입 닫기"><Icon name="close" size={18} /></button>
         {completed ? (
           <div className="signup-complete">
             <span><Icon name="check" size={25} /></span>
             <small>WELCOME TO AMIGO</small>
             <h2 id="signup-title">회원가입이 완료되었습니다</h2>
-            <p>이제 AMIGO에서 새로운 인수인계를 시작할 수 있어요.</p>
-            <button className="primary-button login-button" type="button" onClick={onBack}>로그인 화면으로 이동 <Icon name="arrow" size={17} /></button>
+            <p>{completed}</p>
+            <button className="primary-button login-button" type="button" onClick={finish}>로그인 화면으로 이동 <Icon name="arrow" size={17} /></button>
           </div>
         ) : (
           <form className="login-form signup-form" onSubmit={submit}>
             <span className="eyebrow">CREATE YOUR ACCOUNT</span>
             <h2 id="signup-title">AMIGO 시작하기</h2>
             <label>이름
-              <div className="input-wrap"><Icon name="user" size={17} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름을 입력하세요" autoComplete="name" /></div>
+              <div className="input-wrap"><Icon name="user" size={17} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름을 입력하세요" autoComplete="name" maxLength={50} disabled={busy} /></div>
             </label>
             <label>사번
-              <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value)} placeholder="사번을 입력하세요" autoComplete="username" /></div>
+              <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="사번 7자리 숫자" inputMode="numeric" autoComplete="username" maxLength={7} disabled={busy} /></div>
             </label>
             <label>비밀번호
-              <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호를 입력하세요" type="password" autoComplete="new-password" /></div>
+              <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8자 이상" type="password" autoComplete="new-password" maxLength={128} disabled={busy} /></div>
+            </label>
+            <label>비밀번호 확인
+              <div className="input-wrap"><Icon name="shield" size={17} /><input value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} placeholder="비밀번호를 한 번 더 입력하세요" type="password" autoComplete="new-password" maxLength={128} disabled={busy} /></div>
             </label>
             <label>스마트보안카드 인증번호
               <div className="security-request-row">
-                <div className="input-wrap"><Icon name="key" size={17} /><input value={securityCard} onChange={(event) => setSecurityCard(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6자리 인증번호" inputMode="numeric" autoComplete="one-time-code" maxLength={6} disabled={!codeRequested || timeLeft <= 0} /></div>
-                <button
-                  type="button"
-                  disabled={timeLeft > 0}
-                  onClick={() => {
-                    setCodeRequested(true);
-                    setSecurityCard("");
-                    setTimeLeft(30);
-                    setError("");
-                  }}
-                >
+                <div className="input-wrap"><Icon name="key" size={17} /><input value={securityCard} onChange={(event) => setSecurityCard(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6자리 인증번호" inputMode="numeric" autoComplete="one-time-code" maxLength={6} disabled={busy || !codeRequested || timeLeft <= 0} /></div>
+                <button type="button" disabled={busy || timeLeft > 0} onClick={requestCode}>
                   {timeLeft > 0 ? `${timeLeft}초` : codeRequested ? "재요청" : "요청"}
                 </button>
               </div>
             </label>
-            {error && <p className="signup-error">{error}</p>}
-            <button className="primary-button login-button" type="submit">회원가입 <Icon name="arrow" size={17} /></button>
+            {error && <p className="signup-error" role="alert">{error}</p>}
+            <button className="primary-button login-button" type="submit" disabled={busy}>{busy ? "가입 중…" : "회원가입"} <Icon name="arrow" size={17} /></button>
           </form>
         )}
       </section>

@@ -2,6 +2,7 @@
 // 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 서버 API 가 없어 개수를 표시하지 않는다.
 import { useRef, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
+import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
 import { useProfile } from "@/shared/profile";
@@ -32,18 +33,36 @@ export function AppSidebar({
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [profile, setProfile] = useProfile();
   const [profileDraft, setProfileDraft] = useState(profile);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const profilePhotoRef = useRef<HTMLInputElement>(null);
   const ongoingCount = sessions ? ongoingSessions(sessions).length : null;
   const recent = sessions ? recentSessions(sessions, 2) : [];
   const openProfileEdit = () => {
     setProfileDraft(profile);
+    setProfileError(null);
     setProfileOpen(false);
     setProfileEditOpen(true);
   };
-  const saveProfile = (event: FormEvent) => {
+  // 이름·소속·팀·직책은 서버(PUT /api/profile)에 저장한다. 사진은 서버에 자리가 없어 이 브라우저에서만 쓴다.
+  const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
-    setProfile(profileDraft);
-    setProfileEditOpen(false);
+    const draft = { ...profileDraft, name: profileDraft.name.trim(), division: profileDraft.division.trim(), team: profileDraft.team.trim(), role: profileDraft.role.trim() };
+    if (!draft.name || !draft.division || !draft.role) {
+      setProfileError("이름, 소속, 직책은 비워 둘 수 없어요.");
+      return;
+    }
+    setProfileSaving(true);
+    setProfileError(null);
+    try {
+      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role });
+      setProfile({ ...draft, name: result.profile.name, division: result.profile.department, team: result.profile.team, role: result.profile.position });
+      setProfileEditOpen(false);
+    } catch (e) {
+      setProfileError((e as Error).message);
+    } finally {
+      setProfileSaving(false);
+    }
   };
   const changeProfilePhoto = (file: File | undefined) => {
     if (!file) return;
@@ -114,9 +133,10 @@ export function AppSidebar({
             <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
             <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
             <label className="profile-role-field">직책<input value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })} /></label>
+            {profileError && <p className="profile-edit-error" role="alert">{profileError}</p>}
             <div className="profile-edit-actions">
-              <button type="button" onClick={() => setProfileEditOpen(false)}>취소</button>
-              <button type="submit">변경사항 저장</button>
+              <button type="button" onClick={() => setProfileEditOpen(false)} disabled={profileSaving}>취소</button>
+              <button type="submit" disabled={profileSaving}>{profileSaving ? "저장 중…" : "변경사항 저장"}</button>
             </div>
           </form>
         </section>
