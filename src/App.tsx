@@ -376,7 +376,7 @@ function AppScreens() {
     return (
       <>
         <LoginScreen onLogin={login} onSignup={() => setAuthPanel("signup")} onForgot={() => setAuthPanel("forgot")} busy={busy} error={error} notice={loginNotice} />
-        {authPanel === "signup" && <SignupScreen onBack={() => setAuthPanel(null)} />}
+        {authPanel === "signup" && <SignupScreen onBack={() => setAuthPanel(null)} onRegistered={(message) => { setError(null); setLoginNotice(message); }} />}
         {authPanel === "forgot" && <ForgotPasswordScreen onBack={() => setAuthPanel(null)} />}
       </>
     );

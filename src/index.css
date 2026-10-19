@@ -2880,3 +2880,8 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .brand-link:hover .brand-mark { transform: translateY(-1px); }
 .brand-link .brand-mark { transition: transform .15s ease; }
 .brand-link:focus-visible { outline: 2px solid #7458ec; outline-offset: 3px; }
+
+/* 프로필 수정 창의 서버 오류, 저장 중 버튼 */
+.profile-edit-error { margin: 10px 0 0; color: #c15148; font-size: 9px; }
+.profile-edit-actions button:disabled { opacity: .55; cursor: default; }
+.signup-form .login-button:disabled { opacity: .6; cursor: default; }

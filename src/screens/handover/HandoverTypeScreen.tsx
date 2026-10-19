@@ -19,7 +19,7 @@ export function HandoverTypeScreen({ onSelect, onLogout, onHome }: { onSelect: (
           <button className="type-profile-avatar" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} aria-label="내 프로필 열기">{profile.name.slice(0, 1)}</button>
           {profileOpen && (
             <div className="type-profile-popover">
-              <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId}</small></div></header>
+              <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>아이디 {profile.employeeId}</small></div></header>
               <div className="type-profile-actions">
                 <button className="type-profile-home" onClick={() => { setProfileOpen(false); onHome(); }}><Icon name="home" size={13} /> 홈으로 돌아가기</button>
                 <button className="type-profile-logout" onClick={() => { setProfileOpen(false); setLogoutConfirmOpen(true); }}>로그아웃</button>

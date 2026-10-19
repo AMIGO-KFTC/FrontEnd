@@ -7,7 +7,7 @@ export type Profile = { name: string; employeeId: string; division: string; team
 
 export const EMPTY_PROFILE: Profile = { name: "", employeeId: "", division: "", team: "", role: "", photo: "" };
 
-// AuthUser → Profile. 서버의 department 를 본부(division)로, login_id 를 사번으로 쓴다.
+// AuthUser → Profile. 서버의 department 를 본부(division)로, login_id 를 아이디로 보여 준다.
 export function profileFromUser(user: AuthUser): Profile {
   return {
     name: user.profile?.name || user.name,
