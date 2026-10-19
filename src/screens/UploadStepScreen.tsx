@@ -162,7 +162,6 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
           <button className="primary-button onboarding-next" disabled={busy} onClick={onNext}>AI 분석 시작 <Icon name="arrow" size={18} /></button>
         </div>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

@@ -113,7 +113,6 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
           </div>
         </section>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

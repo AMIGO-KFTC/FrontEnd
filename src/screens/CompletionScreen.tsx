@@ -29,7 +29,6 @@ export function CompletionScreen({ sourceCount, questionCount, citationCount, on
         </div>
         <div className="completion-note"><Icon name="sparkle" size={14} /> 문서는 언제든 다시 열어 수정하거나 내려받을 수 있어요.</div>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

@@ -53,7 +53,6 @@ export function ProcessingScreen({ session, onNext, onRetry }: { session: Sessio
         </div>
         <button className="primary-button processing-next" disabled={!finished && !failed} onClick={failed ? onRetry : onNext}>{failed ? "다시 시도" : finished ? "질의응답 시작" : "분석 중"} <Icon name="arrow" size={18} /></button>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

@@ -70,49 +70,7 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
         </div>
       </header>
       <main className="question-main">
-        <section className="question-conversation">
-          <div className="question-intro">
-            <span>STEP 03 · 질의응답</span>
-            <h1>빈틈을 함께 채워볼게요</h1>
-            <p>자료에서 확인하기 어려운 내용만 간단히 여쭤볼게요.</p>
-          </div>
-          <div className="question-counter">
-            <span>확인 질문</span>
-            <strong>{Math.max(session.question_count, 1)} <small>/ {Math.max(total, 1)}</small></strong>
-          </div>
-          <section className="amigo-question-card">
-            <div className="question-card-top">
-              <span className="question-ai"><Icon name="sparkle" size={16} /></span>
-              <div><strong>AMIGO</strong><small>자료 분석을 바탕으로 질문드려요</small></div>
-              <em>{category}</em>
-            </div>
-            <h2 style={asking?.kind === "confirm" ? { whiteSpace: "pre-line" } : undefined}>{questionText || (waiting ? "AMIGO가 다음 질문을 준비하고 있어요" : "")}</h2>
-            <p>{gap?.description ?? ""}</p>
-          </section>
-          <div className="answer-suggestions">
-            {suggestions.map((suggestion) => <button key={suggestion} onClick={() => setAnswer(suggestion)}>{suggestion}</button>)}
-          </div>
-          <section className="answer-compose">
-            <textarea
-              value={answer}
-              onChange={(event) => setAnswer(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  submitAnswer();
-                }
-              }}
-              placeholder="답변을 입력해 주세요"
-            />
-            <div>
-              <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) onUploadFiles(files); event.target.value = ""; }} />
-              <button className="answer-attach" onClick={() => fileRef.current?.click()}><Icon name="paperclip" size={17} /> 자료 첨부</button>
-              <button className="answer-send" disabled={waiting} onClick={() => (failed ? onRetry() : submitAnswer())}>{failed ? "다시 시도" : isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
-            </div>
-          </section>
-          <ErrorNote message={extraNote} tone="info" />
-          <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
-        </section>
+        {/* 새 디자인은 왼쪽 열(215px)에 질문 목록 패널을 둔다. 4단계에서 서버 질문 목록으로 바꾸기 전까지 항목 충족 현황을 그 자리에 둔다. */}
         <aside className="question-summary">
           <div className="coverage-head"><strong>항목 충족 현황</strong><span><em>충분 {countOf("full")}</em> · <i>부분 {countOf("part")}</i> · 부족 {countOf("lack")}</span></div>
           <div className="coverage-track"><span className="full" style={{ width: `${(countOf("full") / Math.max(rows.length, 1)) * 100}%` }} /><span className="part" style={{ width: `${(countOf("part") / Math.max(rows.length, 1)) * 100}%` }} /><span className="empty" style={{ width: `${(countOf("lack") / Math.max(rows.length, 1)) * 100}%` }} /></div>
@@ -134,13 +92,59 @@ export function QuestionScreen({ session, messages, config, error, onBack, onSen
           </div>
           <div className="summary-note"><Icon name="sparkle" size={15} /><p><strong>답변은 자동으로 정리돼요</strong><br />편하게 말하듯 작성해 주세요.</p></div>
         </aside>
+        <section className="question-conversation">
+          <div className="question-intro">
+            <span>STEP 03 · 질의응답</span>
+            <h1>빈틈을 함께 채워볼게요</h1>
+            <p>자료에서 확인하기 어려운 내용만 간단히 여쭤볼게요.</p>
+          </div>
+          <div className="question-scroll-area">
+          <div className="question-counter">
+            <span>확인 질문</span>
+            <strong>{Math.max(session.question_count, 1)} <small>/ {Math.max(total, 1)}</small></strong>
+          </div>
+          <section className="amigo-question-card">
+            <div className="question-card-top">
+              <span className="question-ai"><Icon name="sparkle" size={16} /></span>
+              <div><strong>AMIGO</strong><small>자료 분석을 바탕으로 질문드려요</small></div>
+              <em>{category}</em>
+            </div>
+            <h2 style={asking?.kind === "confirm" ? { whiteSpace: "pre-line" } : undefined}>{questionText || (waiting ? "AMIGO가 다음 질문을 준비하고 있어요" : "")}</h2>
+            <p>{gap?.description ?? ""}</p>
+          </section>
+          <div className="answer-suggestions">
+            {suggestions.map((suggestion) => <button key={suggestion} onClick={() => setAnswer(suggestion)}>{suggestion}</button>)}
+          </div>
+          <ErrorNote message={extraNote} tone="info" />
+          </div>
+          <section className="answer-compose">
+            <textarea
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  submitAnswer();
+                }
+              }}
+              placeholder="답변을 입력해 주세요"
+            />
+            <div>
+              <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) onUploadFiles(files); event.target.value = ""; }} />
+              <button className="answer-attach" onClick={() => fileRef.current?.click()}><Icon name="paperclip" size={17} /> 자료 첨부</button>
+              <button className="answer-send" disabled={waiting} onClick={() => (failed ? onRetry() : submitAnswer())}>{failed ? "다시 시도" : isLast ? "문서 생성하기" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
+            </div>
+          </section>
+          <div className="question-complete-row">
+            <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
+          </div>
+        </section>
         <ErrorNote message={error ?? (failed ? session.error || "AI 처리 중 문제가 생겼어요. 다시 시도해 주세요." : null)} />
         <div className="question-page-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
           <button className="primary-button onboarding-next" disabled={session.status === "running"} onClick={onComplete}>인수인계서 생성하기 <Icon name="arrow" size={18} /></button>
         </div>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }
