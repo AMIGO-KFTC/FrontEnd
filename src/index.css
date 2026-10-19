@@ -2874,3 +2874,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .final-paper table.gantt-editable td.gantt-cell:not(.bar):hover { background: #efeafc; }
 .final-paper table.gantt-table { -webkit-user-select: none; user-select: none; }
 .gantt-hint { margin-left: 12px; color: #7a7470; font-size: 11px; }
+
+/* 로고 클릭 → 홈. 버튼 기본 모양을 지우고 div 였을 때와 같은 글꼴·색을 유지한다 */
+.brand-link { appearance: none; border: 0; background: none; padding: 0; margin: 0; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; border-radius: 10px; }
+.brand-link:hover .brand-mark { transform: translateY(-1px); }
+.brand-link .brand-mark { transition: transform .15s ease; }
+.brand-link:focus-visible { outline: 2px solid #7458ec; outline-offset: 3px; }

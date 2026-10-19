@@ -74,7 +74,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
     <div className={`final-document-page ${data.mode === "leave" ? "leave-theme" : ""}`}>
       {data.mode === "leave" && <LeaveSeasideBackground />}
       <header className="final-document-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span className="active" />

@@ -55,7 +55,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     <div className={`upload-step-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header upload-step-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span className="active" />

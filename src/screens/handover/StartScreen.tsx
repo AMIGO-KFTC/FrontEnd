@@ -60,7 +60,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     <div className={`onboarding-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span />

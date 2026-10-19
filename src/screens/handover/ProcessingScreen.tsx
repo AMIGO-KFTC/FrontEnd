@@ -21,7 +21,7 @@ export function ProcessingScreen({ mode, session, onNext, onRetry, onBack, onLog
     <div className={`processing-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
-        <Brand />
+        <Brand onClick={onHome} />
         <div className="onboarding-progress">
           <span className="active" />
           <span className="active" />
