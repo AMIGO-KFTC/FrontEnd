@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
-import { StepUserMenu } from "../shared/StepUserMenu";
-import { ErrorNote } from "../shared/ErrorNote";
-import type { IconName } from "../shared/Icon";
-import type { AppConfig, ChatMessage, Coverage, SessionDetail } from "../shared/types";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import { ErrorNote } from "@/shared/ErrorNote";
+import type { IconName } from "@/shared/Icon";
+import type { AppConfig, ChatMessage, Coverage, SessionDetail } from "@/shared/types";
 
 const SLOT_ICON: Record<string, IconName> = { duties: "file", recurring: "arrow", projects: "check", contacts: "user", systems: "shield", issues: "sparkle" };
 const COVERAGE_VIEW: Record<Coverage, { status: string; label: string }> = {

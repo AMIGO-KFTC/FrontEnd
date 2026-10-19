@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
-import { Brand } from "../shared/Brand";
-import { ErrorNote } from "../shared/ErrorNote";
-import { Icon } from "../shared/Icon";
-import { StepUserMenu } from "../shared/StepUserMenu";
-import type { IntegrationImportResult, Source } from "../shared/types";
+import { Brand } from "@/shared/Brand";
+import { ErrorNote } from "@/shared/ErrorNote";
+import { Icon } from "@/shared/Icon";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import type { IntegrationImportResult, Source } from "@/shared/types";
 import { ConfluencePanel } from "./ConfluencePanel";
 import { MattermostPanel } from "./MattermostPanel";
 

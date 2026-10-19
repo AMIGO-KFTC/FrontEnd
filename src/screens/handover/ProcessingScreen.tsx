@@ -1,7 +1,7 @@
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
-import { StepUserMenu } from "../shared/StepUserMenu";
-import type { SessionDetail } from "../shared/types";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import type { SessionDetail } from "@/shared/types";
 
 type Props = { session: SessionDetail; onNext: () => void; onRetry: () => void; onLogout: () => void; onHome: () => void };
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./shared/api";
 import type { StartData } from "./shared/handover";
-import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
+import type { AppConfig, HandoverMode, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
 import { dataFromSession, screenForStage, sessionFromHash, writeHash } from "./shared/restore";
 import { useSessionState } from "./shared/useSessionState";
 import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
@@ -10,20 +10,21 @@ import { AdminDashboardScreen } from "./screens/admin/AdminDashboardScreen";
 import { ForgotPasswordScreen } from "./screens/auth/ForgotPasswordScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
-import { CompletionScreen } from "./screens/CompletionScreen";
-import { FinalDocumentScreen } from "./screens/FinalDocumentScreen";
+import { CompletionScreen } from "./screens/handover/CompletionScreen";
+import { FinalDocumentScreen } from "./screens/handover/FinalDocumentScreen";
+import { HandoverTypeScreen } from "./screens/handover/HandoverTypeScreen";
 import { CompletedDocumentsScreen } from "./screens/home/CompletedDocumentsScreen";
 import { DashboardScreen } from "./screens/home/DashboardScreen";
 import { OngoingHandoverScreen } from "./screens/home/OngoingHandoverScreen";
 import { ReceivedHandoverScreen } from "./screens/home/ReceivedHandoverScreen";
 import type { HomeNav, SessionList } from "./screens/home/types";
-import { ProcessingScreen } from "./screens/ProcessingScreen";
-import { QuestionScreen } from "./screens/QuestionScreen";
-import { StartScreen } from "./screens/StartScreen";
-import { UploadStepScreen } from "./screens/UploadStepScreen";
+import { ProcessingScreen } from "./screens/handover/ProcessingScreen";
+import { QuestionScreen } from "./screens/handover/QuestionScreen";
+import { StartScreen } from "./screens/handover/StartScreen";
+import { UploadStepScreen } from "./screens/handover/UploadStepScreen";
 
 type HomeScreen = "dashboard" | "handover" | "documents" | "received"; // 홈 셸(사이드바가 있는 화면)
-type Screen = "login" | HomeScreen | "admin" | "start" | "upload" | "processing" | "question" | "document" | "complete";
+type Screen = "login" | HomeScreen | "admin" | "handoverType" | "start" | "upload" | "processing" | "question" | "document" | "complete";
 const HOME_SCREENS: Screen[] = ["dashboard", "handover", "documents", "received"];
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
@@ -48,6 +49,7 @@ function AppScreens() {
   const [, setProfile] = useProfile();
   const [authChecked, setAuthChecked] = useState(false); // 로그인 상태 확인이 끝나기 전에는 로그인 화면을 깜빡이지 않는다
   const [data, setData] = useState<StartData>(EMPTY);
+  const [newMode, setNewMode] = useState<HandoverMode>("reassignment"); // 유형 선택 화면에서 고른 값. 기본 정보 화면이 세션을 만들 때 쓴다
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [markdown, setMarkdown] = useState("");
@@ -193,6 +195,7 @@ function AppScreens() {
   );
 
   const start = async (form: StartData) => {
+    if (busy) return; // 두 번 눌러도 세션을 두 개 만들지 않는다
     if (!form.name.trim()) {
       setError("성명을 입력해 주세요.");
       return;
@@ -272,9 +275,10 @@ function AppScreens() {
     setError(null);
   };
 
+  // 새 인수인계: 유형 선택부터 시작한다.
   const reset = () => {
     clearSession();
-    setScreen("start");
+    setScreen("handoverType");
   };
 
   // 홈 목록에서 "이어서 작성"·"문서 열기": 세션을 불러온 뒤 서버에 저장된 단계의 화면으로 간다(해시 복원과 같은 경로).
@@ -358,7 +362,8 @@ function AppScreens() {
   if (screen === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={reset} />;
   if (screen === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
   if (screen === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
-  if (screen === "start") return <StartScreen onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
+  if (screen === "handoverType") return <HandoverTypeScreen onSelect={(mode) => { setNewMode(mode); toScreen("start"); }} onLogout={logout} onHome={goHome} />;
+  if (screen === "start") return <StartScreen key={newMode} mode={newMode} onStart={start} onLogout={logout} onHome={goHome} busy={busy} error={error} />;
 
   if (!session) {
     return null;

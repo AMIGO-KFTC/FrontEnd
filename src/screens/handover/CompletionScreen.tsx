@@ -1,5 +1,5 @@
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
 
 type Props = { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
 

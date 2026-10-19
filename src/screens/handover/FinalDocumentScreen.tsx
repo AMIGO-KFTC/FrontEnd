@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api } from "../shared/api";
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
-import { StepUserMenu } from "../shared/StepUserMenu";
-import type { StartData } from "../shared/handover";
-import { documentRehypePlugins } from "../shared/documentMarkdown";
-import { MermaidDiagram } from "../shared/MermaidDiagram";
-import { GanttAwareTable, GanttContext } from "../shared/GanttTable";
+import { api } from "@/shared/api";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import type { StartData } from "@/shared/handover";
+import { documentRehypePlugins } from "@/shared/documentMarkdown";
+import { MermaidDiagram } from "@/shared/MermaidDiagram";
+import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
 
 type Props = {
   data: StartData;
