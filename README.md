@@ -333,6 +333,12 @@ cd BackEnd; powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 
 <!-- 공통 섹션 끝 -->
 
+## 새 디자인 통합 (진행 중)
+
+`figma-design/` 의 Figma Make 디자인을 `src/` 의 BackEnd 연동 화면에 옮기는 작업이 `feat/figma-make-design` 브랜치에서 진행 중입니다.
+적용 범위, 기존 기능 유지 여부, 가짜 응답·실제 서버 검증 결과와 미검증 항목은 [docs/design-integration-verification.md](docs/design-integration-verification.md) 에 있습니다.
+화면 검증은 `scripts/capture-screens.mjs`(가짜 응답)와 `scripts/integration-check.mjs`(실제 서버)로 다시 돌릴 수 있습니다.
+
 ## 이 저장소만 개발하기
 
 백엔드를 먼저 띄워 둔 상태에서(오프라인 엔진이면 API 키 없이 됩니다) 다음을 실행합니다.
