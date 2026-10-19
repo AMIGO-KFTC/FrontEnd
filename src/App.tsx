@@ -16,7 +16,7 @@ import { StartScreen } from "./screens/StartScreen";
 import { UploadStepScreen } from "./screens/UploadStepScreen";
 
 type Screen = "login" | "start" | "upload" | "processing" | "question" | "document" | "complete";
-type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창(둘 다 아직 준비 중)
+type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
 const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
 

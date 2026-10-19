@@ -26,7 +26,6 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
   const [id, setId] = useState(savedLoginId);
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
-  const [notice, setNotice] = useState<string | null>(null); // SSO 등 아직 없는 기능 안내
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!id.trim() || !password.trim() || busy) return;
@@ -36,7 +35,6 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
     } catch {
       /* 저장소를 못 쓰는 브라우저는 저장만 건너뛴다 */
     }
-    setNotice(null);
     await onLogin(id.trim(), password);
   };
 
@@ -63,10 +61,10 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
               <button type="button" className="text-button" onClick={onSignup}>회원가입</button>
             </div>
           </div>
-          {(error || notice) && <div style={{ marginBottom: 14 }}><ErrorNote message={error ?? notice} tone={error ? "error" : "info"} /></div>}
+          {error && <div style={{ marginBottom: 14 }}><ErrorNote message={error} /></div>}
           <button className="primary-button login-button" type="submit" disabled={busy}>로그인 <Icon name="arrow" size={18} /></button>
           <div className="login-divider"><span />OR<span /></div>
-          <button className="sso-button" type="button" onClick={() => setNotice("SSO 로그인은 준비 중이에요. 아이디와 비밀번호로 로그인해 주세요.")}><Icon name="key" size={16} /> Use SSO Sign-In</button>
+          <button className="sso-button" type="button"><Icon name="key" size={16} /> Use SSO Sign-In</button>
         </form>
       </section>
     </main>
