@@ -9,7 +9,7 @@
 | 가짜 응답 | `/api` 를 Playwright 로 가로채 화면·이동·복원·오류 상태를 확인 | `scripts/capture-screens.mjs` | 86개 시나리오 모두 통과 |
 | 실제 서버 | BackEnd(오프라인 엔진, API 키 없음) + 개발 서버를 상대로 전체 흐름을 브라우저에서 확인 | `scripts/integration-check.mjs` | 30개 통과 · 실패 0 · 확인 불가 3 |
 
-**실제 Claude 엔진으로는 확인하지 않았습니다.** 아래 "미검증 항목"을 보세요.
+**실제 Claude 엔진으로는 확인하지 않았습니다.** 디자인 검토는 끝났고, 아래 "미검증 항목" 4건(실제 Claude 엔진, Mermaid, Windows 한글 파일명 업로드, 로그인 만료)은 미검증 상태로 남겨 둡니다.
 
 ## 1. 적용 범위
 
@@ -21,7 +21,18 @@
 | 4 | 유형 선택·기본 정보·자료 등록·분석·질의응답·문서 생성·완성 문서·완료 화면 새 디자인 적용 | `5832a9c`, `bcb5049`, `7c994e5`, `4186f6a` |
 | 5 | 주소 해시 라우팅, 세션 복원, 오류 원인별 안내, 검증 스크립트 | `36c4e8b`, `878d974` |
 
-`figma-design/` 폴더는 최종 디자인 비교가 끝날 때까지 그대로 둡니다. `src/legacy/`(`legacy.html`)도 그대로입니다.
+디자인 검토가 끝나 `figma-design/` 폴더는 삭제했습니다(2026-10-19). 화면·공통 부품·`index.css` 는 모두 `src/` 로 옮겨졌고, 다음은 옮기지 않은 파일입니다.
+
+| 옮기지 않은 파일 | 이유 |
+|---|---|
+| `src/screens/LandingScreen.tsx` | Figma 앱 자체도 로그인 화면에서 시작해 진입 경로가 없었음 |
+| `src/AppGlass.tsx`, `src/AppIris.tsx`, `glass-theme.css`, `iris-theme.css`, `public/amigo-moon-dunes.webp` | 진입점에서 쓰지 않던 대체 테마 실험 |
+| `src/store/AppStore.tsx`, `src/screens/handover/questions.ts`, `types.ts` | 예시 데이터·브라우저 상태. 서버 세션·프로필로 대체 |
+| `src/screens/legacy-workspace/` | 예전 3단 화면의 복사본. BackEnd 연동 원본이 `src/legacy/`(`legacy.html`)에 있음 |
+| `public/favicon.svg` | Figma Make 기본 아이콘. AMIGO 아이콘을 그대로 사용 |
+| `.figma/`, `AGENTS.md`, `CLAUDE.md`, `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `vite.config.ts` | Figma Make 전용 설정 |
+
+새 디자인에 **아직 없는 기존 기능**: 작업 화면의 Claude 사용량·추정 비용 배지(`src/legacy/components/UsageBadge.tsx`). 사용량은 `/api/usage` 와 `state` 응답의 `usage` 로 확인할 수 있습니다.
 
 ## 2. 기존 BackEnd 기능 유지 여부
 

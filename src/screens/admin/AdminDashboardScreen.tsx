@@ -1,5 +1,5 @@
 // 관리자 모드(개발용 미리보기). BackEnd 에 관리자 권한·구성원·팀 통계·AI 설정 API 가 아직 없어
-// 화면의 값은 figma-design 의 것이며 저장되지 않는다. 진입은 src/shared/adminPreview.ts 로 막아 둔다.
+// 화면의 값은 Figma Make 디자인의 예시 값이며 저장되지 않는다. 진입은 src/shared/adminPreview.ts 로 막아 둔다.
 import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon, type IconName } from "@/shared/Icon";

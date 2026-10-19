@@ -5,9 +5,13 @@ AI 기반 인수인계서 자동 작성 시스템 **AMIGO** 의 화면(UI/UX)입
 
 > 화면만으로는 동작하지 않고 **BackEnd(API 서버)가 함께 떠 있어야** 합니다. 처음이라면 [실행 방법](#실행-방법)을 따라 하세요.
 
-| 질의응답 · 항목 충족 현황 | 완성된 인수인계서 |
+| 홈 대시보드 | 자료 등록 |
 |---|---|
+| ![홈 대시보드](docs/screenshots/dashboard.png) | ![자료 등록 화면](docs/screenshots/upload.png) |
+| **질의응답 · 항목 충족 현황** | **완성된 인수인계서** |
 | ![질의응답 화면](docs/screenshots/qna.png) | ![인수인계서 화면](docs/screenshots/document.png) |
+
+PC 브라우저 기준으로 만든 화면입니다(모바일 최적화는 하지 않았습니다).
 
 <!-- 공통 섹션 시작 — 4개 저장소(RAG·AI·BackEnd·FrontEnd) README 에 같은 내용이 들어 있습니다. 고칠 때는 네 곳을 함께 고쳐 주세요. -->
 
@@ -157,10 +161,9 @@ cd ..\FrontEnd; npm install
 | 컨플루언스 링크 수집 | `CONFLUENCE_BASE_URL` + `CONFLUENCE_PAT`(Server/DC), Cloud 는 `CONFLUENCE_EMAIL` + `CONFLUENCE_API_TOKEN` |
 | 나누미 링크 수집 | `NANUMI_BASE_URL` + `NANUMI_COOKIE` |
 
-- Claude 를 쓰면 작업 화면 오른쪽 위에 이번 작업의 **추정 비용·토큰 수**가, 시작 화면에 **전체 누적 사용량과 남은 예산**이 표시됩니다(배지에 마우스를 올리면 자세히). 추정치이므로 실제 청구액은 <https://platform.claude.com> 의 Usage 에서 확인하고, 그곳의 Limits 에서 월 사용 한도도 걸어 두세요.
+- Claude 사용량은 <http://localhost:8000/api/usage> 에서 **전체 누적 추정 비용·토큰 수와 남은 예산**을, 각 작업의 사용량은 `GET /api/sessions/{id}/state` 응답의 `usage` 로 확인합니다(새 디자인 화면에는 아직 사용량 배지가 없습니다). 추정치이므로 실제 청구액은 <https://platform.claude.com> 의 Usage 에서 확인하고, 그곳의 Limits 에서 월 사용 한도도 걸어 두세요.
 - `.env` 를 고친 뒤에는 백엔드를 껐다가 다시 켭니다(코드 변경 시 자동 재시작은 `.env` 변경을 감지하지 않습니다).
-- 지금 쓰는 엔진은 작업 화면 오른쪽 위 배지(`Claude · claude-haiku-4-5` / `오프라인 규칙 엔진`)나
-  <http://localhost:8000/api/health> 의 `"engine"` 값(`claude` / `offline`)으로 확인합니다.
+- 지금 쓰는 엔진은 <http://localhost:8000/api/health> 의 `"engine"` 값(`claude` / `offline`)으로 확인합니다.
 - `.env` 는 `.gitignore` 에 들어 있어 커밋되지 않습니다. API 키를 `.env.example`·코드·채팅에 적지 마세요.
 - 오프라인 엔진은 표 머리글과 정규식으로 항목을 뽑는 **시연용**이라 문장이 거칠고 질문도 정해진 틀을 씁니다. 실제 품질은 Claude 로 확인하세요.
 - 전체 설정 목록은 [BackEnd README 의 환경변수](https://github.com/AMIGO-KFTC/BackEnd#환경변수)에 있습니다.
@@ -235,19 +238,24 @@ RAG 저장소의 `samples/` 폴더(`amigo/RAG/samples/`)에 가상의 웹서비�
 | `시스템_계정목록.xlsx` | 시스템 계정 목록, 연간 일정 |
 | `웹접근성_개선계획.pptx` | 웹 접근성 지적사항과 추진 일정 |
 
-1. <http://localhost:5173> 에서 **예시 채우기** → **인수인계 시작**
-2. 왼쪽 **업무 자료** 칸에 `RAG/samples/` 의 파일 6개를 끌어다 놓습니다(칸을 클릭해서 골라도 됩니다). 모두 초록색 완료 표시가 될 때까지 기다립니다.
-   - 링크 칸에 컨플루언스·나누미 주소를 붙여 넣고 **링크 추가** 를 누르면 링크도 자료로 등록됩니다.
-     접속할 수 없는 주소면 빨간색 실패 표시와 사유가 나오고, 나머지 자료만으로 계속 진행할 수 있습니다.
-3. **분석 시작** → 위쪽 진행 단계가 STAGE 1(장별 분석) → STAGE 2(요약)로 넘어가고, 오른쪽 **항목 충족 현황**이 채워집니다.
-4. STAGE 3 — 대화창에 첫 질문이 옵니다. 아는 내용을 자유롭게 답하면 AI 가 정리해서 맞는지 되묻습니다.
+1. <http://localhost:5173> 에서 로그인합니다. 계정이 없으면 <http://localhost:8000/docs> 의 `POST /api/auth/signup` 에 아이디·비밀번호(8자 이상)·이름을 넣어 만듭니다
+   (화면의 회원가입·비밀번호 재설정 양식은 아직 서버와 연결되지 않았습니다).
+2. 홈에서 **새 인수인계 시작하기** → **정기인사 인수인계 시작** → 기본 정보를 적습니다. 이름·소속·직책은 프로필에서 채워지고, 담당 업무를 하나 이상 넣어야 다음으로 넘어갑니다.
+3. 자료 등록 화면의 **파일 업로드** 칸에 `RAG/samples/` 의 파일 6개를 끌어다 놓습니다(칸을 클릭해서 골라도 됩니다). 등록한 자료 목록에서 모두 처리 완료가 될 때까지 기다립니다.
+   - **컨플루언스 & 나누미 연결** 에 주소를 붙여 넣으면 링크도 자료로 등록됩니다.
+     접속할 수 없는 주소면 실패 표시와 사유가 나오고, 나머지 자료만으로 계속 진행할 수 있습니다.
+   - **메신저 & 매터모스트** 는 BackEnd 의 가상 Mattermost·Confluence 데이터를 보여 주며, 체크해서 자료로 등록합니다.
+4. **AI 분석 시작** → 분석 화면의 진행률이 STAGE 1(장별 분석) → STAGE 2(요약)로 올라가고, 끝나면 **질의응답 시작** 을 누릅니다.
+5. STAGE 3 — 대화창에 첫 질문이 옵니다. 아는 내용을 자유롭게 답하면 AI 가 정리해서 맞는지 되묻습니다. 왼쪽 **확인할 질문** 목록과 **항목 충족 현황**이 함께 바뀝니다.
    - 예: 재무팀 연락처를 물으면 `재무팀 박지훈 차장, 내선 2345` 라고 답하기 → 정리된 내용 확인 → **네, 맞아요**
-   - 틀렸으면 고칠 내용을 그대로 적고, 모르는 질문은 **모르겠어요 (건너뛰기)** 를 누릅니다.
-5. 질문이 끝나거나 **지금까지 내용으로 문서 생성** 을 누르면 STAGE 4 로 넘어가 **인수인계서** 탭에 문서가 나타납니다.
-6. 문서 위쪽 버튼으로 **PDF / Word / Markdown** 을 내려받습니다. 표의 `[1]` 같은 번호는 문서 끝 **근거 자료** 목록(파일명·페이지·메일 발신자)과 연결됩니다.
-7. 대화창에 `협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요` 처럼 고칠 점을 보내면 반영된 **v2** 문서가 만들어집니다.
+   - 틀렸으면 고칠 내용을 그대로 적고, 모르는 질문은 **이 질문 건너뛰기** 를 누릅니다.
+6. 질문이 끝나거나 **지금까지 내용으로 생성하기** 를 누르면 STAGE 4 로 넘어가 생성 중 화면을 거쳐 **인수인계서**가 나타납니다.
+7. 문서 위쪽 버튼으로 **PDF / Word / Markdown** 을 내려받습니다. 표의 `[1]` 같은 번호는 문서 끝 **근거 자료** 목록(파일명·페이지·메일 발신자)과 연결됩니다.
+8. **수정 요청 보내기** 에 `협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요` 처럼 고칠 점을 적으면 반영된 **v2** 문서가 만들어집니다.
+9. **인수인계 완료하기** → 완료 화면 → **홈으로 돌아가기**. 완성된 문서는 홈의 **완성 문서**에서 다시 열 수 있습니다.
 
-진행 상황은 서버에 저장되므로, 브라우저를 닫거나 서버를 다시 켜도 시작 화면의 **최근 작업**에서 이어서 할 수 있습니다.
+진행 상황은 서버에 저장되므로, 브라우저를 닫거나 서버를 다시 켜도 홈의 **진행 중인 인수인계**에서 **이어서 작성**으로 저장된 단계부터 계속할 수 있습니다.
+작업 화면 주소(`#/s/<세션ID>/<단계>`)를 북마크해 두면 로그인 뒤 바로 그 화면으로 돌아옵니다.
 
 ### 6. (선택) 서버 하나로 실행하기 — 시연·공유용
 
@@ -263,7 +271,7 @@ RAG 저장소의 `samples/` 폴더(`amigo/RAG/samples/`)에 가상의 웹서비�
 .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000        # Windows: .venv\Scripts\python -m uvicorn ...
 ```
 
-**로그인이 없는 프로토타입**이므로 사내망 시연에만 쓰고, 실제 업무 자료를 다루는 서버는 사내 SSO 를 붙인 뒤에 운영하세요.
+로그인은 BackEnd 의 자체 계정(회원가입 API)으로만 동작하는 **프로토타입**이므로 사내망 시연에만 쓰고, 실제 업무 자료를 다루는 서버는 사내 SSO 를 붙이고 HTTPS(`AMIGO_COOKIE_SECURE=true`)로 운영하세요.
 
 ### 7. 테스트
 
@@ -333,11 +341,17 @@ cd BackEnd; powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 
 <!-- 공통 섹션 끝 -->
 
-## 새 디자인 통합 (진행 중)
+## 화면 검증
 
-`figma-design/` 의 Figma Make 디자인을 `src/` 의 BackEnd 연동 화면에 옮기는 작업이 `feat/figma-make-design` 브랜치에서 진행 중입니다.
-적용 범위, 기존 기능 유지 여부, 가짜 응답·실제 서버 검증 결과와 미검증 항목은 [docs/design-integration-verification.md](docs/design-integration-verification.md) 에 있습니다.
-화면 검증은 `scripts/capture-screens.mjs`(가짜 응답)와 `scripts/integration-check.mjs`(실제 서버)로 다시 돌릴 수 있습니다.
+Figma Make 로 만든 새 디자인을 BackEnd 연동 화면에 적용한 결과와 검증 내용은 [docs/design-integration-verification.md](docs/design-integration-verification.md) 에 있습니다
+(적용 범위, 기존 기능 유지 여부, 가짜 응답·실제 서버 검증 결과, 미검증 항목, 실제 Claude 엔진으로 확인하는 방법).
+
+| 스크립트 | 하는 일 | 실행 |
+|---|---|---|
+| `scripts/capture-screens.mjs` | `/api` 를 가짜 응답으로 바꿔 86개 화면·이동·복원·오류 시나리오를 캡처하고, 이동만 한 시나리오에서 변경 요청(POST/PUT/DELETE)이 나가지 않는지 확인 | `npm run dev` 를 띄운 뒤 `npx playwright install chromium` → `node scripts/capture-screens.mjs out` |
+| `scripts/integration-check.mjs` | 실제 BackEnd 를 상대로 회원가입 → 로그인 → 업로드 → 분석 → 질의응답 → 문서 생성 → 다운로드 → 복원·삭제까지 브라우저로 확인 | BackEnd·개발 서버를 띄운 뒤 `node scripts/integration-check.mjs` (테스트 계정은 `AMIGO_TEST_ID`·`AMIGO_TEST_PASSWORD`, 없으면 임의 계정 가입) |
+
+두 스크립트 모두 전역 또는 프로젝트의 `playwright` 패키지를 사용하며, 비밀번호는 출력하지 않습니다.
 
 ## 이 저장소만 개발하기
 
@@ -353,48 +367,76 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 ```
 
 - 다른 주소의 백엔드를 쓰려면 `AMIGO_API=http://서버:8000 npm run dev`(Windows: `$env:AMIGO_API="http://서버:8000"; npm run dev`).
-- API 응답 타입은 `src/types.ts` 에 있고 BackEnd 의 `app/schemas.py` 와 짝을 이룹니다. 응답 구조를 바꿀 때는 두 곳을 함께 고칩니다.
+- API 응답 타입은 `src/shared/types.ts` 에 있고 BackEnd 의 `app/schemas.py` 와 짝을 이룹니다. 응답 구조를 바꿀 때는 두 곳을 함께 고칩니다.
+- 관리자 모드 미리보기는 개발 서버(`npm run dev`)에서만 열리고, 빌드에서 보려면 `VITE_ADMIN_PREVIEW=true npm run build` 로 빌드합니다. 서버에 역할·관리 API 가 없어 화면의 값은 저장되지 않습니다.
+- 이전 3단 작업 화면은 `legacy.html`(`src/legacy/`)로 남겨 두었습니다. 개발 서버에서 <http://localhost:5173/legacy.html> 로 열 수 있습니다.
 - `npm run build` 결과물(`dist/`)은 BackEnd 의 `AMIGO_FRONTEND_DIST=../FrontEnd/dist` 설정으로 8000 포트 하나에서 함께 서비스할 수 있습니다([서버 하나로 실행하기](#6-선택-서버-하나로-실행하기--시연공유용)).
 
 ## 화면 구성
 
-| 화면 | 컴포넌트 | 내용 |
-|---|---|---|
-| 시작 | `StartScreen` | 인계자 기초 정보 등록(성명·소속·직책·담당 업무·인수자·인계일), 최근 작업 이어하기 |
-| 진행 단계 | `StageProgress` | STAGE 1 자료 분석 ➔ 2 분석 요약 ➔ 3 질의응답 ➔ 4 문서 생성 스테퍼 + 진행률 바 + 현재 작업 문구 |
-| 자료 등록 | `UploadStepScreen` | **드래그 앤 드롭 업로드**(PDF·HWPX/HWP·Word·PPT·Excel·메일·소스코드·ZIP), 컨플루언스/나누미 **링크 입력**, 처리 상태(대기/처리 중/완료/실패 사유), 분석 시작 |
-| Mattermost 대화 선택 | `MattermostPanel` | **가상 Mattermost** 최근 대화 목록(채널·DM·그룹, 참여자, 마지막 메시지)을 보고 왼쪽 **체크박스로 골라 자료로 등록**. 찾기(이름·참여자·메시지 내용), 대화 내용 펼쳐 보기, 이미 등록된 대화 표시 |
-| 컨플루언스 검색 | `ConfluencePanel` | **가상 Confluence** 에서 단어를 검색하면 제목·본문·라벨에 그 단어가 들어간 페이지가 검색어 강조와 함께 나오고, 체크해서 자료로 등록. 스페이스로 좁히기, 본문 미리보기 |
-| 대화 | `ChatPanel` | **메신저 형태 채팅**: 질문·확인 요청·요약 말풍선, 빠른 답장(네, 맞아요 / 건너뛰기 / 지금 문서 생성), 입력 중 표시, 채팅창에서 자료 첨부 |
-| 항목 현황 | `SlotBoard` | 인수인계서 항목별 충족 수준(충분/부분/부족), 항목·근거 출처·확인 필요 필드 미리보기 |
-| 문서 | `DocumentViewer` | **Markdown 인수인계서 뷰어**(표·근거 번호), **PDF / Word / Markdown 다운로드**, 인쇄 |
+주소창 해시로 화면을 구분합니다. 로그인 전에는 로그인 화면이 보이고, 로그인하면 보려던 주소로 돌아갑니다.
 
-화면 폭이 좁으면(모바일) 자료 · 대화·문서 · 현황을 탭으로 전환합니다.
+| 주소 | 화면 | 컴포넌트 | 내용 |
+|---|---|---|---|
+| (로그인 전) | 로그인 · 회원가입 · 비밀번호 재설정 | `screens/auth/` | 로그인은 `/api/auth/login`, 만료(401) 시 안내 후 재로그인. 회원가입·비밀번호 재설정 양식은 서버 미연결 |
+| `#/` | 홈 대시보드 | `screens/home/DashboardScreen` | 진행 중·완료 건수(서버 세션 목록), 새 인수인계 시작, 알림·캘린더(예시 값, 서버 미연결) |
+| `#/home/handover` | 진행 중인 인수인계 | `screens/home/OngoingHandoverScreen` | 문서가 아직 없는 세션 목록, 저장된 단계로 **이어서 작성**, 확인창 뒤 삭제(`DELETE /api/sessions/{id}`) |
+| `#/home/documents` | 완성 문서 | `screens/home/CompletedDocumentsScreen` | 문서가 있는 세션 목록, 문서 열기 |
+| `#/home/received` | 받은 인수인계 | `screens/home/ReceivedHandoverScreen` | 예시 값(서버에 받은 인수인계 API 없음) |
+| `#/admin` | 관리자 모드 | `screens/admin/` | 개발용 미리보기(대시보드·구성원·인수인계 관리·AI 작성 지침). 저장되지 않으며 `ADMIN_PREVIEW` 가 참일 때만 열림 |
+| `#/new`, `#/new/<유형>` | 유형 선택 · 기본 정보 | `HandoverTypeScreen`, `StartScreen` | 정기인사 / 장기휴가 선택, 인계자 정보 입력 → `POST /api/sessions` |
+| `#/s/<세션ID>/upload` | 자료 등록 | `UploadStepScreen` + `MattermostPanel`, `ConfluencePanel` | 드래그 앤 드롭 업로드(PDF·HWPX/HWP·Word·PPT·Excel·메일·소스코드·ZIP), 링크 등록, 가상 Mattermost·Confluence 선택, 처리 상태(대기/처리 중/완료/실패 사유), 분석 시작 |
+| `#/s/<세션ID>/processing` | 분석 | `ProcessingScreen` | STAGE 1~2 진행률·현재 작업 문구, 실패 시 다시 시도 |
+| `#/s/<세션ID>/question` | 질의응답 | `QuestionScreen` | 메신저형 대화(질문·확인 요청·추천 답변·건너뛰기·대화 중 자료 첨부), 왼쪽 확인할 질문 목록, 항목 충족 현황, 문서 생성 |
+| `#/s/<세션ID>/generating` | 생성 중 | `GeneratingDocumentScreen` | STAGE 4 진행 표시(서버 상태 기준), 실패 시 다시 시도 |
+| `#/s/<세션ID>/document` | 인수인계서 | `FinalDocumentScreen` + `shared/GanttTable`, `MermaidDiagram` | Markdown 뷰어(표·근거 번호·간트 표·관계도), PDF/Word/Markdown 다운로드, 수정 요청(새 버전 생성) |
+| `#/s/<세션ID>/complete` | 완료 | `CompletionScreen` | 완료 안내, 홈·새 인수인계로 이동 |
 
-<img src="docs/screenshots/mobile.png" alt="모바일 화면" width="280">
+장기휴가 유형은 같은 단계 화면에 바다 테마 배경(`shared/LeaveSeasideBackground`)이 깔립니다.
 
 ## 백엔드 연동 방식
 
-- `src/api.ts` 에 모든 API 호출이 있습니다. 오류는 서버의 `detail` 메시지를 그대로 토스트로 보여 줍니다.
-- `src/hooks/useSessionState.ts` 가 `GET /api/sessions/{id}/state?after=<마지막 메시지 ID>` 를 폴링합니다.
+- `src/shared/api.ts` 에 모든 API 호출이 있습니다. 오류는 서버의 `detail` 메시지를 그대로 화면에 보여 주고, `ApiError.status` 로 401(로그인 만료)·403·404(열 수 없는 작업)·5xx 를 구분합니다.
+- 로그인하면 BackEnd 가 HttpOnly 쿠키를 내려 주고, 이후 요청은 그 쿠키로 사용자를 구분합니다(유효 시간은 BackEnd 의 `AMIGO_SESSION_TTL_HOURS`).
+  로그인하지 않은 요청은 브라우저별 임의 ID 를 `X-User-Id` 헤더로 보내는 프로토타입 방식으로 구분합니다.
+- `src/shared/useSessionState.ts` 가 `GET /api/sessions/{id}/state?after=<마지막 메시지 ID>` 를 폴링합니다.
   AI 가 처리 중이거나 자료를 적재 중이면 1초, 그 외에는 4초 간격으로 새 메시지만 받아 이어 붙입니다.
-- 분석·답변·문서 생성 요청은 서버가 202 로 바로 응답하고 백그라운드에서 처리하므로, 화면은 폴링 결과로 진행 상황을 그립니다.
-- 주소창 해시(`#/s/<세션ID>`)로 현재 세션을 기억해 새로고침해도 이어서 작업합니다.
-- 브라우저별 임의 ID 를 `X-User-Id` 헤더로 보내 사용자별 작업 목록을 구분합니다(프로토타입용, 실서비스는 SSO 로 교체).
+- 분석·답변·문서 생성·수정 요청은 서버가 202 로 바로 응답하고 백그라운드에서 처리하므로, 화면은 폴링 결과로 진행 상황을 그립니다.
+  서버 단계(`setup → analyzing → summary → qna → composing → review`)가 바뀌면 `src/shared/router.ts` 의 `resolveStep` 이 그 단계에 맞는 화면으로 주소를 바꿉니다.
+- 주소창 해시(`#/s/<세션ID>/<단계>`)로 현재 작업과 단계를 기억해 새로고침·뒤로 가기·북마크로 돌아와도 이어서 작업하며, 이동만으로는 변경 요청(POST/PUT/DELETE)을 보내지 않습니다. 예전 주소 `#/s/<세션ID>` 도 그대로 동작합니다.
 
 ## 폴더 구조
 
 ```text
+index.html / legacy.html   새 디자인 화면 / 이전 3단 화면(보존용) 진입점
 src/
-  main.tsx                진입점
-  App.tsx                 해시 라우팅(#/s/<세션ID>), 토스트
-  api.ts / types.ts       API 클라이언트와 응답 타입(BackEnd/app/schemas.py 와 짝)
-  hooks/useSessionState.ts  상태 폴링
-  components/
-    StartScreen.tsx  Workspace.tsx  StageProgress.tsx  UploadPanel.tsx
-    ChatPanel.tsx    SlotBoard.tsx  DocumentViewer.tsx icons.tsx
-  styles.css              디자인 토큰(:root 변수), 반응형 레이아웃, 인쇄 스타일
+  main.tsx                 진입점
+  App.tsx                  로그인 상태, 세션 목록, 단계 전환, 화면 선택
+  index.css                디자인 토큰·화면 스타일·애니메이션(Figma Make 디자인 + BackEnd 연동용 보완 규칙)
+  shared/
+    api.ts / types.ts      API 클라이언트와 응답 타입(BackEnd/app/schemas.py 와 짝)
+    router.ts              주소 해시 파싱·이동, 서버 단계별 허용 화면
+    useSessionState.ts     상태 폴링
+    sessions.ts            세션 목록 분류(진행 중/완성), 단계·상태 표시 문구
+    profile.tsx            서버 프로필(/api/auth/me) 공유
+    adminPreview.ts        관리자 미리보기 여부(개발 서버 또는 VITE_ADMIN_PREVIEW)
+    AppSidebar.tsx  StepUserMenu.tsx  ConfirmModal.tsx  LogoutConfirmModal.tsx
+    Icon.tsx  Brand.tsx  LeaveSeasideBackground.tsx  ErrorNote.tsx
+    documentMarkdown.ts  GanttTable.tsx  MermaidDiagram.tsx  highlight.tsx  handover.ts  restore.ts
+  screens/
+    auth/      LoginScreen  SignupScreen  ForgotPasswordScreen  AuthVisual
+    home/      DashboardScreen  OngoingHandoverScreen  CompletedDocumentsScreen  ReceivedHandoverScreen  DashboardCalendar
+    admin/     AdminDashboardScreen  AdminMembersPage  AdminHandoversPage  AdminAiSettingsPage
+    handover/  HandoverTypeScreen  StartScreen  UploadStepScreen  MattermostPanel  ConfluencePanel
+               ProcessingScreen  QuestionScreen  GeneratingDocumentScreen  FinalDocumentScreen
+               CompletionScreen  SessionGateScreen
+  legacy/                  이전 3단 작업 화면(legacy.html 에서만 사용)
+scripts/
+  capture-screens.mjs      가짜 응답 화면 캡처·이동 검증
+  integration-check.mjs    실제 BackEnd 통합 검증
+docs/
+  design-integration-verification.md   디자인 통합·검증 결과
+  screenshots/             README 화면 캡처
 public/favicon.svg
-vite.config.ts            개발 서버(5173)와 /api 프록시(AMIGO_API)
-docs/screenshots/         README 화면 캡처
+vite.config.ts             개발 서버(5173), /api 프록시(AMIGO_API), @/ 별칭, 두 진입점 빌드
 ```
