@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
+import { openPickerTab, usePicked, usePickReceiver, type PickAck, type PickItem, type PickKind } from "@/shared/pickBridge";
 import type { HandoverMode, IntegrationImportResult, Source } from "@/shared/types";
-import { ConfluencePanel } from "./ConfluencePanel";
-import { MattermostPanel } from "./MattermostPanel";
+import { IntegrationLauncher } from "./IntegrationLauncher";
 
 type Props = {
   mode: HandoverMode;
@@ -40,6 +40,28 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   const links = sources.filter((source) => source.kind === "link" && !isIntegration(source));
   const imported = sources.filter(isIntegration);
   const [activeSource, setActiveSource] = useState<"file" | "mail" | "confluence" | "messenger">("file");
+  // 가장 최근에 선택 창(새 탭)을 열려던 시도가 성공했는지(false 면 팝업 차단 안내)
+  const [opened, setOpened] = useState<Record<PickKind, boolean>>({ mattermost: true, confluence: true });
+  const openPicker = (kind: PickKind) => {
+    const ok = openPickerTab(kind); // 상태 갱신 함수 밖에서 연다(개발 모드는 갱신 함수를 두 번 실행해 탭이 두 번 열린다)
+    setOpened((prev) => ({ ...prev, [kind]: ok }));
+  };
+  // 고른 대화·페이지는 여기서 들고 있다. 다른 탭(선택 창)에서 보내 온 항목도 같은 곳에 들어오고, 등록은 이 창에서 한다.
+  const mattermostPicked = usePicked();
+  const confluencePicked = usePicked();
+  const { addMany: addMattermost } = mattermostPicked;
+  const { addMany: addConfluence } = confluencePicked;
+  const acceptPicks = useCallback(
+    (kind: PickKind, items: PickItem[]): PickAck => {
+      const registered = new Set(sources.filter((source) => source.link_type === kind).map((source) => source.url));
+      const fresh = items.filter((item) => !registered.has(item.url));
+      (kind === "mattermost" ? addMattermost : addConfluence)(fresh);
+      setActiveSource(kind === "mattermost" ? "messenger" : "confluence");
+      return { added: fresh.length, skipped: items.length - fresh.length };
+    },
+    [sources, addMattermost, addConfluence],
+  );
+  usePickReceiver(acceptPicks);
   const addFiles = (fileList: FileList | null) => {
     if (!fileList || !fileList.length) return;
     onUploadFiles(Array.from(fileList));
@@ -81,7 +103,13 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
             <span><Icon name="mail" size={20} /></span><strong>메일 연결 <em className="source-pending">준비 중</em></strong><small>업무 메일 검색 및 선택</small><small className="mail-upload-note">메일 연동 API 가 준비되기 전까지는 메일 화면을 캡처해 이미지로 올려 주세요</small>
           </button>
           <div className={`source-card link-source-card ${activeSource === "confluence" ? "active" : ""}`}>
-            <button className="source-card-heading" onClick={() => setActiveSource("confluence")}>
+            <button
+              className="source-card-heading"
+              onClick={() => {
+                setActiveSource("confluence");
+                openPicker("confluence"); // 페이지는 새 탭의 컨플루언스 화면에서 검색해 고른다
+              }}
+            >
               <span><Icon name="folder" size={20} /></span><strong>컨플루언스 &amp; 나누미 연결</strong><small>업무 페이지 링크 가져오기</small>
             </button>
             <div className="inline-source-link">
@@ -100,12 +128,18 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
               <button onClick={addLink}>추가</button>
             </div>
           </div>
-          <button className={activeSource === "messenger" ? "active" : ""} onClick={() => setActiveSource("messenger")}>
+          <button
+            className={activeSource === "messenger" ? "active" : ""}
+            onClick={() => {
+              setActiveSource("messenger");
+              openPicker("mattermost"); // 대화는 새 탭의 Mattermost 화면에서 고른다
+            }}
+          >
             <span><Icon name="message" size={20} /></span><strong>메신저 &amp; 매터모스트</strong><small>최근 대화를 골라 등록하거나 캡처 이미지 업로드</small><small className="source-formats">대화 선택 · JPG · PDF · PNG</small>
           </button>
         </section>
-        {activeSource === "messenger" && <MattermostPanel sources={sources} busy={busy} onImport={onImportMattermost} />}
-        {activeSource === "confluence" && <ConfluencePanel sources={sources} busy={busy} onImport={onImportConfluence} />}
+        {activeSource === "messenger" && <IntegrationLauncher kind="mattermost" busy={busy} picked={mattermostPicked} onImport={onImportMattermost} onOpen={() => openPicker("mattermost")} opened={opened.mattermost} />}
+        {activeSource === "confluence" && <IntegrationLauncher kind="confluence" busy={busy} picked={confluencePicked} onImport={onImportConfluence} onOpen={() => openPicker("confluence")} opened={opened.confluence} />}
         <div className="source-action-slot">
           {activeSource === "messenger" ? (
             <section
