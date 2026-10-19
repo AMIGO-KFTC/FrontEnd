@@ -30,10 +30,12 @@ export function parsePickHash(hash: string): PickKind | null {
 }
 
 // 선택 창을 새 탭으로 연다. 같은 이름의 탭이 이미 있으면 새로 만들지 않고 그 탭을 다시 쓴다.
-export function openPickerTab(kind: PickKind): void {
+// 팝업 차단 등으로 열리지 않으면 false.
+export function openPickerTab(kind: PickKind): boolean {
   const url = `${window.location.pathname}${window.location.search}#/pick/${kind}`;
   const tab = window.open(url, `amigo-pick-${kind}`);
   tab?.focus();
+  return tab !== null;
 }
 
 // 선택 창 → 원래 창. 원래 창의 응답을 기다렸다가 결과를 돌려주고, 응답이 없으면(원래 창이 닫혔거나 다른 곳) null.

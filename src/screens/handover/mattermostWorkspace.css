@@ -115,3 +115,48 @@
   .mmw-globalbar { grid-template-columns: 12px minmax(0, 1fr) auto; }
   .mmw-product, .mmw-close, .mmw-header-purpose { display: none; }
 }
+
+/* 전역 막대: 모달을 다시 여는 버튼 */
+.mmw-choose { height: 28px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 4px; background: transparent; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.mmw-choose:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* 대화 선택 모달(Mattermost 모달 모양) */
+.mmw-modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.64); }
+.mmw-modal { width: min(640px, 100%); max-height: min(720px, 100%); display: flex; flex-direction: column; border-radius: 12px; background: #fff; color: var(--mm-text); box-shadow: 0 20px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08); overflow: hidden; }
+.mmw-modal-head { padding: 24px 24px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mmw-modal-head h2 { margin: 0; font-size: 22px; font-weight: 700; line-height: 28px; }
+.mmw-modal-head p { margin: 4px 0 0; color: var(--mm-muted); font-size: 14px; }
+.mmw-modal-x { width: 32px; height: 32px; flex: none; border: 0; border-radius: 4px; background: transparent; color: var(--mm-muted); font-size: 24px; line-height: 30px; }
+.mmw-modal-x:hover { background: rgba(63, 67, 80, 0.08); color: var(--mm-text); }
+.mmw-modal-search { margin: 4px 24px 8px; height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(63, 67, 80, 0.16); border-radius: 4px; color: var(--mm-muted); }
+.mmw-modal-search:focus-within { border-color: var(--mm-accent); box-shadow: 0 0 0 1px var(--mm-accent); }
+.mmw-modal-search input { min-width: 0; flex: 1; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--mm-text); font: inherit; }
+.mmw-modal-listhead { margin: 0 24px; padding: 8px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--mm-line); color: var(--mm-muted); font-size: 12px; }
+.mmw-modal-listhead label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.mmw-modal input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--mm-accent); cursor: pointer; }
+.mmw-modal-list { min-height: 120px; margin: 0; padding: 0; flex: 1; overflow-y: auto; list-style: none; }
+.mmw-modal-note { padding: 24px; color: var(--mm-muted); text-align: center; }
+.mmw-modal-note.error { color: #b3261e; }
+.mmw-modal-row { padding: 12px 24px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid rgba(63, 67, 80, 0.06); cursor: pointer; }
+.mmw-modal-row:hover { background: rgba(63, 67, 80, 0.04); }
+.mmw-modal-row.checked { background: rgba(28, 88, 217, 0.08); }
+.mmw-modal-row > input { margin-top: 2px; }
+.mmw-modal-icon { margin-top: 0; color: var(--mm-muted); }
+.mmw-modal-icon .mmw-group-count { background: rgba(63, 67, 80, 0.16); color: var(--mm-text); }
+.mmw-modal-row-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.mmw-modal-row-title { display: flex; align-items: baseline; gap: 8px; }
+.mmw-modal-row-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.mmw-modal-row-title em { flex: none; padding: 0 6px; border-radius: 4px; background: rgba(63, 67, 80, 0.08); color: var(--mm-muted); font-size: 10px; font-style: normal; font-weight: 700; line-height: 16px; }
+.mmw-modal-row-title time { margin-left: auto; flex: none; color: var(--mm-muted); font-size: 12px; }
+.mmw-modal-row-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mm-muted); font-size: 12px; }
+.mmw-modal-row-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 18px; }
+.mmw-modal-row-preview b { font-weight: 600; }
+.mmw-modal-foot { padding: 16px 24px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--mm-line); }
+.mmw-modal-foot > span { margin-right: auto; color: var(--mm-muted); font-size: 13px; }
+.mmw-btn { height: 40px; padding: 0 20px; border: 0; border-radius: 4px; font-size: 14px; font-weight: 600; }
+.mmw-btn.secondary { background: rgba(28, 88, 217, 0.08); color: var(--mm-accent); }
+.mmw-btn.secondary:hover { background: rgba(28, 88, 217, 0.12); }
+.mmw-btn.primary { background: var(--mm-accent); color: #fff; }
+.mmw-btn.primary:hover:not(:disabled) { background: var(--mm-accent-hover); }
+.mmw-btn.primary:disabled { background: rgba(63, 67, 80, 0.08); color: rgba(63, 67, 80, 0.32); cursor: default; }
+@media (max-width: 860px) { .mmw-modal-backdrop { padding: 12px; } .mmw-modal-head, .mmw-modal-row, .mmw-modal-foot { padding-left: 16px; padding-right: 16px; } .mmw-modal-search, .mmw-modal-listhead { margin-left: 16px; margin-right: 16px; } }

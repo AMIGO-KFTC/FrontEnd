@@ -81,6 +81,103 @@ function RowIcon({ row }: { row: MattermostConversation }): ReactNode {
   return <Avatar name={shortName(row)} size={20} />;
 }
 
+const TYPE_LABEL: Record<MattermostConversation["type"], string> = { channel: "채널", private: "비공개 채널", group: "그룹 메시지", dm: "다이렉트 메시지" };
+
+// 대화 선택 모달: 열려 있는 Mattermost 화면 위에서 인수인계에 쓸 대화를 목록으로 보고 고른다.
+function PickModal({ picked, sending, onSubmit, onClose }: { picked: Picked; sending: boolean; onSubmit: () => void; onClose: () => void }) {
+  const [rows, setRows] = useState<MattermostConversation[] | null>(null);
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const loadedOnce = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(
+      () => {
+        api
+          .mattermostConversations(query.trim())
+          .then((data) => {
+            if (cancelled) return;
+            setRows(data.conversations);
+            setError(null);
+          })
+          .catch((e: Error) => !cancelled && setError(e.message));
+      },
+      loadedOnce.current ? 250 : 0,
+    );
+    loadedOnce.current = true;
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
+  const terms = useMemo(() => (query.trim() ? query.trim().split(/\s+/) : []), [query]);
+  const visible = rows ?? [];
+  const toItem = (row: MattermostConversation): PickItem => ({ id: row.id, title: row.display_name, url: row.url });
+  const allChecked = visible.length > 0 && visible.every((row) => picked.has(row.id));
+  const toggleAll = () => {
+    if (allChecked) picked.removeMany(visible.map((row) => row.id));
+    else picked.addMany(visible.map(toItem));
+  };
+
+  return (
+    <div className="mmw-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className="mmw-modal" role="dialog" aria-modal="true" aria-labelledby="mmw-modal-title" onKeyDown={(event) => event.key === "Escape" && onClose()}>
+        <div className="mmw-modal-head">
+          <div>
+            <h2 id="mmw-modal-title">인수인계에 쓸 대화 선택</h2>
+            <p>자료로 등록할 대화를 골라 주세요. 여러 개를 고를 수 있어요.</p>
+          </div>
+          <button type="button" className="mmw-modal-x" onClick={onClose} aria-label="닫기">×</button>
+        </div>
+        <label className="mmw-modal-search">
+          <SearchIcon />
+          <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="대화 이름·참여자·내용으로 찾기" aria-label="대화 찾기" />
+        </label>
+        <div className="mmw-modal-listhead">
+          <label>
+            <input type="checkbox" checked={allChecked} disabled={!visible.length} onChange={toggleAll} /> 전체 선택
+          </label>
+          <span>{rows ? `${visible.length}개 대화 · 최근 순` : ""}</span>
+        </div>
+        <ul className="mmw-modal-list">
+          {error && <li className="mmw-modal-note error" role="alert">{error}</li>}
+          {rows === null && !error && <li className="mmw-modal-note">대화 목록을 불러오는 중…</li>}
+          {rows !== null && !visible.length && <li className="mmw-modal-note">'{query}' 이(가) 들어간 대화가 없어요.</li>}
+          {visible.map((row) => {
+            const stamp = parseStamp(row.last_post_at);
+            return (
+              <li key={row.id}>
+                <label className={`mmw-modal-row${picked.has(row.id) ? " checked" : ""}`}>
+                  <input type="checkbox" checked={picked.has(row.id)} onChange={() => picked.toggle(toItem(row))} />
+                  <span className="mmw-channel-icon mmw-modal-icon"><RowIcon row={row} /></span>
+                  <span className="mmw-modal-row-main">
+                    <span className="mmw-modal-row-title">
+                      <strong>{highlight(row.type === "dm" ? shortName(row) : row.display_name, terms)}</strong>
+                      <em>{TYPE_LABEL[row.type]}</em>
+                      <time>{stamp.label.replace(/^\d+년 /, "")}</time>
+                    </span>
+                    <span className="mmw-modal-row-meta">{highlight(row.members.join(", "), terms)} · 메시지 {row.message_count}건</span>
+                    <span className="mmw-modal-row-preview"><b>{row.last_message.user_name}</b>: {highlight(row.last_message.text, terms)}</span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mmw-modal-foot">
+          <span>{picked.items.length ? `${picked.items.length}개 선택됨` : "대화를 선택해 주세요"}</span>
+          <button type="button" className="mmw-btn secondary" onClick={onClose}>취소</button>
+          <button type="button" className="mmw-btn primary" disabled={!picked.items.length || sending} onClick={onSubmit}>
+            {sending ? "보내는 중…" : "선택한 대화 AMIGO 로 보내기"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props) {
   const [rows, setRows] = useState<MattermostConversation[] | null>(null);
   const [me, setMe] = useState("");
@@ -91,6 +188,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [modalOpen, setModalOpen] = useState(true); // 이 화면이 열리면 대화 선택 모달이 바로 뜬다
   const feedRef = useRef<HTMLDivElement>(null);
   const loadedOnce = useRef(false);
 
@@ -158,6 +256,8 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
     if (message) {
       picked.clear();
       setToast(message);
+      setModalOpen(false);
+      window.setTimeout(onClose, 1800); // 보냈으면 이 탭은 닫는다(스크립트로 연 탭만 닫히고, 아니면 이 화면이 그대로 남는다)
     }
   };
 
@@ -207,6 +307,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
           {query && <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기">×</button>}
         </label>
         <div className="mmw-globalbar-right">
+          <button type="button" className="mmw-choose" onClick={() => setModalOpen(true)}>대화 고르기</button>
           <button type="button" className="mmw-send" disabled={!picked.items.length || sending} onClick={send}>
             {sending ? "보내는 중…" : `원래 창으로 보내기${picked.items.length ? ` (${picked.items.length})` : ""}`}
           </button>
@@ -296,6 +397,8 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
           )}
         </main>
       </div>
+
+      {modalOpen && <PickModal picked={picked} sending={sending} onSubmit={send} onClose={() => setModalOpen(false)} />}
 
       {toast && (
         <div className="mmw-toast" role="status">
