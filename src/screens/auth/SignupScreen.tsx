@@ -1,11 +1,11 @@
 // 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번(login_id)·비밀번호·이름을 보낸다.
-// 서버 규칙: 사번은 영문·숫자·._@- 3~50자, 비밀번호는 8자 이상. 같은 규칙을 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
+// 사번은 숫자 7자리(서버의 login_id 규칙인 영문·숫자 3~50자 안에 든다), 비밀번호는 8자 이상. 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
 // 스마트보안카드 인증번호는 화면 흐름만 있고 서버 검증 API 는 아직 없다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 
-const LOGIN_ID = /^[A-Za-z0-9._@-]{3,50}$/;
+const EMPLOYEE_ID = /^\d{7}$/;
 const CODE_SECONDS = 30;
 
 type Props = { onBack: () => void; onRegistered?: (message: string) => void };
@@ -42,8 +42,8 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
       setError("이름, 사번, 비밀번호를 입력해 주세요.");
       return;
     }
-    if (!LOGIN_ID.test(loginId)) {
-      setError("사번은 영문·숫자·. _ @ - 로 3~50자여야 해요.");
+    if (!EMPLOYEE_ID.test(loginId)) {
+      setError("사번은 숫자 7자리여야 해요.");
       return;
     }
     if (password.length < 8) {
@@ -103,7 +103,7 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
               <div className="input-wrap"><Icon name="user" size={17} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름을 입력하세요" autoComplete="name" maxLength={50} disabled={busy} /></div>
             </label>
             <label>사번
-              <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value)} placeholder="사번을 입력하세요" autoComplete="username" maxLength={50} disabled={busy} /></div>
+              <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="사번 7자리 숫자" inputMode="numeric" autoComplete="username" maxLength={7} disabled={busy} /></div>
             </label>
             <label>비밀번호
               <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8자 이상" type="password" autoComplete="new-password" maxLength={128} disabled={busy} /></div>
