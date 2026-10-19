@@ -33,7 +33,7 @@ flowchart LR
 
 | 저장소 | 하는 일 | 주요 기술 |
 |---|---|---|
-| **[FrontEnd](https://github.com/AMIGO-KFTC/FrontEnd)** (이 저장소) | 자료 업로드(드래그 앤 드롭·링크), 진행 단계 표시, 메신저형 질의응답, 문서 뷰어·PDF/Word 다운로드 | React 19, Vite, TypeScript |
+| **[FrontEnd](https://github.com/AMIGO-KFTC/FrontEnd)** (이 저장소) | 로그인·홈 대시보드, 인수인계 유형 선택, 자료 업로드(드래그 앤 드롭·링크), 분석 진행 표시, 메신저형 질의응답, 문서 뷰어·PDF/Word 다운로드 | React 19, Vite, TypeScript |
 | [BackEnd](https://github.com/AMIGO-KFTC/BackEnd) | API 서버, 세션·자료·대화 DB, 업로드 파일 보관 → RAG 적재, 에이전트 백그라운드 실행, 문서 내보내기 | FastAPI, SQLAlchemy |
 | [AI](https://github.com/AMIGO-KFTC/AI) | STAGE 1~4 상태 머신, 빈 항목 질문, 검색 도구 호출(Agentic RAG), 근거가 달린 문서 합성 | LangGraph, Claude API |
 | [RAG](https://github.com/AMIGO-KFTC/RAG) | PDF·HWPX·Word·메일 등 파싱, 청킹·출처 메타데이터, 하이브리드 검색 `search_documents()` | ChromaDB, pdfplumber |
@@ -256,6 +256,7 @@ RAG 저장소의 `samples/` 폴더(`amigo/RAG/samples/`)에 가상의 웹서비�
 
 진행 상황은 서버에 저장되므로, 브라우저를 닫거나 서버를 다시 켜도 홈의 **진행 중인 인수인계**에서 **이어서 작성**으로 저장된 단계부터 계속할 수 있습니다.
 작업 화면 주소(`#/s/<세션ID>/<단계>`)를 북마크해 두면 로그인 뒤 바로 그 화면으로 돌아옵니다.
+각 화면의 구성과 주소, 서버 연동 방식은 [FrontEnd README 의 화면 구성](https://github.com/AMIGO-KFTC/FrontEnd#화면-구성)을 보세요.
 
 ### 6. (선택) 서버 하나로 실행하기 — 시연·공유용
 
