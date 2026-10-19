@@ -1,0 +1,10 @@
+{
+  "description": "Streamline the handover process with an AI-driven platform for efficient data analysis, document creation, and real-time collaboration for teams.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -1,0 +1,704 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap");
+
+:root {
+  --glass-ink: #252139;
+  --glass-muted: #777287;
+  --glass-violet: #7054cf;
+  --glass-pink: #d852b1;
+  --glass-line: rgba(255, 255, 255, 0.58);
+  --glass-border: rgba(93, 73, 137, 0.14);
+  --glass-surface: rgba(255, 255, 255, 0.66);
+  --glass-surface-strong: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 20px 55px rgba(55, 45, 87, 0.1);
+}
+
+body {
+  background: #f3f0f7;
+}
+
+.iris-theme {
+  min-height: 100vh;
+  color: var(--glass-ink);
+  font-family: "Noto Sans KR", sans-serif;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(122, 184, 239, 0.3), transparent 28rem),
+    radial-gradient(circle at 88% 16%, rgba(230, 115, 194, 0.2), transparent 28rem),
+    radial-gradient(circle at 76% 88%, rgba(144, 114, 220, 0.18), transparent 32rem),
+    linear-gradient(135deg, #f7f5f8, #eef2f8 50%, #f7f1f6);
+}
+
+.iris-theme .brand {
+  color: var(--glass-ink);
+}
+
+.iris-theme .brand-mark,
+.iris-theme .ai-avatar,
+.iris-theme .tiny-avatar,
+.iris-theme .question-ai {
+  color: #fff;
+  background: linear-gradient(145deg, #6b56cb, #9b66d4 52%, #d35bad);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 24px rgba(106, 78, 185, 0.2);
+}
+
+.iris-theme .eyebrow,
+.iris-theme .panel-kicker,
+.iris-theme .processing-kicker,
+.iris-theme .completion-kicker,
+.iris-theme .question-intro > span,
+.iris-theme .upload-step-title > span,
+.iris-theme .onboarding-card-title > div > span {
+  color: var(--glass-violet);
+}
+
+.iris-theme .primary-button,
+.iris-theme .answer-send,
+.iris-theme .finish-handover,
+.iris-theme .new-handover,
+.iris-theme .analyze-button {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(120deg, #624cbd, #8060cf 55%, #c454a7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 12px 28px rgba(102, 74, 178, 0.2);
+}
+
+.iris-theme .primary-button:hover,
+.iris-theme .answer-send:hover,
+.iris-theme .finish-handover:hover,
+.iris-theme .new-handover:hover {
+  background: linear-gradient(120deg, #5741ad, #7453c4 55%, #b64599);
+}
+
+/* Shared glass environment */
+.iris-theme .onboarding-page,
+.iris-theme .upload-step-page,
+.iris-theme .processing-page,
+.iris-theme .question-page,
+.iris-theme .completion-page,
+.iris-theme .final-document-page,
+.iris-theme .workspace,
+.iris-theme .amigo-landing {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(113, 184, 239, 0.24), transparent 25rem),
+    radial-gradient(circle at 92% 18%, rgba(225, 103, 189, 0.17), transparent 27rem),
+    radial-gradient(circle at 78% 90%, rgba(129, 101, 207, 0.16), transparent 30rem),
+    linear-gradient(135deg, #f7f5f8, #edf2f8 52%, #f7f1f6);
+}
+
+.iris-theme .onboarding-header,
+.iris-theme .completion-header,
+.iris-theme .final-document-header,
+.iris-theme .simple-header,
+.iris-theme .workspace-header,
+.iris-theme .stage-bar,
+.iris-theme .landing-header {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.iris-theme .landing-footer {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.iris-theme .onboarding-progress > span {
+  background: rgba(91, 79, 116, 0.14);
+}
+
+.iris-theme .onboarding-progress > span.active {
+  background: linear-gradient(90deg, #6d58ca, #cf59ac);
+  box-shadow: 0 3px 10px rgba(122, 83, 191, 0.16);
+}
+
+/* Login */
+.iris-theme .login-page {
+  gap: 0;
+  background:
+    radial-gradient(circle at 78% 10%, rgba(227, 110, 194, 0.12), transparent 23rem),
+    #f7f5f8;
+}
+
+.iris-theme .login-art {
+  isolation: isolate;
+  margin: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 72% 31%, rgba(255, 255, 255, 0.36), transparent 14%),
+    radial-gradient(circle at 78% 70%, rgba(228, 75, 183, 0.28), transparent 27%),
+    linear-gradient(145deg, #6452bc, #7770d0 48%, #a865c3 78%, #d36aa9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 24px 60px rgba(74, 55, 124, 0.2);
+}
+
+.iris-theme .login-art::before {
+  content: "";
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  right: 4%;
+  top: 11%;
+  z-index: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 38% 62% 58% 42% / 46% 40% 60% 54%;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05) 46%, rgba(237, 91, 190, 0.2));
+  box-shadow:
+    inset 22px 18px 40px rgba(255, 255, 255, 0.14),
+    0 32px 60px rgba(73, 43, 135, 0.16);
+  transform: rotate(-14deg);
+  backdrop-filter: blur(12px);
+}
+
+.iris-theme .login-art::after {
+  content: "";
+  position: absolute;
+  width: 34%;
+  height: 52%;
+  right: 16%;
+  bottom: -8%;
+  z-index: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 48px;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.25), rgba(210, 64, 180, 0.16));
+  box-shadow: inset 18px 18px 38px rgba(255, 255, 255, 0.12);
+  transform: rotate(32deg);
+  backdrop-filter: blur(10px);
+}
+
+.iris-theme .login-art .art-content {
+  position: relative;
+  z-index: 2;
+}
+
+.iris-theme .login-art .brand {
+  color: #fff;
+}
+
+.iris-theme .login-art .brand-mark {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(14px);
+}
+
+.iris-theme .art-grid {
+  opacity: 0.08;
+}
+
+.iris-theme .art-copy {
+  max-width: 650px;
+}
+
+.iris-theme .art-copy h1 {
+  color: #fff;
+  font-size: clamp(40px, 4.5vw, 64px);
+  font-weight: 600;
+  text-shadow: 0 6px 28px rgba(58, 34, 112, 0.2);
+}
+
+.iris-theme .art-copy p,
+.iris-theme .art-proof small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.iris-theme .art-proof {
+  width: fit-content;
+  padding: 13px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(18px);
+}
+
+.iris-theme .proof-avatars span {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #6b4fb0;
+  background: rgba(248, 241, 255, 0.9);
+}
+
+.iris-theme .login-art .orb {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.iris-theme .login-panel {
+  background: transparent;
+}
+
+.iris-theme .login-form {
+  padding: 38px;
+  border: 1px solid var(--glass-line);
+  border-radius: 24px;
+  background: var(--glass-surface);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+/* Inputs */
+.iris-theme .input-wrap,
+.iris-theme .field-grid input,
+.iris-theme .field-grid select,
+.iris-theme .task-editor,
+.iris-theme .inline-source-link,
+.iris-theme .step-link-input,
+.iris-theme .answer-compose,
+.iris-theme .chat-compose {
+  border-color: rgba(93, 73, 137, 0.14);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+.iris-theme .input-wrap:focus-within,
+.iris-theme .field-grid input:focus,
+.iris-theme .field-grid select:focus,
+.iris-theme .answer-compose:focus-within {
+  border-color: rgba(112, 84, 207, 0.52);
+  box-shadow:
+    0 0 0 4px rgba(112, 84, 207, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.iris-theme .check-label input {
+  accent-color: var(--glass-violet);
+}
+
+/* Main cards */
+.iris-theme .onboarding-card,
+.iris-theme .source-grid > button,
+.iris-theme .source-card,
+.iris-theme .step-added-list,
+.iris-theme .source-action-panel,
+.iris-theme .step-link-area,
+.iris-theme .processing-status,
+.iris-theme .question-summary,
+.iris-theme .amigo-question-card,
+.iris-theme .completion-summary,
+.iris-theme .form-card,
+.iris-theme .recent-card {
+  border-color: var(--glass-line);
+  background: var(--glass-surface);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+.iris-theme .onboarding-card,
+.iris-theme .step-added-list,
+.iris-theme .processing-status,
+.iris-theme .question-summary,
+.iris-theme .amigo-question-card,
+.iris-theme .completion-summary {
+  border-radius: 20px;
+}
+
+.iris-theme .field-grid label i,
+.iris-theme .required-note {
+  color: #bb4b9b;
+}
+
+.iris-theme .task-chip {
+  color: #6849aa;
+  border-color: rgba(111, 79, 181, 0.14);
+  background: rgba(239, 231, 251, 0.75);
+}
+
+.iris-theme .source-grid > button:hover,
+.iris-theme .source-grid > button.active,
+.iris-theme .source-card.active {
+  border-color: rgba(112, 84, 207, 0.36);
+  background: rgba(249, 246, 255, 0.82);
+  box-shadow:
+    0 18px 44px rgba(76, 56, 119, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.iris-theme .source-grid > button > span,
+.iris-theme .source-card-heading > span,
+.iris-theme .added-resource > span,
+.iris-theme .processing-file > span,
+.iris-theme .completion-summary > div > span {
+  color: #6d52bf;
+  background: rgba(235, 228, 248, 0.78);
+}
+
+.iris-theme .inline-source-link button,
+.iris-theme .step-link-input button {
+  color: var(--glass-violet);
+}
+
+.iris-theme .previous-step {
+  color: var(--glass-muted);
+}
+
+/* Analysis and Q&A */
+.iris-theme .processing-core,
+.iris-theme .completion-visual > span {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: linear-gradient(145deg, rgba(100, 77, 191, 0.94), rgba(133, 89, 204, 0.94), rgba(204, 82, 170, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 18px 38px rgba(105, 73, 177, 0.24);
+}
+
+.iris-theme .processing-ring,
+.iris-theme .completion-visual::before,
+.iris-theme .completion-visual::after {
+  border-color: rgba(112, 84, 207, 0.18);
+}
+
+.iris-theme .processing-track,
+.iris-theme .coverage-track {
+  background: rgba(83, 70, 109, 0.1);
+}
+
+.iris-theme .processing-track > span,
+.iris-theme .coverage-track .part {
+  background: linear-gradient(90deg, #6d8fd5, #7757ca, #ca55a8);
+}
+
+.iris-theme .amigo-question-card {
+  background:
+    linear-gradient(125deg, rgba(246, 242, 255, 0.78), rgba(255, 255, 255, 0.64));
+}
+
+.iris-theme .question-card-top > em,
+.iris-theme .coverage-item-main > span {
+  color: #6748aa;
+  background: rgba(235, 226, 250, 0.78);
+}
+
+.iris-theme .answer-suggestions button {
+  border-color: rgba(93, 73, 137, 0.14);
+  background: rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(12px);
+}
+
+.iris-theme .answer-suggestions button:hover {
+  color: #6748aa;
+  border-color: rgba(112, 84, 207, 0.4);
+  background: rgba(247, 243, 255, 0.8);
+}
+
+.iris-theme .summary-note {
+  color: #6d52ba;
+  background: rgba(238, 231, 250, 0.66);
+}
+
+/* Final document */
+.iris-theme .final-outline {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(24px);
+}
+
+.iris-theme .document-complete-badge {
+  background: rgba(230, 242, 238, 0.72);
+}
+
+.iris-theme .final-outline nav button.active {
+  color: #6548aa;
+  background: rgba(235, 227, 250, 0.76);
+}
+
+.iris-theme .document-source-info,
+.iris-theme .paper-brand,
+.iris-theme .paper-section-heading > span,
+.iris-theme .paper-section sup {
+  color: #7052bd;
+}
+
+.iris-theme .final-document-toolbar {
+  border-color: var(--glass-border);
+  background: rgba(245, 244, 248, 0.62);
+  backdrop-filter: blur(22px);
+}
+
+.iris-theme .final-paper {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  box-shadow: 0 26px 65px rgba(49, 40, 72, 0.14);
+}
+
+.iris-theme .paper-brand > span {
+  color: #7052bd;
+  background: #eee8f8;
+}
+
+.iris-theme .paper-highlight {
+  color: #674cae;
+  border-left-color: #7659c7;
+  background: #f5f1fb;
+}
+
+/* Completion */
+.iris-theme .completion-main::before {
+  background: #6eb6ea;
+}
+
+.iris-theme .completion-main::after {
+  background: #d964b4;
+}
+
+.iris-theme .completion-note svg {
+  color: var(--glass-violet);
+}
+
+/* Optional workspace */
+.iris-theme .app-sidebar,
+.iris-theme .upload-panel,
+.iris-theme .slot-board,
+.iris-theme .chat-header,
+.iris-theme .document-toolbar,
+.iris-theme .doc-outline {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(22px);
+}
+
+.iris-theme .chat-panel,
+.iris-theme .document-viewer {
+  background: rgba(241, 243, 248, 0.52);
+}
+
+.iris-theme .sidebar-nav button.active,
+.iris-theme .message-label,
+.iris-theme .coverage-number strong,
+.iris-theme .coverage-number span {
+  color: #6d50b8;
+}
+
+.iris-theme .message p,
+.iris-theme .coverage-card,
+.iris-theme .source-summary,
+.iris-theme .upload-zone {
+  border-color: rgba(93, 73, 137, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+}
+
+.iris-theme .message.me p {
+  color: #564382;
+  background: rgba(232, 224, 248, 0.78);
+}
+
+@media (max-width: 650px) {
+  .iris-theme .login-panel {
+    background:
+      radial-gradient(circle at 90% 8%, rgba(221, 103, 189, 0.18), transparent 16rem),
+      radial-gradient(circle at 4% 94%, rgba(102, 176, 232, 0.22), transparent 18rem),
+      #f5f3f7;
+  }
+
+  .iris-theme .login-form {
+    padding: 28px 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iris-theme *,
+  .iris-theme *::before,
+  .iris-theme *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Centered cinematic login */
+.iris-theme .login-page {
+  min-height: 100vh;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(28, 18, 43, 0.36), rgba(29, 13, 39, 0.58)),
+    linear-gradient(90deg, rgba(55, 35, 86, 0.3), rgba(103, 44, 75, 0.2)),
+    url("/amigo-moon-dunes.webp") center 58% / cover no-repeat;
+}
+
+.iris-theme .login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 75% 21%,
+      rgba(255, 253, 248, 0.48) 0 2.3%,
+      rgba(255, 225, 218, 0.2) 3.8%,
+      rgba(255, 211, 205, 0.08) 6%,
+      transparent 9%
+    );
+  mix-blend-mode: screen;
+}
+
+.iris-theme .login-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 44%, transparent 18%, rgba(19, 11, 29, 0.2) 76%),
+    linear-gradient(180deg, rgba(24, 15, 37, 0.05), rgba(18, 9, 25, 0.34));
+}
+
+.iris-theme .login-art {
+  display: none;
+}
+
+.iris-theme .login-panel {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 24px 42px;
+  background: transparent;
+}
+
+.iris-theme .mobile-brand {
+  display: block;
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.iris-theme .mobile-brand .brand {
+  color: #fff;
+  font-size: 18px;
+  text-shadow: 0 2px 14px rgba(20, 12, 30, 0.25);
+}
+
+.iris-theme .mobile-brand .brand-mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(14px);
+}
+
+.iris-theme .login-form {
+  width: min(100%, 430px);
+  padding: 38px 38px 30px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 26px;
+  color: #292337;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(247, 239, 250, 0.48));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    0 30px 80px rgba(17, 8, 25, 0.32);
+  backdrop-filter: blur(30px) saturate(1.25);
+}
+
+.iris-theme .login-form > .eyebrow {
+  justify-content: center;
+  color: #7555a6;
+  letter-spacing: 0.2em;
+}
+
+.iris-theme .login-form h2 {
+  margin: 15px 0 9px;
+  color: #272131;
+  font-size: 30px;
+  text-align: center;
+  letter-spacing: -1.4px;
+}
+
+.iris-theme .form-intro {
+  margin-bottom: 30px;
+  color: rgba(42, 34, 52, 0.62);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.iris-theme .login-form > label {
+  color: rgba(42, 34, 52, 0.8);
+}
+
+.iris-theme .login-form .input-wrap {
+  border-color: rgba(87, 67, 112, 0.18);
+  color: rgba(75, 57, 95, 0.56);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.iris-theme .login-form .input-wrap:focus-within {
+  border-color: rgba(111, 80, 157, 0.45);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 0 4px rgba(110, 79, 156, 0.08);
+}
+
+.iris-theme .login-form .input-wrap input {
+  color: #2c2536;
+  background: transparent;
+}
+
+.iris-theme .login-form .input-wrap input::placeholder {
+  color: rgba(58, 47, 68, 0.42);
+}
+
+.iris-theme .login-options {
+  margin-bottom: 22px;
+}
+
+.iris-theme .login-options .check-label,
+.iris-theme .login-options .text-button {
+  color: rgba(48, 39, 58, 0.62);
+}
+
+.iris-theme .login-options .check-label input {
+  accent-color: #da729f;
+}
+
+.iris-theme .login-button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(110deg, #d85c88, #b95a9e 52%, #7961b9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 12px 28px rgba(27, 14, 36, 0.28);
+}
+
+.iris-theme .login-button:hover {
+  background: linear-gradient(110deg, #e26893, #c461a8 52%, #846cc4);
+}
+
+.iris-theme .security-note {
+  color: rgba(48, 39, 58, 0.48);
+}
+
+@media (max-width: 650px) {
+  .iris-theme .login-panel {
+    padding: 88px 18px 28px;
+    background: transparent;
+  }
+
+  .iris-theme .mobile-brand {
+    top: 25px;
+    left: 50%;
+  }
+
+  .iris-theme .login-form {
+    padding: 30px 22px 24px;
+    border-radius: 22px;
+  }
+}
