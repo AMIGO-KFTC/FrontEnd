@@ -55,6 +55,7 @@ function AppScreens() {
   const [markdown, setMarkdown] = useState("");
   const [docLoading, setDocLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
   const [error, setError] = useState<string | null>(null);
   const [restoreId, setRestoreId] = useState<string | null>(null); // 주소 해시로 이어서 열려는 작업
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null); // 홈 화면의 서버 작업 목록(실패하면 null)
@@ -161,6 +162,7 @@ function AppScreens() {
   const run = useCallback(
     async <T,>(action: () => Promise<T>): Promise<T | undefined> => {
       setError(null);
+      setActing(true);
       try {
         const result = await action();
         if (result && typeof result === "object" && "message" in result) {
@@ -172,6 +174,7 @@ function AppScreens() {
         setError((e as Error).message);
         return undefined;
       } finally {
+        setActing(false);
         void refresh();
       }
     },
@@ -397,6 +400,7 @@ function AppScreens() {
         messages={messages}
         config={config}
         error={error}
+        busy={acting}
         onBack={() => toScreen("upload")}
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}

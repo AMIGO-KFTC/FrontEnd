@@ -2775,12 +2775,23 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
   .integration-submit { width: 100%; justify-content: center; margin-left: 0; }
 }
 
-/* 질의응답: 왼쪽 "항목 충족 현황" 패널을 새 디자인의 왼쪽 질문 목록 위치(215px 열)에 맞춘다.
-   항목이 6개라 화면이 낮으면 아래 버튼 줄과 겹치므로 패널 안에서 스크롤한다. */
-.question-summary { align-self: stretch; min-height: 0; margin-top: 135px; padding: 14px; overflow-y: auto; scrollbar-width: none; }
-.question-summary::-webkit-scrollbar { width: 0; height: 0; }
-.coverage-item-main { grid-template-columns: 20px 1fr auto 12px; gap: 6px; padding: 7px 7px; }
-@media (max-height: 700px) { .question-summary { margin-top: 90px; padding: 11px; } }
+/* 질의응답: 왼쪽 질문 목록은 서버의 빈 항목 수만큼 길어질 수 있어 패널 안에서 스크롤한다.
+   목록은 서버가 정한 순서를 보여 줄 뿐 눌러서 옮겨 갈 수 없으므로 버튼 느낌을 뺀다. */
+.question-list-panel { align-self: stretch; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none; }
+.question-list-panel::-webkit-scrollbar { width: 0; height: 0; }
+.question-list-items { flex: none; }
+.question-list-item { cursor: default; }
+.question-list-item:hover { border-color: #ebe6ec; background: #fff; }
+.question-list-item.active:hover { border-color: #ad9add; background: #faf8ff; }
+.question-list-item.done:hover { border-color: #dceae3; background: #f9fcfa; }
+.question-list-item.done > span svg { width: 12px; height: 12px; }
+.question-list-empty { padding: 12px 8px; border: 1px dashed #e3dde7; border-radius: 9px; color: #9a929d; font-size: 8px; line-height: 1.5; text-align: center; }
+.question-list-panel .question-coverage { margin: 2px 0 0; }
+.question-list-panel .question-coverage > strong { font-size: 8px; }
+.question-list-panel .coverage-track { margin: 7px 0 10px; }
+.question-chat-message p { white-space: pre-line; }
+.answer-suggestions button:disabled { opacity: .55; cursor: default; }
+.question-conversation > p[role="alert"] { margin: 0 0 8px; }
 
 
 /* 이식 시 추가: 850px 이하에서 목차 영역(.final-outline)이 숨겨지면 "인수인계 완료하기"에 닿을 수 없어 같은 버튼을 문서 아래에 노출한다. 데스크톱에서는 숨김. */
