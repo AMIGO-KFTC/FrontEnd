@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
+import { ErrorNote } from "@/shared/ErrorNote";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api } from "../shared/api";
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
-import type { StartData } from "../shared/handover";
-import { documentRehypePlugins } from "../shared/documentMarkdown";
-import { MermaidDiagram } from "../shared/MermaidDiagram";
-import { GanttAwareTable, GanttContext } from "../shared/GanttTable";
+import { api } from "@/shared/api";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import type { StartData } from "@/shared/handover";
+import { documentRehypePlugins } from "@/shared/documentMarkdown";
+import { MermaidDiagram } from "@/shared/MermaidDiagram";
+import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
 
 type Props = {
   data: StartData;
@@ -17,9 +20,13 @@ type Props = {
   loading: boolean;
   sourceCount: number;
   failedMessage: string | null;
+  revising: boolean; // 수정 요청이 서버에 가 있는 동안
+  onRevise: (text: string) => void;
   onRetry: () => void;
   onBack: () => void;
   onComplete: () => void;
+  onLogout: () => void;
+  onHome: () => void;
 };
 
 // 생성된 Markdown 을 "## 제목" 기준으로 장(章)으로 나눈다. 첫 "## " 앞의 표지 부분은 화면의 표지가 대신한다.
@@ -33,10 +40,20 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
+  const [revisionOpen, setRevisionOpen] = useState(false);
+  const [revision, setRevision] = useState("");
+  // "AMIGO에게 수정 요청": 검토 단계의 chat API 로 보내면 서버가 반영한 새 버전을 만든다(README 의 v2 생성과 같은 경로).
+  const sendRevision = () => {
+    const text = revision.trim();
+    if (!text || revising) return;
+    setRevision("");
+    setRevisionOpen(false);
+    onRevise(text);
+  };
   const parsed = splitSections(markdown);
   const gantt = useMemo(() => ({
     editable: isEditing,
@@ -54,7 +71,8 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
   };
 
   return (
-    <div className="final-document-page">
+    <div className={`final-document-page ${data.mode === "leave" ? "leave-theme" : ""}`}>
+      {data.mode === "leave" && <LeaveSeasideBackground />}
       <header className="final-document-header">
         <Brand />
         <div className="onboarding-progress">
@@ -64,11 +82,14 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
           <span className="active" />
           <small>4 / 4</small>
         </div>
-        <div className="document-export">
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx"); }}><Icon name="download" size={15} /> Word</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md"); }}><Icon name="download" size={15} /> Markdown</button>
-          <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
+        <div className="final-header-actions">
+          <div className="document-export">
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx"); }}><Icon name="download" size={15} /> Word</button>
+            <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md"); }}><Icon name="download" size={15} /> Markdown</button>
+            <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
+          </div>
+          <StepUserMenu onLogout={onLogout} onHome={onHome} />
         </div>
       </header>
       <main className="final-document-main">
@@ -91,8 +112,36 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
               {isEditing && <small className="gantt-hint">월별 일정표는 칸을 끌어서 막대를 늘리거나 줄일 수 있어요.{saveState === "saving" ? " 저장 중…" : saveState === "saved" ? " 저장됨" : saveState === "failed" ? " 저장 실패" : ""}</small>}
+              <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => setRevisionOpen((current) => !current)}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
           </div>
+          {revisionOpen && (
+            <section className="revision-compose">
+              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요. 작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
+              <textarea
+                value={revision}
+                onChange={(event) => setRevision(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    sendRevision();
+                  }
+                }}
+                placeholder="예: 협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요"
+                autoFocus
+              />
+              <div>
+                <button onClick={() => setRevisionOpen(false)}>취소</button>
+                <button className="revision-send" disabled={!revision.trim() || revising} onClick={sendRevision}><Icon name="sparkle" size={13} /> 수정 요청 보내기</button>
+              </div>
+            </section>
+          )}
+          {parsed.length > 0 && failedMessage !== null && (
+            <div className="revision-error">
+              <ErrorNote message={failedMessage || "수정 요청을 처리하는 중 문제가 생겼어요."} />
+              <button onClick={onRetry}>다시 시도</button>
+            </div>
+          )}
           <GanttContext.Provider value={gantt}>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
             <header className="final-paper-cover">

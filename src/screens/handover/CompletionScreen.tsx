@@ -1,9 +1,14 @@
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
+import { Brand } from "@/shared/Brand";
+import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
+import type { HandoverMode } from "@/shared/types";
 
-export function CompletionScreen({ sourceCount, questionCount, citationCount, onViewDocument, onNew }: { sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void }) {
+type Props = { mode: HandoverMode; sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
+
+export function CompletionScreen({ mode, sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
   return (
-    <div className="completion-page">
+    <div className={`completion-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="completion-header"><Brand /></header>
       <main className="completion-main">
         <div className="completion-visual">
@@ -19,17 +24,17 @@ export function CompletionScreen({ sourceCount, questionCount, citationCount, on
         <section className="completion-summary">
           <div><span><Icon name="file" size={18} /></span><strong>{sourceCount}</strong><small>분석한 자료</small></div>
           <i />
-          <div><span><Icon name="message" size={18} /></span><strong>{questionCount}</strong><small>완료한 확인</small></div>
+          <div><span><Icon name="message" size={18} /></span><strong>{questionCount}</strong><small>진행한 확인 질문</small></div>
           <i />
           <div><span><Icon name="link" size={18} /></span><strong>{citationCount}</strong><small>연결된 출처</small></div>
         </section>
         <div className="completion-actions">
           <button className="secondary-completion" onClick={onViewDocument}><Icon name="file" size={16} /> 완성 문서 다시 보기</button>
+          <button className="secondary-completion" onClick={onHome}><Icon name="home" size={16} /> 홈으로 돌아가기</button>
           <button className="primary-button new-handover" onClick={onNew}>새 인수인계 시작하기 <Icon name="arrow" size={17} /></button>
         </div>
         <div className="completion-note"><Icon name="sparkle" size={14} /> 문서는 언제든 다시 열어 수정하거나 내려받을 수 있어요.</div>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

@@ -1,0 +1,131 @@
+# 새 디자인(figma-design) 통합 검증 결과
+
+작성일: 2026-10-19 · 브랜치: `feat/figma-make-design`
+
+`figma-design/`(Figma Make 확장 디자인)을 `src/`(BackEnd 연동 화면)에 단계별로 옮긴 뒤, 두 방식으로 확인한 결과입니다.
+
+| 방식 | 대상 | 스크립트 | 결과 |
+|---|---|---|---|
+| 가짜 응답 | `/api` 를 Playwright 로 가로채 화면·이동·복원·오류 상태를 확인 | `scripts/capture-screens.mjs` | 86개 시나리오 모두 통과 |
+| 실제 서버 | BackEnd(오프라인 엔진, API 키 없음) + 개발 서버를 상대로 전체 흐름을 브라우저에서 확인 | `scripts/integration-check.mjs` | 30개 통과 · 실패 0 · 확인 불가 3 |
+
+**실제 Claude 엔진으로는 확인하지 않았습니다.** 디자인 검토는 끝났고, 아래 "미검증 항목" 4건(실제 Claude 엔진, Mermaid, Windows 한글 파일명 업로드, 로그인 만료)은 미검증 상태로 남겨 둡니다.
+
+## 1. 적용 범위
+
+| 단계 | 내용 | 커밋 |
+|---|---|---|
+| 1 | CSS·아이콘·`@/` 별칭·공통 부품 합치기, 단계 화면 푸터 삭제 | `b09f9d0` |
+| 2 | 로그인 화면 새 디자인, 서버 프로필 연결, 단계 화면 사용자 메뉴 | `cc16fc0`, `5c2880e` |
+| 3 | 홈 셸(대시보드·진행 중·완성 문서·받은 인수인계)을 서버 세션 목록에 연결, 관리자 모드는 개발용 미리보기 | `a525078`, `3b1c5dd`, `6f8dde2` |
+| 4 | 유형 선택·기본 정보·자료 등록·분석·질의응답·문서 생성·완성 문서·완료 화면 새 디자인 적용 | `5832a9c`, `bcb5049`, `7c994e5`, `4186f6a` |
+| 5 | 주소 해시 라우팅, 세션 복원, 오류 원인별 안내, 검증 스크립트 | `36c4e8b`, `878d974` |
+
+디자인 검토가 끝나 `figma-design/` 폴더는 삭제했습니다(2026-10-19). 화면·공통 부품·`index.css` 는 모두 `src/` 로 옮겨졌고, 다음은 옮기지 않은 파일입니다.
+
+| 옮기지 않은 파일 | 이유 |
+|---|---|
+| `src/screens/LandingScreen.tsx` | Figma 앱 자체도 로그인 화면에서 시작해 진입 경로가 없었음 |
+| `src/AppGlass.tsx`, `src/AppIris.tsx`, `glass-theme.css`, `iris-theme.css`, `public/amigo-moon-dunes.webp` | 진입점에서 쓰지 않던 대체 테마 실험 |
+| `src/store/AppStore.tsx`, `src/screens/handover/questions.ts`, `types.ts` | 예시 데이터·브라우저 상태. 서버 세션·프로필로 대체 |
+| `src/screens/legacy-workspace/` | 예전 3단 화면의 복사본. BackEnd 연동 원본이 `src/legacy/`(`legacy.html`)에 있음 |
+| `public/favicon.svg` | Figma Make 기본 아이콘. AMIGO 아이콘을 그대로 사용 |
+| `.figma/`, `AGENTS.md`, `CLAUDE.md`, `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `vite.config.ts` | Figma Make 전용 설정 |
+
+새 디자인에 **아직 없는 기존 기능**: 작업 화면의 Claude 사용량·추정 비용 배지(`src/legacy/components/UsageBadge.tsx`). 사용량은 `/api/usage` 와 `state` 응답의 `usage` 로 확인할 수 있습니다.
+
+## 2. 기존 BackEnd 기능 유지 여부
+
+| 기능 | 상태 | 비고 |
+|---|---|---|
+| 로그인·로그아웃·로그인 상태 확인(`/api/auth`) | 유지 | 프로필은 `/api/auth/me` 의 사용자 정보로 채움 |
+| 세션 생성·목록·삭제 | 유지 | 목록은 홈 화면에 연결, 삭제는 확인창 뒤 호출 |
+| 파일 업로드·링크 등록·자료 삭제·처리 상태 | 유지 | 새 레이아웃 안에서 그대로 |
+| Mattermost·Confluence 패널(BackEnd 예시 데이터) | 유지 | |
+| 분석·질의응답(답변·건너뛰기·추천 답변·대화 중 첨부)·재시도 | 유지 | 질문 목록·대화 묶음은 서버 메시지 구조로 표시 |
+| 문서 생성, 수정 요청(검토 단계의 chat), Markdown·간트 편집·Mermaid·PDF/Word/Markdown 다운로드 | 유지 | |
+| 상태 폴링(`/state?after=`), 주소 해시 복원 | 유지·확장 | `#/s/<세션ID>` 는 그대로 쓰이고, 홈·단계 화면도 주소를 가짐 |
+| 메일 연결 | 준비 중 표시 | BackEnd 에 메일 API 가 없음 |
+| 회원가입·비밀번호 재설정·SSO, 받은 인수인계·알림·캘린더 | 화면만 | BackEnd 에 해당 API 가 없음 |
+| 관리자 모드 | 개발용 미리보기 | 서버에 역할·관리 API 가 없어 개발 서버 또는 `VITE_ADMIN_PREVIEW=true` 빌드에서만 열림 |
+
+## 3. 가짜 응답 검증 (`scripts/capture-screens.mjs`)
+
+86개 시나리오를 1280×720 에서 실행했습니다. 각 시나리오는 마지막 화면, 주소 해시, 보낸 변경 요청(POST/PUT/DELETE) 수를 출력합니다.
+
+- 화면: 로그인·회원가입·비밀번호 재설정, 홈 4개, 관리자 4개, 유형 선택, 기본 정보(검사 오류 포함), 자료 등록(Mattermost·Confluence·메일 준비 중), 분석(진행·완료·실패), 질의응답(질문·확인 묶음·처리 중·오류·빈 목록·장기휴가), 생성 중(진행·완료·실패), 문서(수정 요청·오류), 완료
+- 이동·복원: 직접 접속(`#/home/documents`, `#/admin`, `#/new/leave`, 단계 불일치 주소, 생성 중, 문서, 완료, 예전 주소), 뒤로·앞으로 가기(홈 사이, 질의응답↔자료 등록, 생성 후, 세션→홈), 로그인 후 보던 주소 복귀
+- 오류: 세션 404(열 수 없는 작업), 500(서버 오류·다시 시도), 401(로그인 만료), 목록 401
+- 변경 요청은 로그인·로그아웃·세션 생성·삭제·생성·수정 요청을 직접 누른 11개 시나리오에서 각 1건뿐이고, 이동만 한 시나리오는 0건
+
+## 4. 실제 서버 검증 (`scripts/integration-check.mjs`)
+
+환경: BackEnd `016cc98` 을 Python 3.12 가상환경에 설치해 오프라인 엔진(`ANTHROPIC_API_KEY` 없음, `AMIGO_MOCK_MODE=false`)으로 8000 포트에 실행. FrontEnd 개발 서버 5173. 회원가입 API 로 만든 테스트 계정과 `RAG/samples/` 자료 6종 사용. API 가로채기 없음.
+
+| # | 확인 내용 | 결과 |
+|---|---|---|
+| 1 | 회원가입 API, 로그인 → 홈 대시보드 | 통과 |
+| 2 | 기본 정보에 서버 프로필 이름 채움, 세션 생성 → 자료 등록 화면 | 통과 |
+| 3 | 자료 6건 업로드 → 모두 `ready` | 통과 |
+| 4 | 분석 시작 → 분석 화면 → 서버 완료 표시 → 질의응답 | 통과 |
+| 5 | 서버 질문 표시, 왼쪽 목록 = 서버 gaps 11개 | 통과 |
+| 6 | 새로고침 → 질의응답 복원 | 통과 |
+| 7 | 답변 → 확인 요청 말풍선·추천 답변 → "네, 맞아요" → 목록 갱신 | 통과 |
+| 8 | 건너뛰기, 대화 중 자료 첨부 → 반영 안내 | 통과 |
+| 9 | 문서 생성 요청(202) → 문서 화면(Markdown 7개 섹션, 간트 표 1개) | 통과 |
+| 10 | 새로고침 → 문서 복원 | 통과 |
+| 11 | 수정 요청 → v2 문서에 요청 내용 반영 | 통과 |
+| 12 | PDF·Word·Markdown 다운로드(HTTP 200, 올바른 content-type) | 통과 |
+| 13 | 완료 → 홈 → 완성 문서 목록 → 문서 열기 | 통과 |
+| 14 | 브라우저 뒤로·앞으로 가기(문서↔질의응답) | 통과 |
+| 15 | 장기휴가 세션 → 진행 중 목록 → 이어서 작성(자료 등록·바다 테마) | 통과 |
+| 16 | 삭제 확인창 → 서버 삭제 → 목록 갱신, 삭제된 주소 접속 안내 | 통과 |
+| 17 | 로그아웃 → 작업 주소 접속 → 로그인 → 같은 문서로 복귀 | 통과 |
+| — | 생성 중 화면, 수정 요청 중 화면 | 확인 불가: 오프라인 엔진이 1초 안에 끝나 화면이 순간 지나감(가짜 응답으로만 확인) |
+| — | Mermaid 관계도 | 확인 불가: 오프라인 엔진 문서에 관계도가 없음 |
+
+BackEnd 로그에 오류·트레이스백은 없었습니다.
+
+한글 파일명: 검증 환경의 Playwright 가 한글 이름 파일을 input 에 넣지 못해 브라우저 업로드는 ASCII 이름 사본으로 했고, 한글 원본(`업무정의서_웹서비스팀.pdf`, `홈페이지_운영매뉴얼.hwpx`)은 서버 API 에 직접 올려 처리 완료를 확인했습니다. 브라우저에서 한글 파일명을 고르는 동작 자체는 미검증입니다.
+
+## 5. 미검증 항목
+
+- [ ] **실제 Claude 엔진**(`ANTHROPIC_API_KEY` 설정): 질문 품질, 생성 시간, 생성 중 화면과 생성 도중 새로고침 복원, 수정 요청 중 화면
+- [ ] **Mermaid 관계도** 렌더링(Claude 엔진 문서에서)
+- [ ] **Windows 브라우저에서 한글 파일명 업로드**
+- [ ] **로그인 만료**: `AMIGO_SESSION_TTL_HOURS` 가 지난 뒤 작업 주소 접속 시 안내와 재로그인 복귀(가짜 401 응답으로만 확인)
+- [ ] 받은 인수인계·알림·캘린더·관리자 화면의 실제 데이터 연결(BackEnd API 필요)
+
+## 6. 실제 Claude 엔진으로 확인하는 방법
+
+API 키는 `BackEnd/.env` 에만 적습니다. `.env` 는 git 에 올라가지 않으며, 키를 채팅·커밋·`.env.example` 에 남기지 마세요.
+
+1. <https://console.anthropic.com> 에서 키를 발급하고 월 사용 한도를 걸어 둡니다.
+2. `BackEnd/.env` 를 열어 다음 줄을 채웁니다(값은 예시가 아니라 본인 키).
+
+   ```ini
+   ANTHROPIC_API_KEY=여기에_키
+   AMIGO_LLM_MODE=auto
+   AMIGO_LLM_MODEL=claude-haiku-4-5
+   AMIGO_LLM_BUDGET_USD=5
+   ```
+
+3. BackEnd 를 다시 시작합니다(`.env` 변경은 자동 재시작되지 않음). <http://localhost:8000/api/health> 의 `"engine"` 이 `claude` 면 적용된 것입니다.
+4. FrontEnd 개발 서버를 띄운 뒤 데모 자료로 전체 흐름을 진행하거나, FrontEnd 폴더에서 자동 검증을 돌립니다.
+
+   ```bash
+   npx playwright install chromium
+   node scripts/integration-check.mjs
+   ```
+
+   테스트 계정은 `AMIGO_TEST_ID` · `AMIGO_TEST_PASSWORD` 환경변수로 주거나, 없으면 임의 계정을 가입해 씁니다(비밀번호는 출력하지 않음).
+5. 생성 중 화면은 문서 생성 버튼을 누른 직후, 생성 도중 새로고침은 그 화면에서 F5 로 확인합니다.
+
+## 7. 가짜 응답 검증을 다시 돌리는 방법
+
+```bash
+npm run dev                                    # 5173
+npx playwright install chromium
+node scripts/capture-screens.mjs out           # 모든 시나리오, 3개 해상도
+ONLY=dashboard,question VP=laptop node scripts/capture-screens.mjs out
+```

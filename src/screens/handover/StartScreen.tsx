@@ -1,12 +1,30 @@
+// STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받고, 성명·소속·직책은 로그인한 사용자 정보로 미리 채운다.
 import { useState } from "react";
-import { Brand } from "../shared/Brand";
-import { Icon } from "../shared/Icon";
-import { ErrorNote } from "../shared/ErrorNote";
-import type { StartData } from "../shared/handover";
+import { Brand } from "@/shared/Brand";
+import { ErrorNote } from "@/shared/ErrorNote";
+import type { StartData } from "@/shared/handover";
+import { Icon } from "@/shared/Icon";
+import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
+import { useProfile } from "@/shared/profile";
+import { StepUserMenu } from "@/shared/StepUserMenu";
+import type { HandoverMode } from "@/shared/types";
 
-export function StartScreen({ onStart, busy = false, error = null }: { onStart: (data: StartData) => void; busy?: boolean; error?: string | null }) {
-  const [data, setData] = useState<StartData>({ mode: "reassignment", name: "김민준", division: "프로덕트본부", team: "플랫폼팀", role: "프로덕트 매니저", task: "B2B 플랫폼 기획 및 운영", date: "2025-03-14" });
+const DIVISIONS = ["프로덕트본부", "기술본부", "사업본부", "고객경험본부", "경영지원본부"];
+const TEAMS = ["플랫폼팀", "서비스기획팀", "프로덕트디자인팀", "개발팀", "데이터팀", "운영팀"];
+const ROLES = ["사원", "선임", "책임", "팀장", "실장", "본부장", "프로덕트 매니저"];
+
+// 서버 프로필의 값이 보기 목록에 없으면 목록 앞에 끼워 넣어 select 가 빈칸으로 보이지 않게 한다.
+function withValue(options: string[], value: string): string[] {
+  return value && !options.includes(value) ? [value, ...options] : options;
+}
+
+type Props = { mode: HandoverMode; onStart: (data: StartData) => void; onLogout: () => void; onHome: () => void; busy?: boolean; error?: string | null };
+
+export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, error = null }: Props) {
+  const [profile] = useProfile();
+  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "" });
   const [taskDraft, setTaskDraft] = useState("");
+  const [missing, setMissing] = useState<string[]>([]);
   const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
   const tasks = data.task.split("\n").filter(Boolean);
   const addTask = () => {
@@ -17,8 +35,30 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
   };
   const removeTask = (index: number) => update("task", tasks.filter((_, taskIndex) => taskIndex !== index).join("\n"));
 
+  // 필수 항목(성명·본부·팀·담당 업무)이 비어 있으면 넘어가지 않는다. 입력칸에 적어 두고 Enter 를 안 누른 업무도 포함한다.
+  const submit = () => {
+    if (busy) return;
+    const pendingTask = taskDraft.trim();
+    const allTasks = pendingTask ? [...tasks, pendingTask] : tasks;
+    const next = { ...data, task: allTasks.join("\n") };
+    const empty = [
+      [!next.name.trim(), "성명"],
+      [!next.division, "본부"],
+      [!next.team, "팀"],
+      [!allTasks.length, "담당 업무"],
+    ].filter(([isEmpty]) => isEmpty).map(([, label]) => label as string);
+    setMissing(empty);
+    if (empty.length) return;
+    if (pendingTask) {
+      setData(next);
+      setTaskDraft("");
+    }
+    onStart(next);
+  };
+
   return (
-    <div className="onboarding-page">
+    <div className={`onboarding-page ${mode === "leave" ? "leave-theme" : ""}`}>
+      {mode === "leave" && <LeaveSeasideBackground />}
       <header className="onboarding-header">
         <Brand />
         <div className="onboarding-progress">
@@ -28,12 +68,13 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
           <span />
           <small>1 / 4</small>
         </div>
+        <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
       <main className="onboarding-main">
         <section className="onboarding-card">
           <div className="onboarding-card-title">
             <div>
-              <span>STEP 01 · 기본 정보</span>
+              <span>STEP 01 · 기본 정보 · {mode === "leave" ? "장기휴가" : "정기인사 발령"}</span>
               <h2>인계 정보를 알려주세요</h2>
               <p>AMIGO가 업무의 맥락을 이해하는 데 필요한 정보예요.</p>
             </div>
@@ -45,41 +86,20 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
                 <label>본부 <i>*</i>
                   <select value={data.division} onChange={(e) => update("division", e.target.value)}>
                     <option value="">본부 선택</option>
-                    <option>프로덕트본부</option>
-                    <option>기술본부</option>
-                    <option>사업본부</option>
-                    <option>고객경험본부</option>
-                    <option>경영지원본부</option>
+                    {withValue(DIVISIONS, data.division).map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
                 <label>팀 <i>*</i>
                   <select value={data.team} onChange={(e) => update("team", e.target.value)}>
                     <option value="">팀 선택</option>
-                    <option>플랫폼팀</option>
-                    <option>서비스기획팀</option>
-                    <option>프로덕트디자인팀</option>
-                    <option>개발팀</option>
-                    <option>데이터팀</option>
-                    <option>운영팀</option>
+                    {withValue(TEAMS, data.team).map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
               </div>
-              <label className="wide-field">인수인계 유형
-                <select value={data.mode} onChange={(e) => setData({ ...data, mode: e.target.value === "leave" ? "leave" : "reassignment" })}>
-                  <option value="reassignment">인사발령 (전체 양식)</option>
-                  <option value="leave">장기휴가 (부재 중 처리할 단위 업무·세부 업무·시스템 접근 권한)</option>
-                </select>
-              </label>
               <label>직책
                 <select value={data.role} onChange={(e) => update("role", e.target.value)}>
                   <option value="">직책 선택</option>
-                  <option>사원</option>
-                  <option>선임</option>
-                  <option>책임</option>
-                  <option>팀장</option>
-                  <option>실장</option>
-                  <option>본부장</option>
-                  <option>프로덕트 매니저</option>
+                  {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
                 </select>
               </label>
               <label className="wide-field task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>담당 업무 <i>*</i>
@@ -107,13 +127,12 @@ export function StartScreen({ onStart, busy = false, error = null }: { onStart: 
               </label>
               <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>
             </div>
-          <ErrorNote message={error} />
+          <ErrorNote message={error ?? (missing.length ? `필수 항목을 입력해 주세요: ${missing.join(", ")}` : null)} />
           <div className="onboarding-actions">
-            <button className="primary-button onboarding-next" disabled={busy} onClick={() => onStart(data)}>다음 단계로 이동 <Icon name="arrow" size={18} /></button>
+            <button className="primary-button onboarding-next" disabled={busy} onClick={submit}>{busy ? "작업을 만들고 있어요…" : "다음 단계로 이동"} <Icon name="arrow" size={18} /></button>
           </div>
         </section>
       </main>
-      <footer className="onboarding-footer"><Icon name="shield" size={13} /> 입력한 정보는 안전하게 암호화되어 저장됩니다.</footer>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../shared/api";
-import { Icon } from "../shared/Icon";
-import { highlight, shortDate } from "../shared/highlight";
-import type { IntegrationImportResult, MattermostConversation, MattermostPost, Source } from "../shared/types";
+import { api } from "@/shared/api";
+import { Icon } from "@/shared/Icon";
+import { highlight, shortDate } from "@/shared/highlight";
+import type { IntegrationImportResult, MattermostConversation, MattermostPost, Source } from "@/shared/types";
 
 type Props = {
   sources: Source[]; // 이미 등록된 자료(등록된 대화는 체크 해제 불가)
