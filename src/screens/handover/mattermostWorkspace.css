@@ -17,7 +17,7 @@
   grid-template-rows: 40px minmax(0, 1fr);
   background: #fff;
   color: var(--mm-text);
-  font-family: "Open Sans", "Noto Sans KR", sans-serif;
+  font-family: "Open Sans", "Pretendard Variable", Pretendard, sans-serif;
   font-size: 14px;
   line-height: 20px;
 }
