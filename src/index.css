@@ -938,6 +938,47 @@ body { background: #faf8f6; }
 .ai-preview-note { margin: 10px 14px 14px; display: flex; align-items: center; justify-content: center; gap: 5px; color: #a0a4ac; font-size: 6px; }
 .ai-preview-note svg { color: #7058b8; }
 
+/* 관리자: 팀 인수인계 항목(서버에 저장되는 메뉴) */
+.team-items-alert { margin: 12px 0 0; padding: 9px 12px; display: flex; align-items: center; gap: 6px; border: 1px solid #f0cfcb; border-radius: 9px; background: #fff5f4; color: #b4443a; font-size: 8px; }
+.team-items-alert.info { margin: 0; border-color: #e0e6f3; background: #f6f8fd; color: #55648c; }
+.team-items-body { padding: 14px 16px 16px; }
+.team-items-empty { margin: 0 0 12px; padding: 16px; border: 1px dashed #d9dce2; border-radius: 10px; background: #fbfbfc; color: #8c919a; font-size: 7px; text-align: center; }
+.team-items-list { margin: 0; padding: 0; display: grid; gap: 8px; list-style: none; }
+.team-items-list > li { padding: 10px; border: 1px solid #e3e5e8; border-radius: 10px; background: #fcfcfd; }
+.team-items-list > li.required { border-color: #cfc3ea; background: #faf8fe; }
+.team-items-list > li:focus-within { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); background: #fff; }
+.team-item-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 26px; align-items: center; gap: 8px; }
+.team-item-no { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: #eee9fa; color: #6a52b6; font: 700 7px "Manrope", sans-serif; }
+.team-item-top > input { min-width: 0; height: 30px; padding: 0 9px; border: 1px solid #dfe1e6; border-radius: 7px; background: #fff; color: #3f444d; font-size: 8px; font-weight: 700; outline: 0; }
+.team-item-top > input:focus { border-color: #927cce; }
+.team-item-required { height: 30px; padding: 0 9px; display: flex; align-items: center; gap: 6px; border: 1px solid #e0e2e7; border-radius: 7px; background: #fff; color: #7b808a; font-size: 7px; cursor: pointer; white-space: nowrap; }
+.team-item-required input { display: none; }
+.team-item-required > span { width: 14px; height: 14px; display: grid; place-items: center; border: 1px solid #d3d6dc; border-radius: 4px; background: #fff; color: transparent; }
+.team-item-required.on { border-color: #b9a8e3; background: #f0ebfb; color: #5f48ab; font-weight: 700; }
+.team-item-required.on > span { border-color: #7058bd; background: #7058bd; color: #fff; }
+.team-item-remove { width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #9a9ea6; }
+.team-item-remove:hover:not(:disabled) { background: #f6e9eb; color: #b95763; }
+.team-items-list textarea { width: 100%; margin-top: 7px; padding: 8px 9px; resize: vertical; border: 1px solid #e3e5e8; border-radius: 7px; background: #fff; color: #555a63; font-size: 7px; line-height: 1.6; outline: 0; }
+.team-items-list textarea:focus { border-color: #927cce; }
+.team-items-list input:disabled, .team-items-list textarea:disabled { background: #f4f5f7; color: #9a9ea6; }
+.team-items-actions { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; color: #9a9ea6; font-size: 6.5px; }
+.team-items-add { height: 30px; padding: 0 12px; border: 1px dashed #b9abdc; border-radius: 8px; background: #faf8fe; color: #664dc0; font-size: 7.5px; font-weight: 700; }
+.team-items-add:hover:not(:disabled) { background: #f1edfb; }
+.team-items-add:disabled, .team-items-suggest button:disabled { opacity: .5; cursor: default; }
+.team-items-suggest { margin-top: 12px; padding-top: 11px; border-top: 1px solid #eef0f2; }
+.team-items-suggest > small { display: block; margin-bottom: 7px; color: #9a9ea6; font-size: 6.5px; }
+.team-items-suggest > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.team-items-suggest button { height: 26px; padding: 0 9px; border: 1px solid #e0e2e7; border-radius: 999px; background: #fff; color: #6d727c; font-size: 7px; }
+.team-items-suggest button:hover:not(:disabled) { border-color: #b9a8e3; background: #f6f2fd; color: #5f48ab; }
+.team-items-error { color: #b4443a; font-weight: 700; }
+.ai-settings-save > button:disabled { background: #d9dbe0; cursor: default; }
+.team-prompt-panel { display: flex; flex-direction: column; max-height: calc(100vh - 150px); }
+.team-prompt-body { min-height: 90px; padding: 12px 14px 4px; overflow-y: auto; }
+.team-prompt-body pre { margin: 0; padding: 10px; border-radius: 9px; background: #f6f4fa; color: #4f4570; font: 6.5px/1.7 "Noto Sans KR", sans-serif; white-space: pre-wrap; word-break: break-word; }
+.team-prompt-empty { margin: 0; padding: 14px 4px; color: #9a9ea6; font-size: 7px; line-height: 1.7; text-align: center; }
+.team-prompt-note { align-items: flex-start; justify-content: flex-start; text-align: left; line-height: 1.6; }
+.team-prompt-note svg { margin-top: 1px; flex: none; }
+
 @media (max-width: 1000px) {
   .admin-shell { grid-template-columns: 190px minmax(0, 1fr); }
   .admin-stats { grid-template-columns: repeat(2, 1fr); }

@@ -6,6 +6,8 @@ import type {
   ConfluencePage,
   ConfluenceSearchResult,
   IntegrationImportResult,
+  TeamGuidelineItem,
+  TeamGuidelines,
   LoginResult,
   MattermostConversation,
   MattermostConversationDetail,
@@ -118,6 +120,9 @@ export const api = {
     post<IntegrationImportResult>(`/api/sessions/${id}/integrations/mattermost`, { conversation_ids: conversationIds }),
   confluenceSearch: (q: string, space = "") =>
     request<ConfluenceSearchResult>(`/api/integrations/confluence/search?q=${encodeURIComponent(q)}&space=${encodeURIComponent(space)}`),
+  teamGuidelines: () => request<TeamGuidelines>("/api/team-guidelines/me"),
+  saveTeamGuidelines: (body: { items: TeamGuidelineItem[]; notes: string }) =>
+    request<TeamGuidelines>("/api/team-guidelines/me", { method: "PUT", body: JSON.stringify(body) }),
   confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
   importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),
 };
