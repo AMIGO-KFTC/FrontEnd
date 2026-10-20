@@ -247,3 +247,21 @@ export interface IntegrationImportResult {
   sources: Source[];
   skipped: string[];
 }
+
+// 팀 인수인계서 지침(관리자 화면). 소속(부서 + 팀) 단위로 BackEnd 에 저장되고, 그 소속의 AI 분석 프롬프트에 반영된다.
+export interface TeamGuidelineItem {
+  id: string;
+  name: string;
+  instruction: string;
+}
+
+export interface TeamGuidelines {
+  message: string;
+  organization: string;
+  items: TeamGuidelineItem[];
+  notes: string;
+  updated_at: string | null;
+  updated_by: string;
+  editable: boolean;
+  prompt_preview: string;
+}

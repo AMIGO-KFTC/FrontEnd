@@ -8,10 +8,11 @@ import { AdminAiSettingsPage } from "./AdminAiSettingsPage";
 import { AdminHandoversPage, adminHandovers } from "./AdminHandoversPage";
 import { initialAdminMembers } from "./adminMembers";
 import { AdminMembersPage } from "./AdminMembersPage";
+import { AdminTeamItemsPage } from "./AdminTeamItemsPage";
 
 export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
   const [profile] = useProfile();
-  const [section, setSection] = useState<"dashboard" | "members" | "handovers" | "ai">("dashboard");
+  const [section, setSection] = useState<"dashboard" | "members" | "handovers" | "team" | "ai">("dashboard");
   const [members, setMembers] = useState(initialAdminMembers);
   const adminStats = [
     { label: "전체 구성원", value: String(members.length), note: "현재 등록된 구성원", icon: "user" as IconName, tone: "violet" },
@@ -30,19 +31,24 @@ export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
           <button className={section === "dashboard" ? "active" : ""} onClick={() => setSection("dashboard")}><Icon name="home" size={16} /> 대시보드</button>
           <button className={section === "members" ? "active" : ""} onClick={() => setSection("members")}><Icon name="user" size={16} /> 구성원 관리 <em>{members.length}</em></button>
           <button className={section === "handovers" ? "active" : ""} onClick={() => setSection("handovers")}><Icon name="message" size={16} /> 인수인계 관리 <em>{adminHandovers.length}</em></button>
+          <button className={section === "team" ? "active" : ""} onClick={() => setSection("team")}><Icon name="check" size={16} /> 팀 인수인계 항목</button>
           <button className={section === "ai" ? "active" : ""} onClick={() => setSection("ai")}><Icon name="sparkle" size={16} /> AI 맞춤 설정</button>
         </nav>
         <div className="admin-sidebar-bottom">
           <div className="admin-profile"><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>개발용 미리보기</small></div></div>
         </div>
       </aside>
-      <main className={`admin-main ${section === "handovers" ? "handover-mode" : section === "ai" ? "ai-mode" : ""}`}>
+      <main className={`admin-main ${section === "handovers" ? "handover-mode" : section === "ai" || section === "team" ? "ai-mode" : ""}`}>
         <div className="admin-preview-banner" role="status">
           <Icon name="shield" size={14} />
+          {section === "team" ? (
+            <span><strong>서버에 저장되는 메뉴</strong> · 여기서 저장한 팀 지침은 BackEnd 에 저장되어 같은 소속의 AI 분석에 반영돼요. 아직 관리자 권한이 없어, 서버의 <code>AMIGO_TEAM_GUIDELINE_EDITORS</code> 로 저장할 수 있는 계정을 제한해야 해요. 나머지 메뉴의 값은 저장되지 않는 화면용 데이터예요.</span>
+          ) : (
           <span><strong>개발용 미리보기</strong> · BackEnd 에 관리자 권한과 구성원·팀 통계·AI 설정 API 가 아직 없어 아래 값은 저장되지 않는 화면용 데이터입니다. 빌드 결과물에서는 <code>VITE_ADMIN_PREVIEW=true</code> 로 빌드했을 때만 열립니다.</span>
+          )}
         </div>
         <header className="admin-header">
-          <div><span>ADMIN CONSOLE</span><strong>{section === "dashboard" ? "관리자 대시보드" : section === "members" ? "구성원 관리" : section === "handovers" ? "인수인계 관리" : "AI 맞춤 설정"}</strong></div>
+          <div><span>ADMIN CONSOLE</span><strong>{section === "dashboard" ? "관리자 대시보드" : section === "members" ? "구성원 관리" : section === "handovers" ? "인수인계 관리" : section === "team" ? "팀 인수인계 항목" : "AI 맞춤 설정"}</strong></div>
           <div>
             <button className="admin-return" onClick={onExit}><Icon name="home" size={14} /> 일반 모드</button>
           </div>
@@ -79,7 +85,7 @@ export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
               </div>
             </section>
           </div>
-        </div> : section === "members" ? <AdminMembersPage members={members} onDelete={(id) => setMembers((current) => current.filter((member) => member.id !== id))} /> : section === "handovers" ? <AdminHandoversPage /> : <AdminAiSettingsPage />}
+        </div> : section === "members" ? <AdminMembersPage members={members} onDelete={(id) => setMembers((current) => current.filter((member) => member.id !== id))} /> : section === "handovers" ? <AdminHandoversPage /> : section === "team" ? <AdminTeamItemsPage /> : <AdminAiSettingsPage />}
       </main>
     </div>
   );
