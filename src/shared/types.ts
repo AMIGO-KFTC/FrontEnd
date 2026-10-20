@@ -253,7 +253,6 @@ export interface TeamGuidelineItem {
   id: string;
   name: string;
   instruction: string;
-  required: boolean;
 }
 
 export interface TeamGuidelines {

@@ -6,7 +6,7 @@ import { api, ApiError } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import type { TeamGuidelines } from "@/shared/types";
 
-type Row = { key: string; id: string; name: string; instruction: string; required: boolean };
+type Row = { key: string; id: string; name: string; instruction: string };
 
 const MAX_ITEMS = 30;
 const MAX_NAME = 100;
@@ -25,8 +25,8 @@ const SUGGESTIONS: { name: string; instruction: string }[] = [
 
 let rowCounter = 0;
 const newKey = () => `row-${(rowCounter += 1)}`;
-const toRow = (item: { id: string; name: string; instruction: string; required: boolean }): Row => ({ key: newKey(), ...item });
-const normalize = (rows: Row[], notes: string) => JSON.stringify({ items: rows.map(({ id, name, instruction, required }) => ({ id, name: name.trim(), instruction: instruction.trim(), required })), notes: notes.trim() });
+const toRow = (item: { id: string; name: string; instruction: string }): Row => ({ key: newKey(), ...item });
+const normalize = (rows: Row[], notes: string) => JSON.stringify({ items: rows.map(({ id, name, instruction }) => ({ id, name: name.trim(), instruction: instruction.trim() })), notes: notes.trim() });
 
 function savedAt(value: string | null): string {
   if (!value) return "";
@@ -81,7 +81,7 @@ export function AdminTeamItemsPage() {
   };
   const add = (name = "", instruction = "") => {
     if (rows.length >= MAX_ITEMS) return;
-    setRows((current) => [...current, { key: newKey(), id: "", name, instruction, required: false }]);
+    setRows((current) => [...current, { key: newKey(), id: "", name, instruction }]);
     touch();
   };
   const remove = (key: string) => {
@@ -99,7 +99,7 @@ export function AdminTeamItemsPage() {
     setSaveError(null);
     try {
       const data = await api.saveTeamGuidelines({
-        items: rows.map((row) => ({ id: row.id, name: row.name.trim(), instruction: row.instruction.trim(), required: row.required })),
+        items: rows.map((row) => ({ id: row.id, name: row.name.trim(), instruction: row.instruction.trim() })),
         notes: notes.trim(),
       });
       apply(data);
@@ -119,7 +119,7 @@ export function AdminTeamItemsPage() {
         <div>
           <span><Icon name="check" size={13} /> TEAM HANDOVER GUIDE</span>
           <h1>팀 인수인계서 항목</h1>
-          <p>우리 팀 인수인계서에 꼭 들어가야 하는 항목과 팀의 특징을 적어 두면, AI 가 자료를 분석하고 질문할 때 반영해요.</p>
+          <p>우리 팀 인수인계서에 담을 항목과 팀의 특징을 적어 두면, AI 가 자료를 분석하고 정리할 때 반영해요. 적지 않은 내용은 AI 가 따로 챙기지 않아요.</p>
         </div>
         <div className="ai-settings-status"><i /><span>{loaded ? `${loaded.organization} · ${statusText}` : statusText}</span></div>
       </section>
@@ -136,13 +136,13 @@ export function AdminTeamItemsPage() {
             <section className="ai-settings-card">
               <header>
                 <span><Icon name="check" size={16} /></span>
-                <div><small>REQUIRED ITEMS</small><h2>우리 팀 필수 항목</h2><p>팀의 인수인계서에 빠지면 안 되는 내용을 항목으로 적어 주세요. 필수로 표시하면 자료에 없을 때 AI 가 인계자에게 물어봐요.</p></div>
+                <div><small>TEAM ITEMS</small><h2>우리 팀 인수인계서 항목</h2><p>팀의 인수인계서에 담을 내용을 항목으로 적어 주세요. 올린 자료에 있으면 AI 가 이 이름으로 정리하고, 자료에 없으면 비워 둬요.</p></div>
               </header>
               <div className="team-items-body">
                 {rows.length === 0 && <p className="team-items-empty">아직 적은 항목이 없어요. 아래 예시를 누르거나 '항목 추가'로 시작해 보세요.</p>}
                 <ul className="team-items-list">
                   {rows.map((row, index) => (
-                    <li key={row.key} className={row.required ? "required" : ""}>
+                    <li key={row.key}>
                       <div className="team-item-top">
                         <span className="team-item-no">{index + 1}</span>
                         <input
@@ -153,10 +153,6 @@ export function AdminTeamItemsPage() {
                           placeholder="항목 이름 (예: 외주 관리)"
                           aria-label={`${index + 1}번 항목 이름`}
                         />
-                        <label className={`team-item-required${row.required ? " on" : ""}`}>
-                          <input type="checkbox" checked={row.required} disabled={!editable} onChange={(event) => update(row.key, { required: event.target.checked })} />
-                          <span><Icon name="check" size={10} /></span>필수
-                        </label>
                         <button type="button" className="team-item-remove" disabled={!editable} onClick={() => remove(row.key)} aria-label={`${row.name || `${index + 1}번`} 항목 삭제`}>
                           <Icon name="close" size={13} />
                         </button>
