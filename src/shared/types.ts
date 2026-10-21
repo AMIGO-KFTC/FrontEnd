@@ -260,6 +260,7 @@ export interface TeamGuidelines {
   organization: string;
   items: TeamGuidelineItem[];
   notes: string;
+  prompt: string;
   updated_at: string | null;
   updated_by: string;
   editable: boolean;
