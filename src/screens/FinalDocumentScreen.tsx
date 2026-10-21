@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api } from "../shared/api";
+import { api, isDemo } from "../shared/api";
 import { Brand } from "../shared/Brand";
 import { Icon } from "../shared/Icon";
 import type { StartData } from "../shared/handover";
@@ -36,6 +36,11 @@ function splitSections(markdown: string): { title: string; body: string }[] {
 export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, onRetry, onBack, onComplete }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [demoNote, setDemoNote] = useState(false);
+  const download = (format: "pdf" | "docx" | "md") => {
+    if (isDemo) setDemoNote(true); // 예시 화면에서는 파일 내려받기를 지원하지 않는다
+    else window.location.href = api.downloadUrl(sessionId, format);
+  };
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const parsed = splitSections(markdown);
   const gantt = useMemo(() => ({
@@ -65,9 +70,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
           <small>4 / 4</small>
         </div>
         <div className="document-export">
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "docx"); }}><Icon name="download" size={15} /> Word</button>
-          <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "md"); }}><Icon name="download" size={15} /> Markdown</button>
+          {demoNote && <small className="demo-note">예시 화면에서는 내려받기를 지원하지 않아요.</small>}
+          <button onClick={() => download("pdf")}><Icon name="download" size={15} /> PDF</button>
+          <button onClick={() => download("docx")}><Icon name="download" size={15} /> Word</button>
+          <button onClick={() => download("md")}><Icon name="download" size={15} /> Markdown</button>
           <button className="print-only" title="인쇄" onClick={() => window.print()}><Icon name="print" size={16} /></button>
         </div>
       </header>

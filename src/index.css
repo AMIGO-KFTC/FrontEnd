@@ -1010,3 +1010,11 @@ body { background: #faf8f6; }
 .final-paper table.gantt-editable td.gantt-cell:not(.bar):hover { background: #efeafc; }
 .final-paper table.gantt-table { -webkit-user-select: none; user-select: none; }
 .gantt-hint { margin-left: 12px; color: #7a7470; font-size: 11px; }
+
+/* 예시(데모) 화면 전용 */
+.demo-sample-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; }
+.upload-step-main .demo-sample-row { margin: 18px 0 0; }
+.upload-step-main .demo-sample-row small { color: #7a7470; font-size: 12px; line-height: 1.4; }
+.demo-sample-button { height: 36px; padding: 0 14px; border: 1px dashed #6d4bd8; border-radius: 8px; background: #f5f1ff; color: #4b2fb0; font-size: 13px; font-weight: 700; cursor: pointer; }
+.demo-note { margin-right: 8px; color: #7a7470; font-size: 12px; align-self: center; }
+.demo-badge { position: fixed; left: 12px; bottom: 12px; z-index: 50; padding: 5px 10px; border-radius: 999px; background: #1f1b2e; color: #fff; font-size: 11px; opacity: .82; pointer-events: none; }

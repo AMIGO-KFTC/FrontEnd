@@ -1,4 +1,5 @@
 // BackEnd(FastAPI) 호출 모음. 개발 중에는 Vite 프록시가 /api 를 8000 포트로 넘긴다.
+import { demoApi } from "../demo/mockApi";
 import type { AppConfig, AuthUser, LoginResult, ChatMessage, SessionCreate, SessionDetail, SessionSummary, Source, UsageTotal } from "./types";
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
@@ -50,7 +51,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
-export const api = {
+const realApi = {
   health: () => request<{ status: string; engine: string; model: string | null }>("/api/health"),
   config: () => request<AppConfig>("/api/config"),
 
@@ -90,3 +91,7 @@ export const api = {
     }),
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
 };
+
+// VITE_DEMO=1 로 빌드하면 서버 없이 브라우저 안의 예시 API 로 동작한다(npm run build:demo).
+export const isDemo = import.meta.env.VITE_DEMO === "1";
+export const api: typeof realApi = isDemo ? (demoApi as unknown as typeof realApi) : realApi;

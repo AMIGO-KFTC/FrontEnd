@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Brand } from "../shared/Brand";
 import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
+import { isDemo } from "../shared/api";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
 
@@ -16,8 +17,8 @@ function savedLoginId(): string {
 type Props = { onLogin: (loginId: string, password: string) => Promise<void>; busy?: boolean; error?: string | null };
 
 export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
-  const [id, setId] = useState(savedLoginId);
-  const [password, setPassword] = useState("");
+  const [id, setId] = useState(isDemo ? "demo" : savedLoginId);
+  const [password, setPassword] = useState(isDemo ? "demo1234" : "");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,6 +57,7 @@ export function LoginScreen({ onLogin, busy = false, error = null }: Props) {
           <span className="eyebrow">WELCOME TO AMIGO</span>
           <h2>업무의 다음을 이어가세요</h2>
           <p className="form-intro">AMIGO에 로그인하고 인수인계서를 손쉽게 작성해보세요.</p>
+          {isDemo && <p className="form-intro">예시 화면입니다. 입력된 계정(demo / demo1234)으로 바로 로그인하세요.</p>}
           <label>아이디
             <div className="input-wrap"><Icon name="user" size={18} /><input value={id} onChange={(e) => setId(e.target.value)} placeholder="업무용 아이디를 입력하세요" autoComplete="username" /></div>
           </label>

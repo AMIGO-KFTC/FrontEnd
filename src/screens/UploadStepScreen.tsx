@@ -3,6 +3,9 @@ import { Brand } from "../shared/Brand";
 import { ErrorNote } from "../shared/ErrorNote";
 import { Icon } from "../shared/Icon";
 import type { Source } from "../shared/types";
+import { isDemo } from "../shared/api";
+
+const SAMPLE_FILES = ["업무정의서_웹서비스팀.pdf", "홈페이지_운영매뉴얼.hwpx", "주간회의록_2026-09-22.docx", "시스템_계정목록.xlsx", "재무팀_유지보수대금_요청.eml", "웹접근성_개선계획.pptx"];
 
 type Props = {
   sources: Source[];
@@ -56,6 +59,12 @@ export function UploadStepScreen({ sources, error, busy, onBack, onNext, onUploa
           <h1>업무 자료를 모아주세요</h1>
           <p>AMIGO가 자료의 내용을 분석해 인수인계 항목과 질문을 준비합니다.</p>
         </div>
+        {isDemo && (
+          <p className="demo-sample-row">
+            <button type="button" className="demo-sample-button" onClick={() => onUploadFiles(SAMPLE_FILES.map((name) => new File(["예시 자료"], name)))}>예시 자료 6건 채우기</button>
+            <small>예시 화면이라 직접 올린 파일도 내용은 분석하지 않고, 준비된 예시 결과를 보여 줍니다.</small>
+          </p>
+        )}
         <input className="source-file-input" ref={inputRef} type="file" multiple onChange={(event) => addFiles(event.target.files)} />
         <section className="source-grid">
           <button className={activeSource === "file" ? "active" : ""} onClick={() => { setActiveSource("file"); inputRef.current?.click(); }}>
