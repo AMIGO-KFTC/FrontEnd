@@ -121,7 +121,8 @@ export const api = {
   confluenceSearch: (q: string, space = "") =>
     request<ConfluenceSearchResult>(`/api/integrations/confluence/search?q=${encodeURIComponent(q)}&space=${encodeURIComponent(space)}`),
   teamGuidelines: () => request<TeamGuidelines>("/api/team-guidelines/me"),
-  saveTeamGuidelines: (body: { items: TeamGuidelineItem[]; notes: string }) =>
+  // 보낸 필드만 서버에서 바뀐다(항목 화면은 items·notes, AI 맞춤 설정 화면은 prompt 만 보낸다)
+  saveTeamGuidelines: (body: { items?: TeamGuidelineItem[]; notes?: string; prompt?: string }) =>
     request<TeamGuidelines>("/api/team-guidelines/me", { method: "PUT", body: JSON.stringify(body) }),
   confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
   importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),

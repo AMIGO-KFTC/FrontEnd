@@ -856,6 +856,8 @@ body { background: #faf8f6; }
 .ai-settings-status i { width: 6px; height: 6px; border-radius: 50%; background: #4eaa7e; box-shadow: 0 0 0 3px rgba(78,170,126,.12); }
 .ai-settings-layout { min-height: 0; flex: 1; margin-top: 20px; padding-bottom: 1px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
 .ai-settings-layout::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.ai-settings-layout.single { grid-template-columns: minmax(0, 760px); }
+.team-prompt-scope { margin: 0; padding: 0 16px 16px; color: #8c919a; font-size: 7.5px; line-height: 1.7; }
 .ai-settings-form { min-width: 0; display: grid; gap: 10px; }
 .ai-settings-card, .ai-preview-panel { overflow: hidden; border: 1px solid #e1e3e7; border-radius: 14px; background: #fff; box-shadow: 0 7px 24px rgba(39,44,52,.035); }
 .ai-settings-card > header { min-height: 67px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #eef0f2; }
@@ -864,30 +866,6 @@ body { background: #faf8f6; }
 .ai-settings-card > header small { color: #765fbe; font: 700 6.5px "Manrope", sans-serif; letter-spacing: 1px; }
 .ai-settings-card > header h2 { margin: 3px 0 2px; font-size: 12px; }
 .ai-settings-card > header p { margin: 0; color: #979ba4; font-size: 7.5px; }
-.ai-base-materials { padding: 14px 16px 16px; }
-.ai-base-materials > input { display: none; }
-.ai-base-actions { display: grid; grid-template-columns: 145px minmax(0, 1fr); gap: 8px; }
-.ai-base-actions > button { min-height: 48px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; border: 1px dashed #bfb3dc; border-radius: 9px; background: #f8f6fc; color: #6851b3; text-align: left; }
-.ai-base-actions > button > span { min-width: 0; }
-.ai-base-actions > button strong, .ai-base-actions > button small { display: block; }
-.ai-base-actions > button strong { font-size: 9px; }
-.ai-base-actions > button small { margin-top: 3px; color: #9790a2; font-size: 5.5px; white-space: nowrap; }
-.ai-base-actions > div { height: 48px; display: flex; align-items: center; padding-left: 10px; border: 1px solid #dfe1e6; border-radius: 9px; background: #fbfbfc; color: #8e939d; }
-.ai-base-actions > div:focus-within { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); background: #fff; }
-.ai-base-actions > div input { min-width: 0; flex: 1; padding: 0 8px; border: 0; outline: 0; background: transparent; color: #484d56; font-size: 7.5px; }
-.ai-base-actions > div button { height: 100%; padding: 0 12px; border: 0; border-left: 1px solid #e3e5e8; background: transparent; color: #654db1; font-size: 7.5px; font-weight: 700; }
-.ai-base-list { margin-top: 12px; border-top: 1px solid #eceef1; }
-.ai-base-list > div:first-child { height: 34px; display: flex; align-items: center; justify-content: space-between; }
-.ai-base-list > div:first-child strong { color: #656a73; font-size: 7.5px; }
-.ai-base-list > div:first-child span { color: #999ea6; font-size: 6.5px; }
-.ai-base-list > div:not(:first-child) { min-height: 40px; display: grid; grid-template-columns: 29px minmax(0, 1fr) 25px; align-items: center; gap: 8px; border-top: 1px solid #f0f1f3; }
-.ai-base-list > div:not(:first-child) > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: #eee9fa; color: #674fb4; }
-.ai-base-list > div:not(:first-child) > div { min-width: 0; }
-.ai-base-list > div:not(:first-child) strong, .ai-base-list > div:not(:first-child) small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ai-base-list > div:not(:first-child) strong { color: #4a4f58; font-size: 7.5px; }
-.ai-base-list > div:not(:first-child) small { margin-top: 3px; color: #9da1a9; font-size: 6.5px; }
-.ai-base-list > div:not(:first-child) > button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #a2a6ad; }
-.ai-base-list > div:not(:first-child) > button:hover { background: #f4ecee; color: #b95763; }
 .system-prompt-editor:focus-within { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); background: #fff; }
 .system-prompt-editor { margin: 14px 16px 16px; overflow: hidden; border: 1px solid #dcdfe4; border-radius: 10px; background: #fafbfc; transition: .18s; }
 .system-prompt-editor > div { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 11px; border-bottom: 1px solid #e8eaed; }
@@ -897,17 +875,6 @@ body { background: #faf8f6; }
 .system-prompt-editor footer { min-height: 33px; display: flex; align-items: center; padding: 0 11px; border-top: 1px solid #e8eaed; color: #9398a1; font-size: 6.5px; }
 .system-prompt-editor footer span { display: flex; align-items: center; gap: 5px; }
 .system-prompt-editor footer svg { color: #7059b8; }
-.ai-tone-settings, .ai-rule-settings { padding: 14px 16px 0; }
-.ai-rule-settings { padding-bottom: 16px; }
-.ai-tone-settings > strong, .ai-rule-settings > strong { display: block; margin-bottom: 9px; color: #5d626c; font-size: 9px; }
-.ai-tone-settings > div { display: flex; flex-wrap: wrap; gap: 6px; }
-.ai-tone-settings button { height: 30px; padding: 0 10px; border: 1px solid #dfe1e6; border-radius: 8px; background: #fff; color: #777c86; font-size: 7.5px; }
-.ai-tone-settings button.active { border-color: #9a86cf; background: #f0ebfb; color: #6048ac; font-weight: 700; box-shadow: inset 0 0 0 1px rgba(112,85,190,.06); }
-.ai-rule-settings > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.ai-rule-settings label { min-height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid #e3e5e8; border-radius: 8px; color: #676c75; font-size: 7.5px; cursor: pointer; }
-.ai-rule-settings input { display: none; }
-.ai-rule-settings label > span { width: 17px; height: 17px; flex: none; display: grid; place-items: center; border: 1px solid #d5d8de; border-radius: 5px; background: #fff; color: transparent; }
-.ai-rule-settings input:checked + span { border-color: #7058bd; background: #7058bd; color: #fff; }
 .ai-settings-save { min-height: 60px; position: sticky; bottom: 10px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 10px 13px; border: 1px solid #dddfe4; border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 10px 30px rgba(34,39,48,.1); backdrop-filter: blur(16px); }
 .ai-settings-save > div { display: flex; align-items: center; gap: 6px; color: #898e97; font-size: 7.5px; }
 .ai-settings-save > div svg { color: #45886d; }
@@ -918,24 +885,6 @@ body { background: #faf8f6; }
 .ai-preview-panel > header span { color: #765fbe; font: 700 6.5px "Manrope", sans-serif; letter-spacing: 1px; }
 .ai-preview-panel > header h2 { margin: 3px 0 0; font-size: 12px; }
 .ai-preview-panel > header em { padding: 4px 7px; border-radius: 8px; background: #e8f3ed; color: #438269; font-size: 6.5px; font-style: normal; font-weight: 700; }
-.ai-preview-profile { display: flex; align-items: center; gap: 9px; padding: 14px; border-bottom: 1px solid #eef0f2; }
-.ai-preview-profile > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(145deg, #735ac2, #a274d2); color: #fff; box-shadow: 0 7px 16px rgba(103,77,181,.18); }
-.ai-preview-profile strong, .ai-preview-profile small { display: block; }
-.ai-preview-profile strong { font-size: 10px; }
-.ai-preview-profile small { margin-top: 3px; color: #999ea6; font-size: 6.5px; }
-.ai-preview-context { margin: 12px 14px 0; padding: 10px; border-radius: 9px; background: #f6f4fa; }
-.ai-preview-context > small { color: #999da6; font-size: 6.5px; }
-.ai-preview-context > p { margin: 4px 0 7px; color: #5e4ba0; font-size: 7.5px; font-weight: 700; }
-.ai-preview-context > div { display: flex; flex-wrap: wrap; gap: 4px; }
-.ai-preview-context > div span { padding: 3px 5px; border-radius: 6px; background: #fff; color: #888d96; font-size: 5.5px; }
-.ai-preview-chat { min-height: 150px; padding: 15px 14px 10px; }
-.ai-preview-message { display: flex; align-items: flex-start; gap: 7px; }
-.ai-preview-message > span { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 7px; background: #ece7f8; color: #6650ae; }
-.ai-preview-message p { margin: 0; padding: 9px 10px; border-radius: 4px 10px 10px 10px; background: #f4f3f6; color: #5e636c; font-size: 7.5px; line-height: 1.65; }
-.ai-preview-compose { margin: 0 14px; padding: 8px; display: flex; align-items: flex-end; gap: 6px; border: 1px solid #dfe1e6; border-radius: 10px; background: #fff; }
-.ai-preview-compose:focus-within { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); }
-.ai-preview-compose textarea { min-width: 0; height: 42px; flex: 1; padding: 3px; resize: none; border: 0; outline: 0; color: #4d525b; font-size: 7.5px; line-height: 1.5; }
-.ai-preview-compose button { width: 29px; height: 29px; flex: none; display: grid; place-items: center; border: 0; border-radius: 8px; background: #6e56b8; color: #fff; }
 .ai-preview-note { margin: 10px 14px 14px; display: flex; align-items: center; justify-content: center; gap: 5px; color: #a0a4ac; font-size: 6.5px; }
 .ai-preview-note svg { color: #7058b8; }
 
@@ -983,7 +932,6 @@ body { background: #faf8f6; }
   .handover-admin-head, .handover-admin-table > button { grid-template-columns: minmax(175px, 1.4fr) minmax(105px, .8fr) 70px 90px; }
   .handover-admin-head span:last-child, .handover-admin-table > button > .handover-due { display: none; }
   .ai-settings-layout { grid-template-columns: minmax(0, 1fr) 260px; }
-  .ai-base-actions { grid-template-columns: 130px minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
   .admin-shell { display: block; }
@@ -1023,8 +971,6 @@ body { background: #faf8f6; }
   .handover-admin-head, .handover-admin-table > button { grid-template-columns: minmax(0, 1fr) 72px; }
   .handover-admin-head span:nth-child(2), .handover-admin-head span:nth-child(3), .handover-admin-head span:nth-child(5), .handover-admin-table > button > .handover-people, .handover-admin-table > button > em, .handover-admin-table > button > .handover-due { display: none; }
   .ai-settings-status { display: none; }
-  .ai-rule-settings > div { grid-template-columns: 1fr; }
-  .ai-base-actions { grid-template-columns: 1fr; }
   .ai-settings-save { align-items: flex-end; flex-direction: column; }
   .ai-settings-save > button { width: 100%; justify-content: center; }
 }

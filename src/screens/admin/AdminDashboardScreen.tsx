@@ -41,8 +41,8 @@ export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
       <main className={`admin-main ${section === "handovers" ? "handover-mode" : section === "ai" || section === "team" ? "ai-mode" : ""}`}>
         <div className="admin-preview-banner" role="status">
           <Icon name="shield" size={14} />
-          {section === "team" ? (
-            <span><strong>서버에 저장되는 메뉴</strong> · 여기서 저장한 팀 지침은 BackEnd 에 저장되어 같은 소속의 AI 분석에 반영돼요. 아직 관리자 권한이 없어, 서버의 <code>AMIGO_TEAM_GUIDELINE_EDITORS</code> 로 저장할 수 있는 계정을 제한해야 해요. 나머지 메뉴의 값은 저장되지 않는 화면용 데이터예요.</span>
+          {section === "team" || section === "ai" ? (
+            <span><strong>서버에 저장되는 메뉴</strong> · 여기서 저장한 팀 지침·팀 전용 프롬프트는 BackEnd 에 저장되어 같은 소속의 AI 분석에 반영돼요. 아직 관리자 권한이 없어, 서버의 <code>AMIGO_TEAM_GUIDELINE_EDITORS</code> 로 저장할 수 있는 계정을 제한해야 해요. 나머지 메뉴의 값은 저장되지 않는 화면용 데이터예요.</span>
           ) : (
           <span><strong>개발용 미리보기</strong> · BackEnd 에 관리자 권한과 구성원·팀 통계·AI 설정 API 가 아직 없어 아래 값은 저장되지 않는 화면용 데이터입니다. 빌드 결과물에서는 <code>VITE_ADMIN_PREVIEW=true</code> 로 빌드했을 때만 열립니다.</span>
           )}
