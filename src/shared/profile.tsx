@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AuthUser } from "./types";
 
-// role 은 직책(직위) 문자열이고, isAdmin 은 서버의 역할(users.role = admin, 팀장)이다.
+// role 은 직책(직위) 문자열이고, isAdmin 은 서버의 관리자 권한(users.is_admin, 팀장)이다.
 export type Profile = { name: string; employeeId: string; division: string; team: string; role: string; photo: string; isAdmin: boolean };
 
 export const EMPTY_PROFILE: Profile = { name: "", employeeId: "", division: "", team: "", role: "", photo: "", isAdmin: false };
@@ -13,7 +13,7 @@ export function profileFromUser(user: AuthUser): Profile {
   return {
     name: user.profile?.name || user.name,
     employeeId: user.login_id,
-    isAdmin: user.role === "admin",
+    isAdmin: user.is_admin === true,
     division: user.profile?.department ?? "",
     team: user.profile?.team ?? "",
     role: user.profile?.position ?? "",

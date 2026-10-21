@@ -178,7 +178,8 @@ export interface AuthUser {
   id: number;
   login_id: string;
   name: string;
-  role: "admin" | "member"; // admin = 팀 관리자(팀장)
+  email?: string;
+  is_admin: boolean; // 관리자 권한(users.is_admin). 팀장 계정이 팀 관리 모드를 연다
   profile: { department: string; position: string; team: string; name: string } | null;
 }
 
@@ -272,7 +273,7 @@ export interface Member {
   id: number;
   login_id: string;
   name: string;
-  role: "admin" | "member";
+  is_admin: boolean;
   department: string;
   team: string;
   position: string;

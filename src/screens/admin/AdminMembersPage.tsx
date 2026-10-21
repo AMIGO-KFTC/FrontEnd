@@ -6,7 +6,7 @@ import type { AdminHandover, AdminMember } from "@/shared/types";
 
 type Props = { members: AdminMember[]; handovers: AdminHandover[]; meId: string; onDelete: (member: AdminMember) => Promise<string | null>; onOpenDocument: (id: string) => void };
 
-export const AUTHORITY: Record<AdminMember["role"], string> = { admin: "팀 관리자", member: "일반 구성원" };
+const authority = (member: AdminMember) => (member.is_admin ? "팀 관리자" : "일반 구성원");
 
 export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDocument }: Props) {
   const [query, setQuery] = useState("");
@@ -51,7 +51,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
               <button className={selected.id === member.id ? "selected" : ""} key={member.id} onClick={() => setSelectedId(member.id)}>
                 <span className="members-person"><i>{member.name.slice(0, 1)}</i><span><strong>{member.name}</strong><small>{member.position}</small></span></span>
                 <span><strong>{member.team || member.department}</strong><small>{member.team ? member.department : ""}</small></span>
-                <em className={member.role === "admin" ? "admin" : ""}>{AUTHORITY[member.role]}</em>
+                <em className={member.is_admin ? "admin" : ""}>{authority(member)}</em>
                 <strong className="member-handover-count">{member.handover_count}건</strong>
               </button>
             ))}
@@ -72,7 +72,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
           <dl>
             <div><dt>소속</dt><dd>{selected.department}<br />{selected.team}</dd></div>
             <div><dt>아이디</dt><dd>{selected.login_id}</dd></div>
-            <div><dt>권한</dt><dd className={selected.role === "admin" ? "authority" : ""}>{AUTHORITY[selected.role]}</dd></div>
+            <div><dt>권한</dt><dd className={selected.is_admin ? "authority" : ""}>{authority(selected)}</dd></div>
             <div><dt>최근 로그인</dt><dd>{selected.last_login_at ? formatRelativeTime(selected.last_login_at) : "아직 없음"}</dd></div>
           </dl>
           <div className="member-detail-activity">
