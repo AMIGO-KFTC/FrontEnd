@@ -1,60 +1,40 @@
-// 받은 인수인계. BackEnd 에 인수자 쪽 API 가 아직 없어 화면 안의 값으로만 동작한다.
-import { useState } from "react";
+// 받은 인수인계: 내가 인수자로 지정된 인수인계(GET /api/handovers/received). 인수자는 문서를 읽고 PDF 로 받을 수 있다(수정은 인계자만).
+import { useEffect, useState } from "react";
+import { api, ApiError } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
+import { formatDate, hasDocument, MODE_LABEL, sessionProgress, STAGE_LABEL } from "@/shared/sessions";
+import type { ReceivedHandover } from "@/shared/types";
 import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
 
+// 인수자가 보는 상태: 문서가 나왔으면 '확인 필요', 아직이면 인계자가 작성 중
+export function receivedStatus(handover: ReceivedHandover): { label: string; done: boolean } {
+  return hasDocument(handover) ? { label: "확인 필요", done: false } : { label: "작성 중", done: true };
+}
+
 export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onLogout }: Props) {
-  const handovers = [
-    {
-      id: 1,
-      title: "B2B 플랫폼 운영 업무",
-      sender: "박서연",
-      team: "플랫폼팀",
-      role: "프로덕트 매니저",
-      received: "2025. 03. 18",
-      due: "2025. 03. 25",
-      status: "확인 필요",
-      progress: 82,
-      summary: "B2B 플랫폼의 정기 운영, 고객 요청 처리, 장애 대응 및 월간 배포 프로세스에 대한 인수인계입니다.",
-      files: ["플랫폼_운영가이드_v3.pdf", "2025_Q1_백로그.xlsx", "장애대응_연락망.pdf"],
-      sources: 18,
-    },
-    {
-      id: 2,
-      title: "고객 대응 및 VOC 관리",
-      sender: "이지윤",
-      team: "고객경험팀",
-      role: "CX 매니저",
-      received: "2025. 03. 12",
-      due: "2025. 03. 20",
-      status: "열람 완료",
-      progress: 100,
-      summary: "주요 고객 문의 채널, VOC 분류 기준, 긴급 이슈 에스컬레이션 절차를 정리한 인수인계입니다.",
-      files: ["VOC_분류기준.pdf", "고객대응_매뉴얼.docx", "에스컬레이션_체계.xlsx"],
-      sources: 12,
-    },
-    {
-      id: 3,
-      title: "파트너사 정산 프로세스",
-      sender: "최유진",
-      team: "사업운영팀",
-      role: "사업운영 매니저",
-      received: "2025. 03. 05",
-      due: "2025. 03. 14",
-      status: "열람 완료",
-      progress: 100,
-      summary: "월별 파트너사 정산 일정과 검수 기준, 세금계산서 발행 절차를 포함합니다.",
-      files: ["정산_업무가이드.pdf", "파트너사_목록.xlsx"],
-      sources: 9,
-    },
-  ];
-  const [selectedId, setSelectedId] = useState(1);
-  const [confirmed] = useState<number[]>([2, 3]);
-  const selected = handovers.find((handover) => handover.id === selectedId) ?? handovers[0];
-  const isConfirmed = confirmed.includes(selected.id);
+  const [handovers, setHandovers] = useState<ReceivedHandover[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const load = () => {
+    api
+      .receivedHandovers()
+      .then(({ handovers: rows }) => {
+        setHandovers(rows);
+        setError(null);
+      })
+      .catch((e) => {
+        setHandovers(null);
+        setError(e instanceof ApiError && e.status === 401 ? "로그인이 만료됐어요. 다시 로그인해 주세요." : (e as Error).message);
+      });
+  };
+  useEffect(load, []);
+
+  const selected = handovers?.find((handover) => handover.id === selectedId) ?? handovers?.[0];
+  const ready = handovers ? handovers.filter(hasDocument).length : 0;
 
   return (
     <div className="app-shell received-page">
@@ -62,67 +42,73 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
       <main className="received-main">
         <header className="dashboard-header received-header">
           <div><span>MY WORKSPACE</span><strong>받은 인수인계</strong></div>
-          <button className="received-help"><Icon name="download" size={14} /> 전체 내려받기</button>
+          <button className="received-help" onClick={load}><Icon name="clock" size={14} /> 새로고침</button>
         </header>
         <div className="received-content">
           <section className="received-title">
             <div><span>RECEIVED HANDOVERS</span><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
             <div className="received-counts">
-              <div><strong>3</strong><small>전체</small></div>
+              <div><strong>{handovers ? handovers.length : "—"}</strong><small>전체</small></div>
               <i />
-              <div><strong>1</strong><small>확인 필요</small></div>
+              <div><strong>{handovers ? ready : "—"}</strong><small>확인 필요</small></div>
               <i />
-              <div><strong>2</strong><small>열람 완료</small></div>
+              <div><strong>{handovers ? handovers.length - ready : "—"}</strong><small>작성 중</small></div>
             </div>
           </section>
-          <section className="received-layout">
-            <aside className="received-list">
-              <div className="received-list-head"><strong>인수인계 목록</strong><span>{handovers.length}건</span></div>
-              {handovers.map((handover) => (
-                <button className={selected.id === handover.id ? "active" : ""} key={handover.id} onClick={() => setSelectedId(handover.id)}>
-                  <span className="received-avatar">{handover.sender.slice(0, 1)}</span>
+          {error && <div className="list-notice error" role="alert">받은 인수인계를 불러오지 못했어요: {error}<button onClick={load}>다시 시도</button></div>}
+          {handovers && handovers.length === 0 && !error && <div className="list-notice">아직 받은 인수인계가 없어요. 인계자가 기본 정보에서 인수자로 지정하면 여기에 나타납니다.</div>}
+          {handovers && selected && (
+            <section className="received-layout">
+              <aside className="received-list">
+                <div className="received-list-head"><strong>인수인계 목록</strong><span>{handovers.length}건</span></div>
+                {handovers.map((handover) => {
+                  const status = receivedStatus(handover);
+                  return (
+                    <button className={selected.id === handover.id ? "active" : ""} key={handover.id} onClick={() => setSelectedId(handover.id)}>
+                      <span className="received-avatar">{handover.owner_name.slice(0, 1)}</span>
+                      <div>
+                        <span className={`received-status ${status.done ? "done" : ""}`}>{status.label}</span>
+                        <strong>{handover.task_name || handover.title}</strong>
+                        <small>{handover.owner_name} · {handover.organization || "소속 미입력"}</small>
+                      </div>
+                      <Icon name="chevron" size={13} />
+                    </button>
+                  );
+                })}
+              </aside>
+              <article className="received-detail">
+                <header>
                   <div>
-                    <span className={`received-status ${confirmed.includes(handover.id) ? "done" : ""}`}>{confirmed.includes(handover.id) ? "열람 완료" : handover.status}</span>
-                    <strong>{handover.title}</strong>
-                    <small>{handover.sender} · {handover.team}</small>
+                    <span className={`received-status ${receivedStatus(selected).done ? "done" : ""}`}>{receivedStatus(selected).label}</span>
+                    <h2>{selected.task_name || selected.title}</h2>
+                    <p>{MODE_LABEL[selected.mode]} · 현재 {STAGE_LABEL[selected.stage]} 단계 · 진행률 {sessionProgress(selected)}%</p>
                   </div>
-                  <Icon name="chevron" size={13} />
-                </button>
-              ))}
-            </aside>
-            <article className="received-detail">
-              <header>
-                <div>
-                  <span className={`received-status ${isConfirmed ? "done" : ""}`}>{isConfirmed ? "열람 완료" : selected.status}</span>
-                  <h2>{selected.title}</h2>
-                  <p>{selected.summary}</p>
+                </header>
+                <div className="received-meta">
+                  <div><small>인계자</small><strong>{selected.owner_name}</strong><span>{[selected.organization, selected.position].filter(Boolean).join(" · ") || "소속 미입력"}</span></div>
+                  <div><small>시작일</small><strong>{formatDate(selected.created_at)}</strong><span>인계 예정일 {selected.handover_date ? formatDate(selected.handover_date) : "미정"}</span></div>
                 </div>
-                <button title="더보기"><Icon name="more" size={18} /></button>
-              </header>
-              <div className="received-meta">
-                <div><small>인계자</small><strong>{selected.sender}</strong><span>{selected.team} · {selected.role}</span></div>
-                <div><small>전달일</small><strong>{selected.received}</strong><span>인계 예정일 {selected.due}</span></div>
-              </div>
-              <section className="received-files">
-                <div><strong>전달받은 자료</strong><span>{selected.files.length}개 자료 · 출처 {selected.sources}개</span></div>
-                <article className="received-document-preview">
-                  <span>AMIGO HANDOVER</span>
-                  <h3>{selected.title} 인수인계서</h3>
-                  <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
-                  <i />
-                  <div><strong>01. 업무 개요</strong><p>{selected.summary}</p></div>
-                  <div><strong>02. 주요 업무 및 일정</strong><p>정기 업무, 진행 중인 과제, 주요 시스템과 협업 관계가 근거 자료와 함께 정리되어 있습니다.</p></div>
-                  <div><strong>03. 참고 자료</strong><p>{selected.files.join(" · ")}</p></div>
-                </article>
-              </section>
-              <footer>
-                <div className="received-footer-actions">
-                  <button><Icon name="file" size={14} /> 문서 열기</button>
-                  <button><Icon name="download" size={14} /> PDF 내려받기</button>
-                </div>
-              </footer>
-            </article>
-          </section>
+                <section className="received-files">
+                  <div><strong>전달받은 자료</strong><span>자료 {selected.file_count}개 · 문서 {hasDocument(selected) ? `v${selected.document_version}` : "작성 전"}</span></div>
+                  <article className="received-document-preview">
+                    <span>AMIGO HANDOVER</span>
+                    <h3>{selected.title}</h3>
+                    <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
+                    <i />
+                    <div><strong>01. 인계자</strong><p>{[selected.owner_name, selected.organization, selected.position].filter(Boolean).join(" · ")}</p></div>
+                    <div><strong>02. 단위 업무</strong><p>{selected.task_name || "미입력"}</p></div>
+                    <div><strong>03. 문서</strong><p>{hasDocument(selected) ? "표와 근거 번호가 달린 전체 문서는 ‘문서 열기’에서 확인할 수 있어요." : "인계자가 자료를 올리고 AI 질문에 답하면 문서가 만들어져요. 문서가 나오면 여기서 바로 열 수 있어요."}</p></div>
+                  </article>
+                </section>
+                <footer>
+                  <div className="received-footer-actions">
+                    <button disabled={!hasDocument(selected)} onClick={() => list.openDocument(selected.id)}><Icon name="file" size={14} /> 문서 열기</button>
+                    <button disabled={!hasDocument(selected)} onClick={() => { window.location.href = api.downloadUrl(selected.id, "pdf"); }}><Icon name="download" size={14} /> PDF 내려받기</button>
+                  </div>
+                </footer>
+              </article>
+            </section>
+          )}
         </div>
       </main>
     </div>

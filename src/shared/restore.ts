@@ -13,5 +13,7 @@ export function dataFromSession(session: SessionDetail): StartData {
     role: session.position,
     task: session.duties,
     date: session.handover_date,
+    successor: session.successor,
+    successorLoginId: session.successor_login_id,
   };
 }

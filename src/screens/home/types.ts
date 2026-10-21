@@ -15,5 +15,6 @@ export type SessionList = {
   error: string | null;
   reload: () => void;
   open: (id: string) => void;
+  openDocument: (id: string) => void; // 받은 인수인계의 문서 보기(인수자는 읽기만)
   remove: (id: string) => Promise<string | null>; // 실패하면 오류 문구를 돌려준다
 };

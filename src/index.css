@@ -455,6 +455,7 @@ body { background: #faf8f6; }
 .dashboard-header-actions .header-icon-button { width: 32px; position: relative; padding: 0; color: #777078; }
 .dashboard-header-actions .admin-mode-entry { padding: 0 11px; border-color: #dcd2f0; background: #f5f1ff; color: #634ab8; }
 .dashboard-header-actions .admin-mode-entry:hover { background: #ece5fb; }
+.document-readonly-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1px solid #dcd2f0; border-radius: 999px; background: #f5f1ff; color: #634ab8; font-size: 8.5px; font-weight: 700; }
 .dashboard-header-actions .header-icon-button i { width: 5px; height: 5px; position: absolute; top: 6px; right: 6px; border: 1px solid #fff; border-radius: 50%; background: #f05e7e; }
 .notification-popover { width: 330px; position: absolute; top: 40px; right: 40px; z-index: 50; overflow: hidden; border: 1px solid #e5dedb; border-radius: 15px; background: rgba(255,253,251,.98); box-shadow: 0 22px 60px rgba(44,34,49,.2); backdrop-filter: blur(18px); animation: notification-in .18s ease-out; }
 .notification-popover > header { display: flex; align-items: center; justify-content: space-between; padding: 15px 15px 11px; border-bottom: 1px solid #eee8e5; }
@@ -681,7 +682,7 @@ body { background: #faf8f6; }
 .admin-chart-summary p { margin-left: auto; color: #969ba3; font-size: 7.5px; }
 .admin-chart-summary p strong { color: #4a8b70; }
 .admin-progress > header > svg { color: #9ba0a9; }
-.progress-donut { width: 118px; height: 118px; margin: 21px auto 16px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#725bc0 0 82%, #c07ac2 82% 92%, #ebecef 92%); }
+.progress-donut { width: 118px; height: 118px; margin: 21px auto 16px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#725bc0 0 var(--rate, 0%), #ebecef var(--rate, 0%)); }
 .progress-donut:before { content: ""; width: 84px; height: 84px; grid-area: 1 / 1; border-radius: 50%; background: #fff; }
 .progress-donut > div { z-index: 1; grid-area: 1 / 1; text-align: center; }
 .progress-donut strong, .progress-donut small { display: block; }

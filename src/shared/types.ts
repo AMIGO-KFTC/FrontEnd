@@ -28,6 +28,21 @@ export interface Citation {
   quote?: string;
 }
 
+// 인수인계서의 근거 번호별 출처(GET /api/sessions/{id}/citations). 번호는 문서의 '근거 자료' 목록과 같다.
+export interface DocumentCitation extends Citation {
+  number: number;
+  kind: "document" | "answer";
+  source_name: string;
+  text: string;
+  slot: string;
+  item_title: string;
+}
+
+export interface CitationsResult {
+  document_version: number;
+  citations: DocumentCitation[];
+}
+
 export interface SlotItem {
   id: string;
   title: string;
@@ -63,6 +78,9 @@ export interface SessionSummary {
   position: string;
   mode: HandoverMode;
   task_name: string;
+  successor: string;
+  successor_login_id: string; // 인수자가 이 시스템 계정이면 그 아이디(그 계정의 '받은 인수인계'에 나타난다)
+  handover_date: string;
   stage: Stage;
   status: Status;
   document_version: number;
@@ -88,8 +106,7 @@ export interface UsageTotal extends Usage {
 
 export interface SessionDetail extends SessionSummary {
   duties: string;
-  successor: string;
-  handover_date: string;
+  owner_login_id: string; // 인계자 계정의 아이디. 로그인한 사용자와 다르면(인수자·팀장) 문서 화면을 읽기 전용으로 그린다
   progress: { message: string; current: number; total: number };
   error: string;
   engine: string;
@@ -150,6 +167,7 @@ export interface SessionCreate {
   position: string;
   duties: string;
   successor: string;
+  successor_login_id?: string; // 인수자가 이 시스템 계정이면 그 아이디(예전 화면은 보내지 않는다)
   handover_date: string;
   mode: HandoverMode;
   task_name: string;
@@ -160,6 +178,7 @@ export interface AuthUser {
   id: number;
   login_id: string;
   name: string;
+  role: "admin" | "member"; // admin = 팀 관리자(팀장)
   profile: { department: string; position: string; team: string; name: string } | null;
 }
 
@@ -246,6 +265,51 @@ export interface IntegrationImportResult {
   message: string;
   sources: Source[];
   skipped: string[];
+}
+
+// 구성원(프로필을 입력한 계정). 인수자 선택 목록과 관리자 구성원 목록에 쓴다.
+export interface Member {
+  id: number;
+  login_id: string;
+  name: string;
+  role: "admin" | "member";
+  department: string;
+  team: string;
+  position: string;
+  organization: string;
+}
+
+// 받은 인수인계(GET /api/handovers/received): 내가 인수자로 지정된 세션. 읽기(문서·PDF)만 할 수 있다.
+export interface ReceivedHandover {
+  id: string;
+  title: string;
+  task_name: string;
+  mode: HandoverMode;
+  owner_name: string;
+  owner_login_id: string;
+  organization: string;
+  position: string;
+  handover_date: string;
+  stage: Stage;
+  status: Status;
+  document_version: number;
+  file_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// 관리자(팀장) 화면: 우리 팀 구성원과 팀의 인수인계
+export interface AdminMember extends Member {
+  handover_count: number;
+  completed_count: number;
+  last_login_at: string | null;
+}
+
+export interface AdminHandover extends ReceivedHandover {
+  successor: string;
+  successor_login_id: string;
+  question_count: number;
+  open_gap_count: number;
 }
 
 // 팀 인수인계서 지침(관리자 화면). 소속(부서 + 팀) 단위로 BackEnd 에 저장되고, 그 소속의 AI 분석 프롬프트에 반영된다.

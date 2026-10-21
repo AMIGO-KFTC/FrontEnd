@@ -59,7 +59,10 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const total = askedCount + session.open_gap_count;
   const isLast = session.open_gap_count === 0;
 
-  const coverage = specs.map((spec) => session.slots[spec.key]?.coverage ?? "missing");
+  // 충족 현황은 이 세션의 양식에 있는 장만 센다. 서버 설정(config.slots)에는 인사발령·장기휴가 양식의 장이 모두 들어 있어
+  // 그대로 세면 다른 양식의 장이 '부족'으로 잡힌다. 분석 뒤에는 session.slots 에 이 양식의 장만 들어 있다.
+  const activeSpecs = specs.filter((spec) => spec.key in session.slots);
+  const coverage = (activeSpecs.length ? activeSpecs : specs).map((spec) => session.slots[spec.key]?.coverage ?? "missing");
   const countOf = (value: Coverage) => coverage.filter((c) => c === value).length;
   const extraSources = session.sources.filter((source) => source.added_stage !== "setup");
   const extraReading = extraSources.some((source) => source.status === "pending" || source.status === "processing");
@@ -104,9 +107,9 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
             <span><em>충분 {countOf("sufficient")}</em> · <i>부분 {countOf("partial")}</i> · 부족 {countOf("missing")}</span>
           </div>
           <div className="coverage-track">
-            <span className="full" style={{ width: `${(countOf("sufficient") / Math.max(specs.length, 1)) * 100}%` }} />
-            <span className="part" style={{ width: `${(countOf("partial") / Math.max(specs.length, 1)) * 100}%` }} />
-            <span className="empty" style={{ width: `${(countOf("missing") / Math.max(specs.length, 1)) * 100}%` }} />
+            <span className="full" style={{ width: `${(countOf("sufficient") / Math.max(coverage.length, 1)) * 100}%` }} />
+            <span className="part" style={{ width: `${(countOf("partial") / Math.max(coverage.length, 1)) * 100}%` }} />
+            <span className="empty" style={{ width: `${(countOf("missing") / Math.max(coverage.length, 1)) * 100}%` }} />
           </div>
           <div className="question-list-items" role="list">
             {session.gaps.length === 0 && <div className="question-list-empty">{session.stage === "qna" ? "확인할 빈 항목이 없어요. 바로 문서를 만들 수 있어요." : "AMIGO가 빈 항목을 정리하고 있어요."}</div>}

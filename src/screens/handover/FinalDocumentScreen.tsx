@@ -27,6 +27,8 @@ type Props = {
   onComplete: () => void;
   onLogout: () => void;
   onHome: () => void;
+  // 인계자가 아닌 사람(인수자·팀장)이 열었을 때: 수정·완료 없이 읽기와 내려받기만. onExit 는 왔던 목록으로 돌아간다.
+  readOnly?: { badge: string; note: string; exitLabel: string; onExit: () => void } | null;
 };
 
 // 생성된 Markdown 을 "## 제목" 기준으로 장(章)으로 나눈다. 첫 "## " 앞의 표지 부분은 화면의 표지가 대신한다.
@@ -40,7 +42,7 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
@@ -75,13 +77,17 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
       {data.mode === "leave" && <LeaveSeasideBackground />}
       <header className="final-document-header">
         <Brand onClick={onHome} />
-        <div className="onboarding-progress">
-          <span className="active" />
-          <span className="active" />
-          <span className="active" />
-          <span className="active" />
-          <small>4 / 4</small>
-        </div>
+        {readOnly ? (
+          <div className="document-readonly-badge"><Icon name="file" size={13} /> 읽기 전용 · 인계자 {data.name}{data.role ? ` ${data.role}` : ""}</div>
+        ) : (
+          <div className="onboarding-progress">
+            <span className="active" />
+            <span className="active" />
+            <span className="active" />
+            <span className="active" />
+            <small>4 / 4</small>
+          </div>
+        )}
         <div className="final-header-actions">
           <div className="document-export">
             <button onClick={() => { window.location.href = api.downloadUrl(sessionId, "pdf"); }}><Icon name="download" size={15} /> PDF</button>
@@ -94,7 +100,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
       </header>
       <main className="final-document-main">
         <aside className="final-outline">
-          <div className="document-complete-badge"><span><Icon name="check" size={14} /></span><div><strong>인수인계서 완성</strong></div></div>
+          <div className="document-complete-badge"><span><Icon name="check" size={14} /></span><div><strong>{readOnly ? readOnly.badge : "인수인계서 완성"}</strong></div></div>
           <div className="outline-title"><span>문서 목차</span><small>{sections.length}개 항목</small></div>
           <nav>
             {sections.map((section, index) => (
@@ -104,16 +110,26 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             ))}
           </nav>
           <div className="document-source-info"><Icon name="link" size={15} /><div><strong>출처 {sourceCount}개 연결됨</strong><small>AI가 어떤 자료를 참고했는지 직접 확인해 보세요.</small></div></div>
-          <button className="finish-handover" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
-          <button className="document-back" onClick={onBack}><Icon name="arrow" size={15} /> 질의응답으로 돌아가기</button>
+          {readOnly ? (
+            <button className="document-back" onClick={readOnly.onExit}><Icon name="arrow" size={15} /> {readOnly.exitLabel}</button>
+          ) : (
+            <>
+              <button className="finish-handover" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
+              <button className="document-back" onClick={onBack}><Icon name="arrow" size={15} /> 질의응답으로 돌아가기</button>
+            </>
+          )}
         </aside>
         <section className="final-document-view">
           <div className="final-document-toolbar">
+            {readOnly ? (
+              <div><small className="gantt-hint">{readOnly.note}</small></div>
+            ) : (
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
               {isEditing && <small className="gantt-hint">월별 일정표는 칸을 끌어서 막대를 늘리거나 줄일 수 있어요.{saveState === "saving" ? " 저장 중…" : saveState === "saved" ? " 저장됨" : saveState === "failed" ? " 저장 실패" : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => setRevisionOpen((current) => !current)}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
+            )}
           </div>
           {revisionOpen && (
             <section className="revision-compose">
@@ -136,7 +152,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
               </div>
             </section>
           )}
-          {parsed.length > 0 && failedMessage !== null && (
+          {!readOnly && parsed.length > 0 && failedMessage !== null && (
             <div className="revision-error">
               <ErrorNote message={failedMessage || "수정 요청을 처리하는 중 문제가 생겼어요."} />
               <button onClick={onRetry}>다시 시도</button>
@@ -181,7 +197,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
           </article>
           </GanttContext.Provider>
         </section>
-        <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
+        {!readOnly && <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>}
       </main>
     </div>
   );

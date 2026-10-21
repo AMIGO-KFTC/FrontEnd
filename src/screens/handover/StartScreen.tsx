@@ -1,5 +1,6 @@
 // STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받고, 성명·소속·직책은 로그인한 사용자 정보로 미리 채운다.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import type { StartData } from "@/shared/handover";
@@ -7,7 +8,7 @@ import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { useProfile } from "@/shared/profile";
 import { StepUserMenu } from "@/shared/StepUserMenu";
-import type { HandoverMode } from "@/shared/types";
+import type { HandoverMode, Member } from "@/shared/types";
 
 const DIVISIONS = ["프로덕트본부", "기술본부", "사업본부", "고객경험본부", "경영지원본부"];
 const TEAMS = ["플랫폼팀", "서비스기획팀", "프로덕트디자인팀", "개발팀", "데이터팀", "운영팀"];
@@ -22,10 +23,22 @@ type Props = { mode: HandoverMode; onStart: (data: StartData) => void; onLogout:
 
 export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, error = null }: Props) {
   const [profile] = useProfile();
-  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "" });
+  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "" });
   const [taskDraft, setTaskDraft] = useState("");
   const [missing, setMissing] = useState<string[]>([]);
+  // 인수자 선택 목록: 프로필을 입력한 다른 계정. 고르면 그 계정의 '받은 인수인계'에 이 작업이 나타난다(못 불러오면 비워 둔다).
+  const [members, setMembers] = useState<Member[]>([]);
+  useEffect(() => {
+    api
+      .members()
+      .then((result) => setMembers(result.members.filter((member) => member.login_id !== profile.employeeId)))
+      .catch(() => setMembers([]));
+  }, [profile.employeeId]);
   const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
+  const pickSuccessor = (loginId: string) => {
+    const member = members.find((m) => m.login_id === loginId);
+    setData({ ...data, successorLoginId: member ? member.login_id : "", successor: member ? `${member.name} ${member.position}`.trim() : "" });
+  };
   const tasks = data.task.split("\n").filter(Boolean);
   const addTask = () => {
     const nextTask = taskDraft.trim();
@@ -100,6 +113,12 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
                 <select value={data.role} onChange={(e) => update("role", e.target.value)}>
                   <option value="">직책 선택</option>
                   {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
+                </select>
+              </label>
+              <label>인수자
+                <select value={data.successorLoginId} onChange={(e) => pickSuccessor(e.target.value)}>
+                  <option value="">나중에 정할게요</option>
+                  {members.map((member) => <option key={member.login_id} value={member.login_id}>{member.name} {member.position} · {member.team || member.department}</option>)}
                 </select>
               </label>
               <label className="wide-field task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>담당 업무 <i>*</i>
