@@ -368,7 +368,7 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 
 - 다른 주소의 백엔드를 쓰려면 `AMIGO_API=http://서버:8000 npm run dev`(Windows: `$env:AMIGO_API="http://서버:8000"; npm run dev`).
 - API 응답 타입은 `src/shared/types.ts` 에 있고 BackEnd 의 `app/schemas.py` 와 짝을 이룹니다. 응답 구조를 바꿀 때는 두 곳을 함께 고칩니다.
-- 관리자 모드 미리보기는 개발 서버(`npm run dev`)에서만 열리고, 빌드에서 보려면 `VITE_ADMIN_PREVIEW=true npm run build` 로 빌드합니다. 서버에 역할·관리 API 가 없어 화면의 값은 저장되지 않습니다.
+- 팀 관리 모드는 서버가 `is_admin: true`(관리자 권한, 팀장)로 알려 준 계정만 열 수 있습니다. 팀장은 로그인 뒤 **인수인계 작성 / 팀 관리** 중 하나를 고르고(선택은 탭을 닫거나 로그아웃할 때까지 유지), 홈 머리글의 **팀 관리 모드** 단추와 관리자 머리글의 **일반 모드** 단추로 오갑니다.
 - 이전 3단 작업 화면은 `legacy.html`(`src/legacy/`)로 남겨 두었습니다. 개발 서버에서 <http://localhost:5173/legacy.html> 로 열 수 있습니다.
 - `npm run build` 결과물(`dist/`)은 BackEnd 의 `AMIGO_FRONTEND_DIST=../FrontEnd/dist` 설정으로 8000 포트 하나에서 함께 서비스할 수 있습니다([서버 하나로 실행하기](#6-선택-서버-하나로-실행하기--시연공유용)).
 
@@ -382,8 +382,8 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 | `#/` | 홈 대시보드 | `screens/home/DashboardScreen` | 진행 중·완료 건수(서버 세션 목록), 새 인수인계 시작, 알림·캘린더(예시 값, 서버 미연결) |
 | `#/home/handover` | 진행 중인 인수인계 | `screens/home/OngoingHandoverScreen` | 문서가 아직 없는 세션 목록, 저장된 단계로 **이어서 작성**, 확인창 뒤 삭제(`DELETE /api/sessions/{id}`) |
 | `#/home/documents` | 완성 문서 | `screens/home/CompletedDocumentsScreen` | 문서가 있는 세션 목록, 문서 열기 |
-| `#/home/received` | 받은 인수인계 | `screens/home/ReceivedHandoverScreen` | 예시 값(서버에 받은 인수인계 API 없음) |
-| `#/admin` | 관리자 모드 | `screens/admin/` | 개발용 미리보기(대시보드·구성원·인수인계 관리·AI 작성 지침). 저장되지 않으며 `ADMIN_PREVIEW` 가 참일 때만 열림 |
+| `#/home/received` | 받은 인수인계 | `screens/home/ReceivedHandoverScreen` | `GET /api/handovers/received`. 인수자는 문서 열기·PDF 내려받기만(읽기 전용) |
+| `#/admin`, `#/admin/<tab>` | 팀 관리 모드 | `screens/admin/` | 관리자(`is_admin`)만. 구성원(`/api/admin/members`)·팀 인수인계(`/api/admin/handovers`)·팀 인수인계 항목·AI 맞춤 설정. 일반 구성원이 들어오면 홈으로 |
 | `#/new`, `#/new/<유형>` | 유형 선택 · 기본 정보 | `HandoverTypeScreen`, `StartScreen` | 정기인사 / 장기휴가 선택, 인계자 정보 입력 → `POST /api/sessions` |
 | `#/s/<세션ID>/upload` | 자료 등록 | `UploadStepScreen` + `MattermostPanel`, `ConfluencePanel` | 드래그 앤 드롭 업로드(PDF·HWPX/HWP·Word·PPT·Excel·메일·소스코드·ZIP), 링크 등록, 가상 Mattermost·Confluence 선택, 처리 상태(대기/처리 중/완료/실패 사유), 분석 시작 |
 | `#/s/<세션ID>/processing` | 분석 | `ProcessingScreen` | STAGE 1~2 진행률·현재 작업 문구, 실패 시 다시 시도 |
@@ -419,13 +419,13 @@ src/
     useSessionState.ts     상태 폴링
     sessions.ts            세션 목록 분류(진행 중/완성), 단계·상태 표시 문구
     profile.tsx            서버 프로필(/api/auth/me) 공유
-    adminPreview.ts        관리자 미리보기 여부(개발 서버 또는 VITE_ADMIN_PREVIEW)
     AppSidebar.tsx  StepUserMenu.tsx  ConfirmModal.tsx  LogoutConfirmModal.tsx
     Icon.tsx  Brand.tsx  LeaveSeasideBackground.tsx  ErrorNote.tsx
     documentMarkdown.ts  GanttTable.tsx  MermaidDiagram.tsx  highlight.tsx  handover.ts  restore.ts
   screens/
     auth/      LoginScreen  SignupScreen  ForgotPasswordScreen  AuthVisual
     home/      DashboardScreen  OngoingHandoverScreen  CompletedDocumentsScreen  ReceivedHandoverScreen  DashboardCalendar
+    auth/      … WorkspaceSelectScreen(팀장의 일반 / 팀 관리 모드 선택)
     admin/     AdminDashboardScreen  AdminMembersPage  AdminHandoversPage  AdminAiSettingsPage
     handover/  HandoverTypeScreen  StartScreen  UploadStepScreen  MattermostPanel  ConfluencePanel
                ProcessingScreen  QuestionScreen  GeneratingDocumentScreen  FinalDocumentScreen

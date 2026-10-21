@@ -2,7 +2,7 @@
 //
 //   #/                     홈 대시보드
 //   #/home/handover        진행 중인 인수인계      #/home/documents  완성 문서      #/home/received  받은 인수인계
-//   #/admin                관리자 모드(개발용 미리보기)
+//   #/admin                팀 관리 모드(팀장)          #/admin/<tab>     팀 관리의 탭(tab = dashboard | members | handovers | team | ai)
 //   #/new                  인수인계 유형 선택      #/new/<mode>      기본 정보(mode = reassignment | leave)
 //   #/s/<세션ID>           작업(서버에 저장된 단계로 복원)
 //   #/s/<세션ID>/<step>    작업의 특정 화면(step = upload | processing | question | generating | document | complete)
@@ -12,14 +12,16 @@ import { useCallback, useEffect, useState } from "react";
 import type { HandoverMode, SessionDetail, Stage } from "./types";
 
 export type HomePage = "dashboard" | "handover" | "documents" | "received";
+export type AdminSection = "dashboard" | "members" | "handovers" | "team" | "ai";
 export type StepScreen = "upload" | "processing" | "question" | "generating" | "document" | "complete";
 export type Route =
   | { kind: "home"; page: HomePage }
-  | { kind: "admin" }
+  | { kind: "admin"; section: AdminSection }
   | { kind: "new"; mode: HandoverMode | null }
   | { kind: "session"; id: string; step: StepScreen | null };
 
 const HOME_PAGES: HomePage[] = ["dashboard", "handover", "documents", "received"];
+const ADMIN_SECTIONS: AdminSection[] = ["dashboard", "members", "handovers", "team", "ai"];
 const STEPS: StepScreen[] = ["upload", "processing", "question", "generating", "document", "complete"];
 const SESSION_ID = /^[0-9a-f]{8,64}$/;
 
@@ -32,7 +34,10 @@ export function parseHash(hash: string): Route {
     const page = parts[1] as HomePage | undefined;
     return { kind: "home", page: page && HOME_PAGES.includes(page) ? page : "dashboard" };
   }
-  if (parts[0] === "admin") return { kind: "admin" };
+  if (parts[0] === "admin") {
+    const section = parts[1] as AdminSection | undefined;
+    return { kind: "admin", section: section && ADMIN_SECTIONS.includes(section) ? section : "dashboard" };
+  }
   if (parts[0] === "new") {
     const mode = parts[1];
     return { kind: "new", mode: mode === "leave" || mode === "reassignment" ? mode : null };
@@ -49,7 +54,7 @@ export function buildHash(route: Route): string {
     case "home":
       return route.page === "dashboard" ? "#/" : `#/home/${route.page}`;
     case "admin":
-      return "#/admin";
+      return route.section === "dashboard" ? "#/admin" : `#/admin/${route.section}`;
     case "new":
       return route.mode ? `#/new/${route.mode}` : "#/new";
     case "session":

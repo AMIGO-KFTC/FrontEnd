@@ -1,61 +1,124 @@
-// 관리자 모드(개발용 미리보기). BackEnd 에 관리자 권한·구성원·팀 통계·AI 설정 API 가 아직 없어
-// 화면의 값은 Figma Make 디자인의 예시 값이며 저장되지 않는다. 진입은 src/shared/adminPreview.ts 로 막아 둔다.
-import { useState } from "react";
+// 관리자(팀장) 모드. 구성원·인수인계는 서버(GET /api/admin/members, /api/admin/handovers)에서, 팀 지침·AI 설정은 /api/team-guidelines/me 에서 가져온다.
+// '우리 팀'은 관리자 프로필의 소속(부서 + 팀)과 같은 구성원이다. 일반 구성원 계정은 이 화면에 들어올 수 없다(App.tsx).
+import { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { Icon, type IconName } from "@/shared/Icon";
 import { useProfile } from "@/shared/profile";
+import { hasDocument } from "@/shared/sessions";
+import type { AdminSection } from "@/shared/router";
+import type { AdminHandover, AdminMember } from "@/shared/types";
 import { AdminAiSettingsPage } from "./AdminAiSettingsPage";
-import { AdminHandoversPage, adminHandovers } from "./AdminHandoversPage";
-import { initialAdminMembers } from "./adminMembers";
+import { AdminHandoversPage } from "./AdminHandoversPage";
 import { AdminMembersPage } from "./AdminMembersPage";
 import { AdminTeamItemsPage } from "./AdminTeamItemsPage";
 
-export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
+type Section = AdminSection;
+const TITLES: Record<Section, string> = { dashboard: "관리자 대시보드", members: "구성원 관리", handovers: "인수인계 관리", team: "팀 인수인계 항목", ai: "AI 맞춤 설정" };
+
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+
+// 최근 12주 동안 주마다 새로 시작한 인수인계 수(막대 높이는 가장 많은 주를 100 으로 본 비율)
+function weeklyActivity(handovers: AdminHandover[]): { counts: number[]; heights: number[] } {
+  const now = Date.now();
+  const counts = Array.from({ length: 12 }, (_, i) => {
+    const end = now - (11 - i) * WEEK;
+    const start = end - WEEK;
+    return handovers.filter((h) => {
+      const t = Date.parse(h.created_at);
+      return t > start && t <= end;
+    }).length;
+  });
+  const max = Math.max(1, ...counts);
+  return { counts, heights: counts.map((c) => Math.round((c / max) * 100)) };
+}
+
+// 보고 있는 탭(section)은 주소(#/admin/<탭>)에 있어, 문서를 열었다 돌아오거나 새로고침해도 같은 탭이 열린다.
+type Props = { section: Section; onSection: (section: Section) => void; onExit: () => void; onOpenDocument: (id: string, from: Section) => void; onExpire: () => void };
+
+export function AdminDashboardScreen({ section, onSection: setSection, onExit, onOpenDocument, onExpire }: Props) {
   const [profile] = useProfile();
-  const [section, setSection] = useState<"dashboard" | "members" | "handovers" | "team" | "ai">("dashboard");
-  const [members, setMembers] = useState(initialAdminMembers);
+  const openDocument = (id: string) => onOpenDocument(id, section);
+  const [organization, setOrganization] = useState("");
+  const [members, setMembers] = useState<AdminMember[] | null>(null);
+  const [handovers, setHandovers] = useState<AdminHandover[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [m, h] = await Promise.all([api.adminMembers(), api.adminHandovers()]);
+      setOrganization(m.organization);
+      setMembers(m.members);
+      setHandovers(h.handovers);
+      setError(null);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        onExpire();
+        return;
+      }
+      setMembers(null);
+      setHandovers(null);
+      setError((e as Error).message);
+    }
+  }, [onExpire]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const deleteMember = async (member: AdminMember): Promise<string | null> => {
+    try {
+      await api.deleteMember(member.id);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) onExpire();
+      return (e as Error).message;
+    }
+    await load();
+    return null;
+  };
+
+  const all = handovers ?? [];
+  const completed = all.filter(hasDocument);
+  const ongoing = all.filter((h) => !hasDocument(h));
+  const unavailable = "—";
+  const dueSoon = ongoing.filter((h) => h.handover_date && Date.parse(h.handover_date) - Date.now() < 2 * WEEK).length;
+  const rate = all.length ? Math.round((completed.length / all.length) * 100) : 0;
   const adminStats = [
-    { label: "전체 구성원", value: String(members.length), note: "현재 등록된 구성원", icon: "user" as IconName, tone: "violet" },
-    { label: "진행 중인 인수인계", value: "24", note: "기한 임박 5건", icon: "message" as IconName, tone: "blue" },
-    { label: "완료된 인수인계", value: "186", note: "완료율 92%", icon: "check" as IconName, tone: "green" },
+    { label: "전체 구성원", value: members ? String(members.length) : unavailable, note: organization || "같은 소속의 구성원", icon: "user" as IconName, tone: "violet" },
+    { label: "진행 중인 인수인계", value: handovers ? String(ongoing.length) : unavailable, note: handovers ? `인계 예정일 2주 이내 ${dueSoon}건` : "불러오지 못함", icon: "message" as IconName, tone: "blue" },
+    { label: "완료된 인수인계", value: handovers ? String(completed.length) : unavailable, note: handovers ? `완료율 ${rate}%` : "불러오지 못함", icon: "check" as IconName, tone: "green" },
   ];
-  const activity = [42, 58, 47, 72, 64, 88, 76, 93, 81, 100, 86, 95];
+  const activity = weeklyActivity(all);
+  const recentStarted = activity.counts.slice(-4).reduce((a, b) => a + b, 0);
+  const recentCompleted = completed.filter((h) => Date.now() - Date.parse(h.updated_at) <= 4 * WEEK).length;
 
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-brand"><Brand onClick={onExit} /><span>PREVIEW</span></div>
-        <div className="admin-workspace-label"><span><Icon name="shield" size={15} /></span><div><small>WORKSPACE</small><strong>관리자 미리보기</strong></div></div>
+        <div className="admin-sidebar-brand"><Brand onClick={onExit} /><span>ADMIN</span></div>
+        <div className="admin-workspace-label"><span><Icon name="shield" size={15} /></span><div><small>WORKSPACE</small><strong>{profile.team || "팀"} 관리</strong></div></div>
         <nav className="admin-nav">
           <small>관리 메뉴</small>
           <button className={section === "dashboard" ? "active" : ""} onClick={() => setSection("dashboard")}><Icon name="home" size={16} /> 대시보드</button>
-          <button className={section === "members" ? "active" : ""} onClick={() => setSection("members")}><Icon name="user" size={16} /> 구성원 관리 <em>{members.length}</em></button>
-          <button className={section === "handovers" ? "active" : ""} onClick={() => setSection("handovers")}><Icon name="message" size={16} /> 인수인계 관리 <em>{adminHandovers.length}</em></button>
+          <button className={section === "members" ? "active" : ""} onClick={() => setSection("members")}><Icon name="user" size={16} /> 구성원 관리 {members && <em>{members.length}</em>}</button>
+          <button className={section === "handovers" ? "active" : ""} onClick={() => setSection("handovers")}><Icon name="message" size={16} /> 인수인계 관리 {handovers && <em>{handovers.length}</em>}</button>
           <button className={section === "team" ? "active" : ""} onClick={() => setSection("team")}><Icon name="check" size={16} /> 팀 인수인계 항목</button>
           <button className={section === "ai" ? "active" : ""} onClick={() => setSection("ai")}><Icon name="sparkle" size={16} /> AI 맞춤 설정</button>
         </nav>
         <div className="admin-sidebar-bottom">
-          <div className="admin-profile"><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>개발용 미리보기</small></div></div>
+          <div className="admin-profile"><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>{profile.role} · 팀 관리자</small></div></div>
         </div>
       </aside>
       <main className={`admin-main ${section === "handovers" ? "handover-mode" : section === "ai" || section === "team" ? "ai-mode" : ""}`}>
-        <div className="admin-preview-banner" role="status">
-          <Icon name="shield" size={14} />
-          {section === "team" || section === "ai" ? (
-            <span><strong>서버에 저장되는 메뉴</strong> · 여기서 저장한 팀 지침·팀 전용 프롬프트는 BackEnd 에 저장되어 같은 소속의 AI 분석에 반영돼요. 아직 관리자 권한이 없어, 서버의 <code>AMIGO_TEAM_GUIDELINE_EDITORS</code> 로 저장할 수 있는 계정을 제한해야 해요. 나머지 메뉴의 값은 저장되지 않는 화면용 데이터예요.</span>
-          ) : (
-          <span><strong>개발용 미리보기</strong> · BackEnd 에 관리자 권한과 구성원·팀 통계·AI 설정 API 가 아직 없어 아래 값은 저장되지 않는 화면용 데이터입니다. 빌드 결과물에서는 <code>VITE_ADMIN_PREVIEW=true</code> 로 빌드했을 때만 열립니다.</span>
-          )}
-        </div>
         <header className="admin-header">
-          <div><span>ADMIN CONSOLE</span><strong>{section === "dashboard" ? "관리자 대시보드" : section === "members" ? "구성원 관리" : section === "handovers" ? "인수인계 관리" : section === "team" ? "팀 인수인계 항목" : "AI 맞춤 설정"}</strong></div>
+          <div><span>ADMIN CONSOLE</span><strong>{TITLES[section]}</strong></div>
           <div>
             <button className="admin-return" onClick={onExit}><Icon name="home" size={14} /> 일반 모드</button>
           </div>
         </header>
+        {error && <div className="list-notice error" role="alert">팀 정보를 불러오지 못했어요: {error}<button onClick={() => void load()}>다시 시도</button></div>}
         {section === "dashboard" ? <div className="admin-content">
           <section className="admin-title">
-            <div><span><Icon name="shield" size={13} /> TEAM OVERVIEW</span><h1>팀의 인수인계 현황을 한눈에 확인하세요.</h1><p>구성원의 진행 상황과 필요한 관리 항목을 빠르게 살펴볼 수 있습니다.</p></div>
+            <div><span><Icon name="shield" size={13} /> TEAM OVERVIEW</span><h1>{profile.team || "팀"}의 인수인계 현황을 한눈에 확인하세요.</h1><p>구성원의 진행 상황과 필요한 관리 항목을 빠르게 살펴볼 수 있습니다.</p></div>
           </section>
           <section className="admin-stats">
             {adminStats.map((stat) => (
@@ -69,23 +132,27 @@ export function AdminDashboardScreen({ onExit }: { onExit: () => void }) {
             <section className="admin-panel admin-activity">
               <header><div><span>HANDOVER ACTIVITY</span><h2>인수인계 활동 추이</h2></div></header>
               <div className="admin-chart">
-                <div className="chart-axis"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+                <div className="chart-axis"><span>{Math.max(1, ...activity.counts)}</span><span /><span /><span /><span>0</span></div>
                 <div className="chart-bars">
-                  {activity.map((height, index) => <div key={index}><span style={{ height: `${height}%` }} /><small>{index + 1}주</small></div>)}
+                  {activity.heights.map((height, index) => <div key={index} title={`${activity.counts[index]}건`}><span style={{ height: `${height}%` }} /><small>{index === 11 ? "이번 주" : `${11 - index}주 전`}</small></div>)}
                 </div>
               </div>
-              <div className="admin-chart-summary"><div><i className="started" /><span>새로 시작</span><strong>38건</strong></div><div><i className="completed" /><span>완료</span><strong>31건</strong></div><p>지난달 대비 <strong>12.4%</strong> 증가했어요.</p></div>
+              <div className="admin-chart-summary"><div><i className="started" /><span>최근 4주 새로 시작</span><strong>{recentStarted}건</strong></div><div><i className="completed" /><span>최근 4주 문서 완성</span><strong>{recentCompleted}건</strong></div><p>주마다 새로 시작한 인수인계 수예요.</p></div>
             </section>
             <section className="admin-panel admin-progress">
-              <header><div><span>COMPLETION RATE</span><h2>전체 진행 상태</h2></div><Icon name="more" size={17} /></header>
-              <div className="progress-donut"><div><strong>92%</strong><small>완료율</small></div></div>
+              <header><div><span>COMPLETION RATE</span><h2>전체 진행 상태</h2></div></header>
+              <div className="progress-donut" style={{ ["--rate" as string]: `${rate}%` }}><div><strong>{rate}%</strong><small>완료율</small></div></div>
               <div className="progress-legend">
-                <div><i className="complete" /><span>완료</span><strong>186</strong></div>
-                <div><i className="ongoing" /><span>진행 중</span><strong>24</strong></div>
+                <div><i className="complete" /><span>완료</span><strong>{completed.length}</strong></div>
+                <div><i className="ongoing" /><span>진행 중</span><strong>{ongoing.length}</strong></div>
               </div>
             </section>
           </div>
-        </div> : section === "members" ? <AdminMembersPage members={members} onDelete={(id) => setMembers((current) => current.filter((member) => member.id !== id))} /> : section === "handovers" ? <AdminHandoversPage /> : section === "team" ? <AdminTeamItemsPage /> : <AdminAiSettingsPage />}
+        </div> : section === "members" ? (
+          members && handovers ? <AdminMembersPage members={members} handovers={handovers} meId={profile.employeeId} onDelete={deleteMember} onOpenDocument={openDocument} /> : null
+        ) : section === "handovers" ? (
+          handovers ? <AdminHandoversPage handovers={handovers} onOpenDocument={openDocument} /> : null
+        ) : section === "team" ? <AdminTeamItemsPage /> : <AdminAiSettingsPage />}
       </main>
     </div>
   );

@@ -3,14 +3,14 @@ import { api, ApiError } from "./shared/api";
 import type { StartData } from "./shared/handover";
 import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
 import { dataFromSession } from "./shared/restore";
-import { HOME, resolveStep, useHashRoute, type Route, type StepScreen } from "./shared/router";
+import { HOME, resolveStep, useHashRoute, type AdminSection, type Route, type StepScreen } from "./shared/router";
 import { useSessionState } from "./shared/useSessionState";
 import { EMPTY_PROFILE, ProfileProvider, profileFromUser, useProfile } from "./shared/profile";
-import { ADMIN_PREVIEW } from "./shared/adminPreview";
 import { AdminDashboardScreen } from "./screens/admin/AdminDashboardScreen";
 import { ForgotPasswordScreen } from "./screens/auth/ForgotPasswordScreen";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { SignupScreen } from "./screens/auth/SignupScreen";
+import { WorkspaceSelectScreen, type Workspace } from "./screens/auth/WorkspaceSelectScreen";
 import { CompletionScreen } from "./screens/handover/CompletionScreen";
 import { FinalDocumentScreen } from "./screens/handover/FinalDocumentScreen";
 import { GeneratingDocumentScreen } from "./screens/handover/GeneratingDocumentScreen";
@@ -28,8 +28,18 @@ import type { HomeNav, SessionList } from "./screens/home/types";
 
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
-const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "" };
+const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "" };
 const EXPIRED = "로그인이 만료됐어요. 다시 로그인해 주세요.";
+const WORKSPACE_KEY = "amigo-workspace"; // 팀장이 고른 작업 공간(일반 / 팀 관리). 탭을 닫거나 로그아웃하면 다시 고른다.
+
+function storedWorkspace(): Workspace | null {
+  try {
+    const value = sessionStorage.getItem(WORKSPACE_KEY);
+    return value === "admin" || value === "user" ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 function citationCount(session: SessionDetail | null): number {
   if (!session) return 0;
@@ -52,10 +62,23 @@ function AppScreens() {
   const [authPanel, setAuthPanel] = useState<AuthPanel>(null);
   const [loginNotice, setLoginNotice] = useState<string | null>(null); // 로그인 만료 안내
   const [homeNotice, setHomeNotice] = useState<string | null>(null); // 홈에서 보여 줄 안내(열 수 없는 작업 등)
-  const [, setProfile] = useProfile();
+  const [profile, setProfile] = useProfile();
+  const [workspace, setWorkspaceState] = useState<Workspace | null>(storedWorkspace);
+  const [adminReturn, setAdminReturn] = useState<AdminSection>("handovers"); // 팀장이 문서를 열기 전에 보던 팀 관리 탭
+  const setWorkspace = useCallback((next: Workspace | null) => {
+    setWorkspaceState(next);
+    try {
+      if (next) sessionStorage.setItem(WORKSPACE_KEY, next);
+      else sessionStorage.removeItem(WORKSPACE_KEY);
+    } catch {
+      /* 저장소를 못 쓰면 이번 화면에서만 기억한다 */
+    }
+  }, []);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [docLoading, setDocLoading] = useState(false);
+  // 문서에 번호가 달린 근거 수(문서의 '근거 자료' 목록과 같은 수). 항목마다 달린 근거를 모두 더한 수와 달라 따로 받아 둔다.
+  const [citationTotal, setCitationTotal] = useState<number | null>(null);
   const [busy, setBusy] = useState(false); // 세션 생성·분석 시작처럼 화면을 바꾸는 요청
   const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
   const [targetVersion, setTargetVersion] = useState(1); // 생성 중 화면이 기다리는 문서 버전
@@ -73,8 +96,9 @@ function AppScreens() {
   const expire = useCallback(() => {
     setLoggedIn(false);
     setProfile(EMPTY_PROFILE);
+    setWorkspace(null);
     setLoginNotice(EXPIRED);
-  }, [setProfile]);
+  }, [setProfile, setWorkspace]);
 
   // 홈 화면의 작업 목록. 실패하면 목록을 비우고(null) 오류를 남겨 "0건"으로 보이지 않게 한다.
   const loadSessions = useCallback(async () => {
@@ -179,6 +203,19 @@ function AppScreens() {
     };
   }, [step, sessionId, documentVersion]);
 
+  // 문서·완료 화면의 '출처 N개' 는 문서에 번호가 달린 근거 수로 보여 준다(못 받으면 항목별 근거 합계로 대신).
+  useEffect(() => {
+    if ((step !== "document" && step !== "complete") || !sessionId || documentVersion === 0) return;
+    let cancelled = false;
+    api
+      .citations(sessionId)
+      .then((result) => !cancelled && setCitationTotal(result.citations.length))
+      .catch(() => !cancelled && setCitationTotal(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [step, sessionId, documentVersion]);
+
   const run = useCallback(
     async <T,>(action: () => Promise<T>): Promise<T | undefined> => {
       setError(null);
@@ -235,7 +272,8 @@ function AppScreens() {
         duties: form.task,
         mode: form.mode,
         task_name: form.task.split(/\r?\n/).filter(Boolean)[0] ?? "",
-        successor: "",
+        successor: form.successor,
+        successor_login_id: form.successorLoginId,
         handover_date: form.date,
       });
       setMarkdown("");
@@ -352,6 +390,7 @@ function AppScreens() {
     setError(null);
     setLoginNotice(null);
     setProfile(EMPTY_PROFILE);
+    setWorkspace(null);
     setLoggedIn(false);
     navigate(HOME, { replace: true });
   };
@@ -368,6 +407,7 @@ function AppScreens() {
     error: sessionsError,
     reload: () => void loadSessions(),
     open: (id) => go({ kind: "session", id, step: null }), // 서버 단계로 복원
+    openDocument: (id) => go({ kind: "session", id, step: "document" }), // 받은 인수인계·팀 관리에서 문서만 본다
     remove: deleteSession,
   };
 
@@ -382,15 +422,49 @@ function AppScreens() {
     );
   }
 
+  // 팀장(관리자)은 로그인 뒤 일반 모드(내 인수인계)와 팀 관리 모드 중 하나를 고른다. 일반 구성원은 바로 홈으로.
+  if (profile.isAdmin && !workspace) {
+    return (
+      <WorkspaceSelectScreen
+        onSelect={(next) => {
+          setWorkspace(next);
+          go(next === "admin" ? { kind: "admin", section: "dashboard" } : HOME);
+        }}
+        onLogout={logout}
+      />
+    );
+  }
+  const enterAdmin = () => {
+    setWorkspace("admin");
+    go({ kind: "admin", section: "dashboard" });
+  };
+  const exitAdmin = () => {
+    setWorkspace("user");
+    goHome();
+  };
+
   if (route.kind === "admin") {
-    if (ADMIN_PREVIEW) return <AdminDashboardScreen onExit={goHome} />;
-    return <DashboardScreen {...nav} list={list} onNew={startNew} onAdmin={() => undefined} />;
+    if (profile.isAdmin) {
+      return (
+        <AdminDashboardScreen
+          section={route.section}
+          onSection={(section) => go({ kind: "admin", section })}
+          onExit={exitAdmin}
+          onOpenDocument={(id, from) => {
+            setAdminReturn(from);
+            list.openDocument(id);
+          }}
+          onExpire={expire}
+        />
+      );
+    }
+    return <DashboardScreen {...nav} list={list} onNew={startNew} isAdmin={false} onAdmin={() => undefined} />;
   }
   if (route.kind === "home") {
     if (route.page === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={startNew} />;
     if (route.page === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
     if (route.page === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
-    return <DashboardScreen {...nav} list={list} notice={homeNotice} onDismissNotice={() => setHomeNotice(null)} onNew={startNew} onAdmin={() => ADMIN_PREVIEW && go({ kind: "admin" })} />;
+    return <DashboardScreen {...nav} list={list} notice={homeNotice} onDismissNotice={() => setHomeNotice(null)} onNew={startNew} isAdmin={profile.isAdmin} onAdmin={enterAdmin} />;
   }
   if (route.kind === "new") {
     if (!route.mode) return <HandoverTypeScreen onSelect={(mode) => go({ kind: "new", mode })} onLogout={logout} onHome={goHome} />;
@@ -473,14 +547,26 @@ function AppScreens() {
     );
   }
   if (step === "document") {
+    // 인계자가 아닌 사람(인수자·팀장)이 열면 읽기 전용: 수정·완료 없이 보고 내려받기만. 돌아가기는 왔던 목록으로.
+    const isOwner = !session.owner_login_id || session.owner_login_id === profile.employeeId;
+    const isSuccessor = !!session.successor_login_id && session.successor_login_id === profile.employeeId;
+    const readOnly = isOwner
+      ? null
+      : {
+          badge: isSuccessor ? "전달받은 인수인계서" : "팀 구성원 인수인계서",
+          note: `${session.owner_name}님이 작성한 인수인계서예요. 내용을 보고 PDF·Word 로 내려받을 수 있고, 수정은 인계자만 할 수 있어요.`,
+          exitLabel: isSuccessor ? "받은 인수인계로 돌아가기" : "팀 관리로 돌아가기",
+          onExit: () => go(isSuccessor ? { kind: "home", page: "received" } : { kind: "admin", section: adminReturn }),
+        };
     return (
       <FinalDocumentScreen
         data={data}
+        readOnly={readOnly}
         sessionId={session.id}
         markdown={markdown}
         onGanttEdit={(name, nth, months) => api.editGantt(session.id, name, nth, months).then((d) => setMarkdown(d.markdown))}
         loading={docLoading}
-        sourceCount={citationCount(session)}
+        sourceCount={citationTotal ?? citationCount(session)}
         failedMessage={session.status === "error" ? session.error : null}
         revising={acting || session.status === "running"}
         onRevise={(text) => void revise(text)}
@@ -497,7 +583,7 @@ function AppScreens() {
       mode={data.mode}
       sourceCount={session.sources.length}
       questionCount={session.question_count}
-      citationCount={citationCount(session)}
+      citationCount={citationTotal ?? citationCount(session)}
       onViewDocument={() => goStep("document")}
       onNew={startNew}
       onHome={goHome}

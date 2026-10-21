@@ -1,8 +1,11 @@
 // BackEnd(FastAPI) 호출 모음. 개발 중에는 Vite 프록시가 /api 를 8000 포트로 넘긴다.
 import type {
+  AdminHandover,
+  AdminMember,
   AppConfig,
   AuthUser,
   ChatMessage,
+  CitationsResult,
   ConfluencePage,
   ConfluenceSearchResult,
   IntegrationImportResult,
@@ -12,7 +15,9 @@ import type {
   MattermostConversation,
   MattermostConversationDetail,
   ProfileInput,
+  Member,
   ProfileResult,
+  ReceivedHandover,
   SessionCreate,
   SessionDetail,
   SessionSummary,
@@ -80,6 +85,13 @@ export const api = {
   signup: (loginId: string, password: string, name: string) => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name }),
   saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
 
+  // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용
+  members: () => request<{ members: Member[] }>("/api/members"),
+  receivedHandovers: () => request<{ handovers: ReceivedHandover[] }>("/api/handovers/received"),
+  adminMembers: () => request<{ organization: string; members: AdminMember[] }>("/api/admin/members"),
+  adminHandovers: () => request<{ organization: string; handovers: AdminHandover[] }>("/api/admin/handovers"),
+  deleteMember: (id: number) => request<{ message: string }>(`/api/admin/members/${id}`, { method: "DELETE" }),
+
   listSessions: () => request<SessionSummary[]>("/api/sessions"),
   createSession: (body: SessionCreate) => post<SessionDetail>("/api/sessions", body),
   deleteSession: (id: string) => request<void>(`/api/sessions/${id}`, { method: "DELETE" }),
@@ -104,6 +116,7 @@ export const api = {
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 
   document: (id: string) => request<{ markdown: string; version: number }>(`/api/sessions/${id}/document`),
+  citations: (id: string) => request<CitationsResult>(`/api/sessions/${id}/citations`),
   editGantt: (id: string, name: string, nth: number, months: number[]) =>
     request<{ markdown: string; version: number }>(`/api/sessions/${id}/document/gantt`, {
       method: "PUT",
