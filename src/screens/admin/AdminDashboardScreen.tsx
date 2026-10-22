@@ -149,7 +149,7 @@ export function AdminDashboardScreen({ section, onSection: setSection, onExit, o
             </section>
           </div>
         </div> : section === "members" ? (
-          members && handovers ? <AdminMembersPage members={members} handovers={handovers} meId={profile.employeeId} onDelete={deleteMember} onOpenDocument={openDocument} /> : null
+          members && handovers ? <AdminMembersPage members={members} handovers={handovers} meId={profile.loginId} onDelete={deleteMember} onOpenDocument={openDocument} /> : null
         ) : section === "handovers" ? (
           handovers ? <AdminHandoversPage handovers={handovers} onOpenDocument={openDocument} /> : null
         ) : section === "team" ? <AdminTeamItemsPage /> : <AdminAiSettingsPage />}

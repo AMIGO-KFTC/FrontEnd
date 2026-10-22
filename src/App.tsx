@@ -548,8 +548,8 @@ function AppScreens() {
   }
   if (step === "document") {
     // 인계자가 아닌 사람(인수자·팀장)이 열면 읽기 전용: 수정·완료 없이 보고 내려받기만. 돌아가기는 왔던 목록으로.
-    const isOwner = !session.owner_login_id || session.owner_login_id === profile.employeeId;
-    const isSuccessor = !!session.successor_login_id && session.successor_login_id === profile.employeeId;
+    const isOwner = !session.owner_login_id || session.owner_login_id === profile.loginId;
+    const isSuccessor = !!session.successor_login_id && session.successor_login_id === profile.loginId;
     const readOnly = isOwner
       ? null
       : {

@@ -9,13 +9,13 @@ export function AuthVisual() {
       <div className="art-content">
         <Brand />
         <div className="art-copy">
-          <span className="eyebrow light"><Icon name="sparkle" size={15} /> ASK ME INTERACTIVELY</span>
-          <h1>업무의 맥락까지,<br />온전히 이어지도록.</h1>
-          <p>Grounding으로 근거를 찾고, Orchestration으로 흐름을 연결해<br />빈틈없는 인수인계서를 완성합니다.</p>
-        </div>
-        <div className="art-proof">
-          <div className="proof-avatars"><span>김</span><span>이</span><span>박</span></div>
-          <div><strong>누적 1,248건</strong><small>아미고와 함께 인수인계를 완료했어요</small></div>
+          <span className="eyebrow light"><Icon name="sparkle" size={15} /> Ask me Interactive, Grounded and Orchestrated</span>
+          <h1 className="art-lines">
+            <span className="art-line"><b>Interactive</b>한 상호작용,</span>
+            <span className="art-line"><b>Grounding</b>으로 근거를 찾고,</span>
+            <span className="art-line"><b>Orchestration</b>으로 모두 모은 흐름.</span>
+            <span className="art-line art-line-final">빈틈없는 인수인계서를 완성합니다.</span>
+          </h1>
         </div>
       </div>
       <div className="orb orb-one" />

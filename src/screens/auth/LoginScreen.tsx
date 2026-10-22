@@ -6,6 +6,9 @@ import { AuthVisual } from "./AuthVisual";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
 
+// 임시: Onetel SSO 연동 전까지 SSO 로그인은 시연 계정(계장 김민준)으로 들어간다. 연동되면 이 계정 정보를 지우고 SSO 응답으로 바꾼다.
+const SSO_DEMO_ACCOUNT = { loginId: "demo", password: "demo1234" };
+
 function savedLoginId(): string {
   try {
     return window.localStorage.getItem(SAVED_ID_KEY) ?? "";
@@ -27,6 +30,12 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
   const [id, setId] = useState(savedLoginId);
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
+  const [ssoOpen, setSsoOpen] = useState(false);
+  const ssoLogin = async () => {
+    if (busy) return;
+    setSsoOpen(false);
+    await onLogin(SSO_DEMO_ACCOUNT.loginId, SSO_DEMO_ACCOUNT.password);
+  };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!id.trim() || !password.trim() || busy) return;
@@ -47,7 +56,7 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
         <form className="login-form" onSubmit={submit}>
           <span className="eyebrow">WELCOME TO AMIGO</span>
           <h2>업무의 다음을 이어가세요</h2>
-          <p className="form-intro">AMIGO에 로그인하고 인수인계서를 손쉽게 작성해보세요.</p>
+          <p className="form-intro">AMIGO에 로그인하고,<br />인수인계서를 손쉽게 작성해보세요.</p>
           <label>아이디
             <div className="input-wrap"><Icon name="user" size={18} /><input value={id} onChange={(e) => setId(e.target.value)} placeholder="업무용 아이디를 입력하세요" autoComplete="username" /></div>
           </label>
@@ -65,9 +74,19 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
           {(error || notice) && <div style={{ marginBottom: 14 }}><ErrorNote message={error ?? notice} tone={error ? "error" : "info"} /></div>}
           <button className="primary-button login-button" type="submit" disabled={busy}>로그인 <Icon name="arrow" size={18} /></button>
           <div className="login-divider"><span />OR<span /></div>
-          <button className="sso-button" type="button"><Icon name="key" size={16} /> Use SSO Sign-In</button>
+          <button className="sso-button" type="button" onClick={() => setSsoOpen(true)}><Icon name="key" size={16} /> Use SSO Sign-In</button>
         </form>
       </section>
+      {ssoOpen && (
+        <div className="logout-overlay" role="presentation" onClick={() => setSsoOpen(false)}>
+          <section className="logout-modal sso-modal" role="alertdialog" aria-modal="true" aria-labelledby="sso-title" onClick={(event) => event.stopPropagation()}>
+            <span><Icon name="key" size={22} /></span>
+            <h2 id="sso-title">SSO 로그인</h2>
+            <p>현재 Onetel에서 로그인된 사번으로 로그인합니다.</p>
+            <div><button type="button" onClick={() => setSsoOpen(false)}>취소</button><button type="button" autoFocus onClick={ssoLogin}>로그인</button></div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

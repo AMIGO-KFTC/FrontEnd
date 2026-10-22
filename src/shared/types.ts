@@ -179,8 +179,9 @@ export interface AuthUser {
   login_id: string;
   name: string;
   email?: string;
+  employee_no?: string; // 사번(로그인 아이디와 별개)
   is_admin: boolean; // 관리자 권한(users.is_admin). 팀장 계정이 팀 관리 모드를 연다
-  profile: { department: string; position: string; team: string; name: string } | null;
+  profile: { department: string; position: string; team: string; name: string; employee_no?: string } | null;
 }
 
 // 회원가입(POST /api/auth/signup)과 프로필 저장(PUT /api/profile) 응답. message 는 화면에 그대로 띄운다.
@@ -194,6 +195,7 @@ export interface ProfileInput {
   position: string;
   team: string;
   name: string;
+  employee_no?: string; // 보내지 않으면 서버가 그대로 두고, 빈 문자열이면 비운다
 }
 
 export interface ProfileResult {

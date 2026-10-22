@@ -44,7 +44,7 @@ export function AppSidebar({
     setProfileOpen(false);
     setProfileEditOpen(true);
   };
-  // 이름·소속·팀·직책은 서버(PUT /api/profile)에 저장한다. 사진은 서버에 자리가 없어 이 브라우저에서만 쓴다.
+  // 이름·사번·소속·팀·직책은 서버(PUT /api/profile)에 저장한다. 사진은 서버에 자리가 없어 이 브라우저에서만 쓴다.
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
     const draft = { ...profileDraft, name: profileDraft.name.trim(), division: profileDraft.division.trim(), team: profileDraft.team.trim(), role: profileDraft.role.trim() };
@@ -52,11 +52,16 @@ export function AppSidebar({
       setProfileError("이름, 소속, 직책은 비워 둘 수 없어요.");
       return;
     }
+    draft.employeeId = draft.employeeId.trim();
+    if (draft.employeeId && !/^\d{7}$/.test(draft.employeeId)) {
+      setProfileError("사번은 숫자 7자리여야 해요.");
+      return;
+    }
     setProfileSaving(true);
     setProfileError(null);
     try {
-      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role });
-      setProfile({ ...draft, name: result.profile.name, division: result.profile.department, team: result.profile.team, role: result.profile.position });
+      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role, employee_no: draft.employeeId });
+      setProfile({ ...draft, employeeId: result.profile.employee_no ?? draft.employeeId, name: result.profile.name, division: result.profile.department, team: result.profile.team, role: result.profile.position });
       setProfileEditOpen(false);
     } catch (e) {
       setProfileError((e as Error).message);
@@ -100,7 +105,7 @@ export function AppSidebar({
           <button className="profile-more" onClick={() => setProfileOpen((current) => !current)} aria-label="내 프로필 열기" aria-expanded={profileOpen}><Icon name="more" size={16} /></button>
           {profileOpen && (
             <div className="profile-popover">
-              <header><span>{profile.photo ? <img src={profile.photo} alt="" /> : profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId}</small></div></header>
+              <header><span>{profile.photo ? <img src={profile.photo} alt="" /> : profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
               <dl>
                 <div><dt>소속</dt><dd>{profile.division} · {profile.team}</dd></div>
                 <div><dt>직책</dt><dd>{profile.role}</dd></div>
@@ -129,7 +134,7 @@ export function AppSidebar({
               <input ref={profilePhotoRef} type="file" accept="image/png,image/jpeg" onChange={(event) => changeProfilePhoto(event.target.files?.[0])} />
             </div>
             <label>이름<input value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} /></label>
-            <label>사번<input value={profileDraft.employeeId} disabled /></label>
+            <label>사번<input value={profileDraft.employeeId} onChange={(event) => setProfileDraft({ ...profileDraft, employeeId: event.target.value.replace(/\D/g, "").slice(0, 7) })} placeholder="숫자 7자리" inputMode="numeric" maxLength={7} /></label>
             <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
             <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
             <label className="profile-role-field">직책<input value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })} /></label>

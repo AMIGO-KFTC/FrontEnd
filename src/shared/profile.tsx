@@ -4,15 +4,17 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AuthUser } from "./types";
 
 // role 은 직책(직위) 문자열이고, isAdmin 은 서버의 관리자 권한(users.is_admin, 팀장)이다.
-export type Profile = { name: string; employeeId: string; division: string; team: string; role: string; photo: string; isAdmin: boolean };
+// loginId 는 로그인 아이디, employeeId 는 사번(서로 다른 값이다).
+export type Profile = { name: string; loginId: string; employeeId: string; division: string; team: string; role: string; photo: string; isAdmin: boolean };
 
-export const EMPTY_PROFILE: Profile = { name: "", employeeId: "", division: "", team: "", role: "", photo: "", isAdmin: false };
+export const EMPTY_PROFILE: Profile = { name: "", loginId: "", employeeId: "", division: "", team: "", role: "", photo: "", isAdmin: false };
 
-// AuthUser → Profile. 서버의 department 를 본부(division)로, login_id 를 사번으로 쓴다.
+// AuthUser → Profile. 서버의 department 를 본부(division)로, employee_no 를 사번으로 쓴다.
 export function profileFromUser(user: AuthUser): Profile {
   return {
     name: user.profile?.name || user.name,
-    employeeId: user.login_id,
+    loginId: user.login_id,
+    employeeId: user.employee_no ?? "",
     isAdmin: user.is_admin === true,
     division: user.profile?.department ?? "",
     team: user.profile?.team ?? "",

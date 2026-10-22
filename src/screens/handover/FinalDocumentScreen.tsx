@@ -193,7 +193,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
                 >{section.body}</ReactMarkdown>
               </section>
             ))}
-            <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / {Math.max(sections.length, 1)}</span></footer>
+            <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </GanttContext.Provider>
         </section>
