@@ -20,6 +20,7 @@ type Props = {
   onBack: () => void;
   onSend: (text: string) => void;
   onSkip: () => void;
+  onReopen: (gapId: string) => void; // 이미 답한·건너뛴 질문으로 돌아가 다시 답한다
   onUploadFiles: (files: File[]) => void;
   onRetry: () => void;
   onComplete: () => void;
@@ -38,7 +39,7 @@ function gapState(gap: Gap): "active" | "done" | "waiting" {
   return "done";
 }
 
-export function QuestionScreen({ mode, session, messages, config, error, busy, onBack, onSend, onSkip, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
+export function QuestionScreen({ mode, session, messages, config, error, busy, onBack, onSend, onSkip, onReopen, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [answer, setAnswer] = useState("");
@@ -120,6 +121,11 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                   <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : index + 1}</span>
                   <div><small>{slotTitle(item.slot)}{item.status === "skipped" ? " · 건너뜀" : ""}</small><strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
+                  {state === "done" && (
+                    <button type="button" className="question-reopen" disabled={waiting} onClick={() => onReopen(item.id)} title="이 질문으로 돌아가 답을 고칩니다">
+                      {item.status === "skipped" ? "답하러 가기" : "다시 답하기"}
+                    </button>
+                  )}
                 </div>
               );
             })}
