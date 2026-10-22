@@ -112,6 +112,8 @@ export const api = {
   analyze: (id: string) => post<SessionDetail>(`/api/sessions/${id}/analyze`),
   chat: (id: string, text: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/chat`, { text }),
   skip: (id: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/skip`),
+  // 이미 답했거나 건너뛴 질문으로 돌아가 다시 묻는다(질의응답 중에만). 새로 답하면 앞의 답을 고친다.
+  reopen: (id: string, gapId: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/reopen`, { gap_id: gapId }),
   generate: (id: string) => post<{ ok: boolean; message: ChatMessage }>(`/api/sessions/${id}/generate`),
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 

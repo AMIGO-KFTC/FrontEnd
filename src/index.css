@@ -2995,3 +2995,6 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 @keyframes track-shine { to { transform: translateX(100%); } }
 .generation-track > span.running { transition: width .5s ease; }
 @media (prefers-reduced-motion: reduce) { .quip, .quip-mascot, .processing-track > span.running::after, .generation-track > span.running::after { animation: none; } .quip-out { display: none; } .quip-in { opacity: 1; transform: translate(-50%, -50%); } }
+.question-reopen { grid-column: 2 / -1; justify-self: start; height: 26px; margin-top: 2px; padding: 0 10px; border: 1px solid #d9d0ee; border-radius: 8px; background: #fff; color: #6749bd; font-size: 12.5px; font-weight: 700; }
+.question-reopen:hover:not(:disabled) { background: #f3effc; border-color: #b9a9e2; }
+.question-reopen:disabled { opacity: .5; cursor: default; }

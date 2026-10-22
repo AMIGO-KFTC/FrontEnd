@@ -525,6 +525,7 @@ function AppScreens() {
         onBack={() => goStep("upload")}
         onSend={(text) => sessionId && void run(() => api.chat(sessionId, text))}
         onSkip={() => sessionId && void run(() => api.skip(sessionId))}
+        onReopen={(gapId) => sessionId && void run(() => api.reopen(sessionId, gapId))}
         onUploadFiles={uploadFiles}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onComplete={generate}
