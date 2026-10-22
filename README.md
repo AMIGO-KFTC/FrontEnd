@@ -355,7 +355,7 @@ Figma Make 로 만든 새 디자인을 BackEnd 연동 화면에 적용한 결과
 
 ## 이 저장소만 개발하기
 
-백엔드를 먼저 띄워 둔 상태에서(오프라인 엔진이면 API 키 없이 됩니다) 다음을 실행합니다.
+Node.js 22 LTS(20.19 이상)가 필요합니다. 백엔드를 먼저 띄워 둔 상태에서(오프라인 엔진이면 API 키 없이 됩니다) 다음을 실행합니다.
 
 ```bash
 cd FrontEnd
@@ -368,7 +368,9 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 
 - 다른 주소의 백엔드를 쓰려면 `AMIGO_API=http://서버:8000 npm run dev`(Windows: `$env:AMIGO_API="http://서버:8000"; npm run dev`).
 - API 응답 타입은 `src/shared/types.ts` 에 있고 BackEnd 의 `app/schemas.py` 와 짝을 이룹니다. 응답 구조를 바꿀 때는 두 곳을 함께 고칩니다.
-- 팀 관리 모드는 서버가 `is_admin: true`(관리자 권한, 팀장)로 알려 준 계정만 열 수 있습니다. 팀장은 로그인 뒤 **인수인계 작성 / 팀 관리** 중 하나를 고르고(선택은 탭을 닫거나 로그아웃할 때까지 유지), 홈 머리글의 **팀 관리 모드** 단추와 관리자 머리글의 **일반 모드** 단추로 오갑니다.
+- 팀 관리 모드는 서버가 `is_admin: true`(관리자 권한, 팀장)로 알려 준 계정만 열 수 있습니다.
+  - 팀장은 로그인 뒤 **인수인계 작성 / 팀 관리** 중 하나를 고릅니다. 선택은 탭을 닫거나 로그아웃할 때까지 유지됩니다.
+  - 홈 머리글의 **팀 관리 모드** 단추와 관리자 머리글의 **일반 모드** 단추로 두 모드를 오갑니다.
 - 이전 3단 작업 화면은 `legacy.html`(`src/legacy/`)로 남겨 두었습니다. 개발 서버에서 <http://localhost:5173/legacy.html> 로 열 수 있습니다.
 - `npm run build` 결과물(`dist/`)은 BackEnd 의 `AMIGO_FRONTEND_DIST=../FrontEnd/dist` 설정으로 8000 포트 하나에서 함께 서비스할 수 있습니다([서버 하나로 실행하기](#6-선택-서버-하나로-실행하기--시연공유용)).
 
@@ -408,6 +410,7 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 ## 폴더 구조
 
 ```text
+.github/CODEOWNERS         코드 소유자 지정
 index.html / legacy.html   새 디자인 화면 / 이전 3단 화면(보존용) 진입점
 src/
   main.tsx                 진입점
@@ -424,8 +427,8 @@ src/
     documentMarkdown.ts  GanttTable.tsx  MermaidDiagram.tsx  highlight.tsx  handover.ts  restore.ts
   screens/
     auth/      LoginScreen  SignupScreen  ForgotPasswordScreen  AuthVisual
+               WorkspaceSelectScreen(팀장의 일반 / 팀 관리 모드 선택)
     home/      DashboardScreen  OngoingHandoverScreen  CompletedDocumentsScreen  ReceivedHandoverScreen  DashboardCalendar
-    auth/      … WorkspaceSelectScreen(팀장의 일반 / 팀 관리 모드 선택)
     admin/     AdminDashboardScreen  AdminMembersPage  AdminHandoversPage  AdminAiSettingsPage
     handover/  HandoverTypeScreen  StartScreen  UploadStepScreen  MattermostPanel  ConfluencePanel
                ProcessingScreen  QuestionScreen  GeneratingDocumentScreen  FinalDocumentScreen
