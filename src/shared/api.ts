@@ -82,7 +82,7 @@ export const api = {
   login: (loginId: string, password: string) => post<LoginResult>("/api/auth/login", { login_id: loginId, password }),
   logout: () => post<{ message: string }>("/api/auth/logout"),
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
-  signup: (loginId: string, password: string, name: string) => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name }),
+  signup: (loginId: string, password: string, name: string, employeeNo = "") => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo }),
   saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
 
   // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용

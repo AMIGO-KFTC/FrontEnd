@@ -31,9 +31,9 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   useEffect(() => {
     api
       .members()
-      .then((result) => setMembers(result.members.filter((member) => member.login_id !== profile.employeeId)))
+      .then((result) => setMembers(result.members.filter((member) => member.login_id !== profile.loginId)))
       .catch(() => setMembers([]));
-  }, [profile.employeeId]);
+  }, [profile.loginId]);
   const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
   const pickSuccessor = (loginId: string) => {
     const member = members.find((m) => m.login_id === loginId);

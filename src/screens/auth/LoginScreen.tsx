@@ -7,7 +7,7 @@ import { AuthVisual } from "./AuthVisual";
 const SAVED_ID_KEY = "amigo-saved-login-id";
 
 // 임시: Onetel SSO 연동 전까지 SSO 로그인은 시연 계정(계장 김민준)으로 들어간다. 연동되면 이 계정 정보를 지우고 SSO 응답으로 바꾼다.
-const SSO_DEMO_ACCOUNT = { loginId: "1111111", password: "demo1234" };
+const SSO_DEMO_ACCOUNT = { loginId: "demo", password: "demo1234" };
 
 function savedLoginId(): string {
   try {

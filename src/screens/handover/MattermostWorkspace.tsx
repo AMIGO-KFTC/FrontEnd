@@ -188,6 +188,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState<PickItem[]>([]); // 원래 창으로 이미 보낸 대화(보낸 뒤에도 무엇을 보냈는지 보이게)
   const [modalOpen, setModalOpen] = useState(true); // 이 화면이 열리면 대화 선택 모달이 바로 뜬다
   const feedRef = useRef<HTMLDivElement>(null);
   const loadedOnce = useRef(false);
@@ -254,6 +255,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
     const message = await onSend(picked.items);
     setSending(false);
     if (message) {
+      setSent((prev) => [...prev.filter((p) => !picked.items.some((i) => i.id === p.id)), ...picked.items]);
       picked.clear();
       setToast(message);
       setModalOpen(false);
@@ -296,6 +298,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
   };
 
   const isPicked = (id: string) => picked.has(id);
+  const isSent = (id: string) => sent.some((item) => item.id === id);
 
   return (
     <div className="mmw">
@@ -307,7 +310,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
           {query && <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기">×</button>}
         </label>
         <div className="mmw-globalbar-right">
-          <button type="button" className="mmw-choose" onClick={() => setModalOpen(true)}>대화 고르기</button>
+          <button type="button" className={`mmw-choose${picked.items.length ? " has-picked" : ""}`} onClick={() => setModalOpen(true)}>대화 고르기{picked.items.length ? ` (${picked.items.length})` : ""}</button>
           <button type="button" className="mmw-send" disabled={!picked.items.length || sending} onClick={send}>
             {sending ? "보내는 중…" : `원래 창으로 보내기${picked.items.length ? ` (${picked.items.length})` : ""}`}
           </button>
@@ -326,6 +329,34 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
             <strong>{team || "Mattermost"}</strong>
             <ChevronIcon />
           </div>
+          {(picked.items.length > 0 || sent.length > 0) && (
+            <div className="mmw-tray" aria-label="내가 고른 대화">
+              {picked.items.length > 0 && (
+                <>
+                  <div className="mmw-tray-title">내가 고른 대화 <b>{picked.items.length}</b></div>
+                  {picked.items.map((item) => (
+                    <div className={`mmw-tray-item${item.id === openId ? " active" : ""}`} key={item.id}>
+                      <button type="button" className="mmw-tray-open" onClick={() => setOpenId(item.id)} title="이 대화 보기">
+                        <CheckIcon />
+                        <span>{item.title}</span>
+                      </button>
+                      <button type="button" className="mmw-tray-x" onClick={() => picked.toggle(item)} aria-label={`${item.title} 선택 해제`} title="선택 해제">×</button>
+                    </div>
+                  ))}
+                </>
+              )}
+              {sent.length > 0 && (
+                <>
+                  <div className="mmw-tray-title sent">원래 창으로 보낸 대화 <b>{sent.length}</b></div>
+                  {sent.map((item) => (
+                    <button type="button" className="mmw-tray-item sent" key={item.id} onClick={() => setOpenId(item.id)}>
+                      <span>{item.title}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
           <div className="mmw-sidebar-scroll">
             {rows === null && !loadError && <p className="mmw-side-note">불러오는 중…</p>}
             {rows !== null && rows.length === 0 && <p className="mmw-side-note">'{query}' 이(가) 들어간 대화가 없어요.</p>}
@@ -351,6 +382,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
                         <span className="mmw-channel-icon"><RowIcon row={row} /></span>
                         <span className="mmw-channel-name">{highlight(shortName(row), terms)}</span>
                         {isPicked(row.id) && <span className="mmw-picked-mark" title="자료로 선택됨"><CheckIcon /></span>}
+                        {!isPicked(row.id) && isSent(row.id) && <span className="mmw-sent-mark" title="원래 창으로 보냈어요">보냄</span>}
                       </button>
                     ))}
                 </section>

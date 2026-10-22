@@ -1,10 +1,11 @@
-// STEP 04 문서 생성 중. 서버가 composing 단계에서 보내는 진행 문구와 상태만으로 그린다(퍼센트는 서버가 주지 않아 표시하지 않는다).
+// STEP 04 문서 생성 중. 서버가 composing 단계에서 보내는 진행 문구와 상태로 그린다. 서버가 퍼센트를 주지 않아 바의 퍼센트는 추정치(useEstimatedProgress)다.
 // 문서가 만들어지면(document_version 증가, stage=review) App 이 문서 화면으로 넘긴다.
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
+import { useEstimatedProgress, WorkQuips } from "@/shared/WorkQuips";
 import type { HandoverMode, SessionDetail } from "@/shared/types";
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
 export function GeneratingDocumentScreen({ mode, session, targetVersion, onRetry, onBack, onLogout, onHome }: Props) {
   const failed = session.status === "error";
   const done = session.document_version >= targetVersion && session.status !== "running";
+  const percent = useEstimatedProgress(!failed && !done, done);
   const readySources = session.sources.filter((source) => source.status === "ready").length;
   const steps = [
     { label: `등록 자료 ${readySources}건 정리`, state: "done" as const },
@@ -56,9 +58,10 @@ export function GeneratingDocumentScreen({ mode, session, targetVersion, onRetry
         <span className="generation-kicker">{failed ? "GENERATION PAUSED" : done ? "DOCUMENT READY" : "GENERATING HANDOVER"}</span>
         <h1>{headline}</h1>
         <p>{failed ? "다시 시도하거나 질의응답으로 돌아가 내용을 보완한 뒤 다시 생성할 수 있어요." : done ? "완성된 문서 화면으로 이동합니다." : "등록한 자료와 답변을 바탕으로 바로 활용할 수 있는 문서를 구성하고 있어요."}</p>
+        {!failed && !done && <WorkQuips />}
         <section className="generation-progress-card">
-          <div className="generation-progress-head"><strong>{progressText}</strong><span>{failed ? "중단" : done ? "완료" : "진행 중"}</span></div>
-          <div className="generation-track"><span className={done ? "" : failed ? "stopped" : "indeterminate"} style={done ? { width: "100%" } : undefined} /></div>
+          <div className="generation-progress-head"><strong>{progressText}</strong><span>{failed ? "중단" : `${percent}%`}</span></div>
+          <div className="generation-track"><span className={done ? "" : failed ? "stopped" : "running"} style={failed ? undefined : { width: `${percent}%` }} /></div>
           <div className="generation-step-list">
             {steps.map((step) => (
               <div className={step.state === "done" ? "done" : step.state === "active" ? "active" : step.state === "failed" ? "failed" : ""} key={step.label}>

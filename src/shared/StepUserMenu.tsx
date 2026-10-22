@@ -32,7 +32,7 @@ export function StepUserMenu({ onLogout, onHome }: { onLogout: () => void; onHom
         <button className="step-user-avatar" aria-label={`${profile.name} 프로필 열기`} aria-expanded={open} onClick={() => setOpen((current) => !current)}>{profile.name.slice(0, 1)}</button>
         {open && (
           <div className="type-profile-popover">
-            <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId}</small></div></header>
+            <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
             <div className="type-profile-actions">
               <button className="type-profile-home" onClick={() => {
                 setOpen(false);

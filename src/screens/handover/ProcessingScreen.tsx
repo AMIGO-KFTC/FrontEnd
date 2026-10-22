@@ -2,6 +2,7 @@ import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
+import { WorkQuips } from "@/shared/WorkQuips";
 import type { HandoverMode, SessionDetail } from "@/shared/types";
 
 type Props = { mode: HandoverMode; session: SessionDetail; onNext: () => void; onRetry: () => void; onBack: () => void; onLogout: () => void; onHome: () => void };
@@ -43,9 +44,10 @@ export function ProcessingScreen({ mode, session, onNext, onRetry, onBack, onLog
         <span className="processing-kicker">{failed ? "ANALYSIS PAUSED" : finished ? "ANALYSIS COMPLETE" : "ANALYZING YOUR FILES"}</span>
         <h1>{failed ? "분석을 끝내지 못했어요" : finished ? "자료를 모두 읽었어요" : "AMIGO가 자료를 분석하고 있어요"}</h1>
         <p>{failed ? "분석 중 문제가 생겼어요. 다시 시도하거나, 자료 등록으로 돌아가 자료를 확인한 뒤 다시 시작할 수 있어요." : finished ? "자료 분석을 마쳤어요. 이제 빈틈을 채워볼까요?" : "자료의 양에 따라 잠시 시간이 걸릴 수 있어요. 창을 닫아도 분석은 계속됩니다."}</p>
+        {!failed && !finished && <WorkQuips />}
         <section className="processing-status">
           <div className="processing-status-head"><span>{currentTask}</span><strong>{progressValue}%</strong></div>
-          <div className="processing-track"><span style={{ width: `${progressValue}%` }} /></div>
+          <div className="processing-track"><span className={!failed && !finished ? "running" : ""} style={{ width: `${progressValue}%` }} /></div>
           <div className="processing-file">
             <span><Icon name="file" size={16} /></span>
             <div><small>{failed ? "중단된 자료" : finished ? "분석 완료" : "현재 분석 중"}</small><strong>{currentFile}</strong></div>

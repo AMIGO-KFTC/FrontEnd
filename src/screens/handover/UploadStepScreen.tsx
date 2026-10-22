@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
-import { Icon } from "@/shared/Icon";
+import { Icon, type IconName } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
 import { openPickerTab, usePicked, usePickReceiver, type PickAck, type PickItem, type PickKind } from "@/shared/pickBridge";
@@ -24,12 +24,42 @@ type Props = {
   onImportConfluence: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>;
 };
 
+type SourceKey = "file" | "mail" | "confluence" | "messenger";
+// 목록 한 줄. 등록 예정(고르기만 한 것)과 등록된 자료(서버에 저장된 것)를 같은 모양으로 그린다.
+type ListRow = { id: string; group: SourceKey; icon: IconName; title: string; sub: string; remove: () => void };
+
 const INTEGRATION_LABEL: Record<string, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지" };
+const START_WAIT_MS = 120_000; // 등록한 자료를 다 읽을 때까지 기다리는 최대 시간
+
+// 자료 종류 4개. 하나를 누르면 그 내용이 가운데로 나오고, 나머지 셋은 아래쪽 줄로 내려간다.
+const CARDS: { key: SourceKey; icon: IconName; title: string; desc: string; tag?: string; soon?: boolean }[] = [
+  { key: "file", icon: "upload", title: "파일 업로드", desc: "업무 매뉴얼부터 기안문서까지, 인수인계에 필요한 모든 자료 업로드", tag: "PDF · HWP · Word · PPT · Excel · JPG" },
+  { key: "mail", icon: "mail", title: "메일 연결", desc: "업무 메일 검색 및 선택", soon: true },
+  { key: "confluence", icon: "folder", title: "컨플루언스 & 나누미 연결", desc: "업무 페이지 링크 가져오기" },
+  { key: "messenger", icon: "message", title: "메신저 & 매터모스트", desc: "최근 대화를 골라 등록하거나 캡처 이미지 업로드", tag: "대화 선택 · JPG · PDF · PNG" },
+];
 
 function sourceStatus(source: Source): string {
   if (source.status === "pending" || source.status === "processing") return " · 읽는 중";
   if (source.status === "failed") return ` · 실패${source.error ? `: ${source.error}` : ""}`;
   return "";
+}
+
+function SourceCard({ card, onSelect, counts, compact = false, index = 0 }: { card: (typeof CARDS)[number]; onSelect: (key: SourceKey) => void; counts: { pending: number; registered: number }; compact?: boolean; index?: number }) {
+  return (
+    <button type="button" className={`us-card ${compact ? "compact" : ""}`} style={{ "--i": index } as React.CSSProperties} onClick={() => onSelect(card.key)}>
+      <span className="us-card-icon"><Icon name={card.icon} size={compact ? 17 : 22} /></span>
+      <strong>{card.title}{card.soon && <em className="source-pending">준비 중</em>}</strong>
+      {(counts.pending > 0 || counts.registered > 0) && (
+        <span className="us-card-counts">
+          {counts.pending > 0 && <i className="pending">예정 {counts.pending}</i>}
+          {counts.registered > 0 && <i>등록 {counts.registered}</i>}
+        </span>
+      )}
+      {!compact && <small>{card.desc}</small>}
+      {!compact && card.tag && <small className="source-formats">{card.tag}</small>}
+    </button>
+  );
 }
 
 export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
@@ -39,7 +69,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   const files = sources.filter((source) => source.kind === "file" && !isIntegration(source));
   const links = sources.filter((source) => source.kind === "link" && !isIntegration(source));
   const imported = sources.filter(isIntegration);
-  const [activeSource, setActiveSource] = useState<"file" | "mail" | "confluence" | "messenger">("file");
+  const [activeSource, setActiveSource] = useState<SourceKey | null>(null);
   // 가장 최근에 선택 창(새 탭)을 열려던 시도가 성공했는지(false 면 팝업 차단 안내)
   const [opened, setOpened] = useState<Record<PickKind, boolean>>({ mattermost: true, confluence: true });
   const openPicker = (kind: PickKind) => {
@@ -72,6 +102,131 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     onAddLink(nextLink);
     setLink("");
   };
+  // 카드를 눌러도 새 탭은 열리지 않는다. 'Mattermost 열기' 같은 단추를 눌러야 열린다.
+  const select = (key: SourceKey) => setActiveSource(key);
+  const dropProps = {
+    onClick: () => inputRef.current?.click(),
+    onDragOver: (event: React.DragEvent) => event.preventDefault(),
+    onDrop: (event: React.DragEvent) => {
+      event.preventDefault();
+      addFiles(event.dataTransfer.files);
+    },
+  };
+
+  // ---- 자료 목록: 종류별로 '등록 예정'(고르기만 함)과 '등록된 자료'(저장됨)를 나눠 둔다. 어느 쪽이든 ×로 뺄 수 있다.
+  const pendingRowsOf = (kind: PickKind): ListRow[] => {
+    const picked = kind === "mattermost" ? mattermostPicked : confluencePicked;
+    return picked.items.map((item) => ({
+      id: `pending-${kind}-${item.id}`,
+      group: kind === "mattermost" ? "messenger" : "confluence",
+      icon: kind === "mattermost" ? "message" : "folder",
+      title: item.title,
+      sub: `${INTEGRATION_LABEL[kind]} · 등록 전`,
+      remove: () => picked.toggle(item),
+    }));
+  };
+  const savedRow = (source: Source, group: SourceKey, icon: IconName, sub: string): ListRow => ({
+    id: `saved-${source.id}`,
+    group,
+    icon,
+    title: source.kind === "link" && !isIntegration(source) ? source.url || source.name : source.name,
+    sub: `${sub}${sourceStatus(source)}`,
+    remove: () => onDeleteSource(source),
+  });
+  const fileRows = files.map((file) => savedRow(file, "file", "file", `${(file.size / 1024 / 1024).toFixed(1)} MB`));
+  const linkRows = links.map((item) => savedRow(item, "confluence", "link", "외부 링크"));
+  const mattermostRows = imported.filter((item) => item.link_type === "mattermost").map((item) => savedRow(item, "messenger", "message", INTEGRATION_LABEL.mattermost));
+  const confluenceRows = imported.filter((item) => item.link_type === "confluence").map((item) => savedRow(item, "confluence", "folder", INTEGRATION_LABEL.confluence));
+  const groups: Record<SourceKey, { pending: ListRow[]; registered: ListRow[] }> = {
+    file: { pending: [], registered: fileRows },
+    mail: { pending: [], registered: [] },
+    confluence: { pending: pendingRowsOf("confluence"), registered: [...confluenceRows, ...linkRows] },
+    messenger: { pending: pendingRowsOf("mattermost"), registered: mattermostRows },
+  };
+  const countsOf = (key: SourceKey) => ({ pending: groups[key].pending.length, registered: groups[key].registered.length });
+  const allPending = [...groups.messenger.pending, ...groups.confluence.pending];
+  const allRegistered = [...fileRows, ...linkRows, ...mattermostRows, ...confluenceRows];
+
+  // ---- AI 분석 시작: 확인 → 고른(등록 예정) 대화·페이지를 먼저 등록 → 자료를 다 읽으면 분석 시작
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [starting, setStarting] = useState(false); // 등록·읽기가 끝나기를 기다렸다가 분석을 시작하는 중
+  const [waitFor, setWaitFor] = useState<number | null>(null); // 이만큼 자료가 목록에 보이고 다 읽으면 분석 시작
+  const [localNotice, setLocalNotice] = useState<string | null>(null);
+  const [needSources, setNeedSources] = useState(false); // 자료 없이 시작을 누른 뒤, 자료가 생기기 전까지 안내를 보여 준다
+  const readable = sources.filter((source) => source.status !== "failed").length;
+
+  const askStart = () => {
+    if (busy || starting) return;
+    setLocalNotice(null);
+    if (!readable && !allPending.length) {
+      setNeedSources(true);
+      return;
+    }
+    setConfirmOpen(true);
+  };
+  const confirmStart = async () => {
+    setConfirmOpen(false);
+    setStarting(true);
+    let created = 0;
+    for (const [picked, run] of [[mattermostPicked, onImportMattermost], [confluencePicked, onImportConfluence]] as const) {
+      if (!picked.items.length) continue;
+      const result = await run(picked.items.map((item) => item.id));
+      if (!result) {
+        setStarting(false); // 등록에 실패하면 서버 오류 문구가 화면에 뜬다. 고른 항목은 남겨 다시 시도할 수 있게 한다
+        return;
+      }
+      picked.clear();
+      created += result.sources.length;
+    }
+    setWaitFor(sources.length + created);
+  };
+  useEffect(() => {
+    if (waitFor === null) return;
+    if (sources.length < waitFor) return; // 방금 등록한 자료가 목록에 아직 안 보임
+    if (sources.some((source) => source.status === "pending" || source.status === "processing")) return; // 읽는 중
+    setWaitFor(null);
+    setStarting(false);
+    onNext();
+  }, [waitFor, sources, onNext]);
+  useEffect(() => {
+    if (waitFor === null) return;
+    const timer = window.setTimeout(() => {
+      setWaitFor(null);
+      setStarting(false);
+      setLocalNotice("자료를 읽는 데 시간이 걸리고 있어요. 잠시 뒤 'AI 분석 시작'을 다시 눌러 주세요.");
+    }, START_WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [waitFor]);
+
+  const active = CARDS.find((card) => card.key === activeSource) ?? null;
+  const registeredCount = sources.length;
+
+  const renderRow = (row: ListRow, pending: boolean) => (
+    <div className={`added-resource${pending ? " pending" : ""}${row.group === activeSource ? " in-focus" : ""}`} key={row.id}>
+      <span><Icon name={row.icon} size={17} /></span>
+      <div><strong>{row.title}</strong><small>{row.sub}</small></div>
+      <button type="button" onClick={row.remove} aria-label={`${row.title} 삭제`} title="삭제"><Icon name="close" size={14} /></button>
+    </div>
+  );
+  // 지금 연 종류에 담긴 자료만 나란히 보여 준다(왼쪽 등록 예정 | 오른쪽 등록됨)
+  const renderCompare = (key: SourceKey) => {
+    const group = groups[key];
+    const withPending = key === "confluence" || key === "messenger";
+    return (
+      <div className={`us-compare${withPending ? " two" : ""}`}>
+        {withPending && (
+          <div className="us-compare-col pending">
+            <div className="us-compare-head"><strong>등록 예정</strong><span>{group.pending.length}</span></div>
+            {group.pending.length ? group.pending.map((row) => renderRow(row, true)) : <p>열기를 눌러 고르면 여기에 담겨요.</p>}
+          </div>
+        )}
+        <div className="us-compare-col">
+          <div className="us-compare-head"><strong>등록됨</strong><span>{group.registered.length}</span></div>
+          {group.registered.length ? group.registered.map((row) => renderRow(row, false)) : <p>아직 등록된 자료가 없어요.</p>}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={`upload-step-page ${mode === "leave" ? "leave-theme" : ""}`}>
@@ -87,122 +242,121 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
         </div>
         <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
-      <main className="upload-step-main">
+      <main className="upload-step-main us-main">
         <div className="upload-step-title">
           <span>STEP 02 · 자료 등록</span>
           <h1>업무 자료를 모아주세요</h1>
           <p>AMIGO가 자료의 내용을 분석해 인수인계 항목과 질문을 준비합니다.</p>
           <div className="upload-richness-note"><Icon name="sparkle" size={14} /><strong>자료가 풍부할수록 인수인계 문서가 더 정확해져요</strong></div>
         </div>
-        <input className="source-file-input" ref={inputRef} type="file" multiple onChange={(event) => addFiles(event.target.files)} />
-        <section className="source-grid">
-          <button className={activeSource === "file" ? "active" : ""} onClick={() => { setActiveSource("file"); inputRef.current?.click(); }}>
-            <span><Icon name="upload" size={20} /></span><strong>파일 업로드</strong><small>업무 매뉴얼부터 기안문서까지, 인수인계에 필요한 모든 자료 업로드</small><small className="source-formats">PDF · HWP · Word · PPT · Excel · JPG</small>
-          </button>
-          <button className={activeSource === "mail" ? "active" : ""} onClick={() => setActiveSource("mail")}>
-            <span><Icon name="mail" size={20} /></span><strong>메일 연결 <em className="source-pending">준비 중</em></strong><small>업무 메일 검색 및 선택</small><small className="mail-upload-note">메일 연동 API 가 준비되기 전까지는 메일 화면을 캡처해 이미지로 올려 주세요</small>
-          </button>
-          <div className={`source-card link-source-card ${activeSource === "confluence" ? "active" : ""}`}>
-            <button
-              className="source-card-heading"
-              onClick={() => {
-                setActiveSource("confluence");
-                openPicker("confluence"); // 페이지는 새 탭의 컨플루언스 화면에서 검색해 고른다
-              }}
-            >
-              <span><Icon name="folder" size={20} /></span><strong>컨플루언스 &amp; 나누미 연결</strong><small>업무 페이지 링크 가져오기</small>
-            </button>
-            <div className="inline-source-link">
-              <input
-                value={link}
-                onFocus={() => setActiveSource("confluence")}
-                onChange={(event) => setLink(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addLink();
-                  }
-                }}
-                placeholder="링크 붙여넣기"
-              />
-              <button onClick={addLink}>추가</button>
-            </div>
+        <input className="source-file-input" ref={inputRef} type="file" multiple onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
+        <div className="us-body">
+          <div className={`us-stage ${active ? "is-focused" : ""}`}>
+            {!active ? (
+              <section className="us-grid" aria-label="자료 종류">
+                {CARDS.map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} onSelect={select} />)}
+              </section>
+            ) : (
+              <>
+                <section className="us-focus" key={active.key} aria-label={active.title}>
+                  <header className="us-focus-head">
+                    <span className="us-card-icon"><Icon name={active.icon} size={19} /></span>
+                    <div><strong>{active.title}</strong><small>{active.desc}</small></div>
+                    <button type="button" className="us-focus-close" onClick={() => setActiveSource(null)}>모두 보기</button>
+                  </header>
+                  <div className="us-focus-body">
+                    {active.key === "file" && (
+                      <>
+                        <div className="us-drop" {...dropProps}>
+                          <Icon name="upload" size={26} />
+                          <strong>파일을 여기에 놓거나 클릭해서 선택하세요</strong>
+                          <p>올리면 바로 등록돼요. 여러 개를 한 번에 올릴 수 있어요.</p>
+                          <small className="source-formats">{active.tag}</small>
+                          <button type="button">파일 선택</button>
+                        </div>
+                        {renderCompare("file")}
+                      </>
+                    )}
+                    {active.key === "mail" && (
+                      // 메일 연결 API 가 BackEnd 에 아직 없다. 메일 화면 캡처를 파일로 올리는 길만 열어 둔다.
+                      <div className="us-drop" {...dropProps}>
+                        <Icon name="mail" size={26} />
+                        <strong>메일 연결은 준비 중이에요</strong>
+                        <p>메일함 연동 API 가 생기면 여기서 바로 검색해 고를 수 있어요. 지금은 메일 화면 캡처(JPG · PNG · PDF)를 올려 주세요. 올린 파일은 '파일 업로드'에 담겨요.</p>
+                        <button type="button">캡처 올리기</button>
+                      </div>
+                    )}
+                    {active.key === "confluence" && (
+                      <>
+                        <IntegrationLauncher kind="confluence" busy={busy || starting} picked={confluencePicked} showChips={false} onImport={onImportConfluence} onOpen={() => openPicker("confluence")} opened={opened.confluence} />
+                        <div className="us-link-row">
+                          <input
+                            value={link}
+                            onChange={(event) => setLink(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                addLink();
+                              }
+                            }}
+                            placeholder="또는 컨플루언스·나누미 링크 붙여넣기"
+                          />
+                          <button type="button" onClick={addLink}>추가</button>
+                        </div>
+                        {renderCompare("confluence")}
+                      </>
+                    )}
+                    {active.key === "messenger" && (
+                      <>
+                        <IntegrationLauncher kind="mattermost" busy={busy || starting} picked={mattermostPicked} showChips={false} onImport={onImportMattermost} onOpen={() => openPicker("mattermost")} opened={opened.mattermost} />
+                        {renderCompare("messenger")}
+                        <div className="us-drop slim" {...dropProps}>
+                          <Icon name="upload" size={18} />
+                          <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>올린 파일은 '파일 업로드'에 담겨요.</p></div>
+                          <button type="button">파일 선택</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </section>
+                <section className="us-dock" aria-label="다른 자료 종류">
+                  {CARDS.filter((card) => card.key !== active.key).map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} compact onSelect={select} />)}
+                </section>
+              </>
+            )}
           </div>
-          <button
-            className={activeSource === "messenger" ? "active" : ""}
-            onClick={() => {
-              setActiveSource("messenger");
-              openPicker("mattermost"); // 대화는 새 탭의 Mattermost 화면에서 고른다
-            }}
-          >
-            <span><Icon name="message" size={20} /></span><strong>메신저 &amp; 매터모스트</strong><small>최근 대화를 골라 등록하거나 캡처 이미지 업로드</small><small className="source-formats">대화 선택 · JPG · PDF · PNG</small>
-          </button>
-        </section>
-        {activeSource === "messenger" && <IntegrationLauncher kind="mattermost" busy={busy} picked={mattermostPicked} onImport={onImportMattermost} onOpen={() => openPicker("mattermost")} opened={opened.mattermost} />}
-        {activeSource === "confluence" && <IntegrationLauncher kind="confluence" busy={busy} picked={confluencePicked} onImport={onImportConfluence} onOpen={() => openPicker("confluence")} opened={opened.confluence} />}
-        <div className="source-action-slot">
-          {activeSource === "messenger" ? (
-            <section
-              className="source-action-panel compact"
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                addFiles(event.dataTransfer.files);
-              }}
-            >
-              <Icon name="upload" size={18} />
-              <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>여기에 놓거나 클릭해서 파일을 선택하세요.</p></div>
-              <button>파일 선택</button>
+          <aside className="us-side">
+            <section className="us-side-section us-pending">
+              <div className="added-list-title"><strong><Icon name="clock" size={15} /> 등록 예정 자료</strong><span>{allPending.length}개</span></div>
+              <p className="us-side-desc">고르기만 한 자료예요. 'AI 분석 시작'을 누르면 등록돼요.</p>
+              {allPending.length === 0 ? <div className="empty-resource">고른 대화·페이지가 여기에 모여요.</div> : allPending.map((row) => renderRow(row, true))}
             </section>
-          ) : activeSource === "mail" ? (
-            // 메일 연결 API 가 BackEnd 에 아직 없다. 메일 화면 캡처를 파일로 올리는 길만 열어 둔다.
-            <section
-              className="source-action-panel mail-connected-panel"
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                addFiles(event.dataTransfer.files);
-              }}
-            >
-              <Icon name="mail" size={18} />
-              <div><strong>메일 연결은 준비 중이에요</strong><p>메일함 연동 API 가 생기면 여기서 바로 검색해 고를 수 있어요. 지금은 메일 화면 캡처(JPG · PNG · PDF)를 올려 주세요.</p></div>
-              <button>캡처 올리기</button>
+            <section className="us-side-section us-registered">
+              <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{registeredCount}개</span></div>
+              <p className="us-side-desc">이미 저장돼 AI 분석에 쓰이는 자료예요.</p>
+              {allRegistered.length === 0 ? <div className="empty-resource">아직 등록된 자료가 없습니다.</div> : allRegistered.map((row) => renderRow(row, false))}
             </section>
-          ) : null}
+          </aside>
         </div>
-        <section className="step-added-list">
-            <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{sources.length}개</span></div>
-            {sources.length === 0 && <div className="empty-resource">아직 등록된 자료가 없습니다.</div>}
-            {files.map((file) => (
-              <div className="added-resource" key={file.id}>
-                <span><Icon name="file" size={17} /></span>
-                <div><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(1)} MB{sourceStatus(file)}</small></div>
-                <button onClick={() => onDeleteSource(file)}><Icon name="close" size={14} /></button>
-              </div>
-            ))}
-            {links.map((item) => (
-              <div className="added-resource" key={item.id}>
-                <span><Icon name="link" size={17} /></span>
-                <div><strong>{item.url || item.name}</strong><small>외부 링크{sourceStatus(item)}</small></div>
-                <button onClick={() => onDeleteSource(item)}><Icon name="close" size={14} /></button>
-              </div>
-            ))}
-            {imported.map((item) => (
-              <div className="added-resource" key={item.id}>
-                <span><Icon name={item.link_type === "mattermost" ? "message" : "folder"} size={17} /></span>
-                <div><strong>{item.name}</strong><small>{INTEGRATION_LABEL[item.link_type]}{sourceStatus(item)}</small></div>
-                <button onClick={() => onDeleteSource(item)}><Icon name="close" size={14} /></button>
-              </div>
-            ))}
-        </section>
-        <ErrorNote message={error} />
+        <ErrorNote message={error ?? localNotice ?? (needSources && !readable && !allPending.length ? "분석할 자료를 1건 이상 등록해 주세요. 위에서 자료 종류를 골라 보세요." : null)} />
         <div className="upload-step-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
-          <button className="primary-button onboarding-next" disabled={busy} onClick={onNext}>AI 분석 시작 <Icon name="arrow" size={18} /></button>
+          <button className="primary-button onboarding-next" disabled={busy || starting} onClick={askStart}>{starting ? "자료를 준비하는 중…" : "AI 분석 시작"} <Icon name="arrow" size={18} /></button>
         </div>
       </main>
+      {confirmOpen && (
+        <div className="logout-overlay" role="presentation" onClick={() => setConfirmOpen(false)}>
+          <section className="logout-modal neutral-modal" role="alertdialog" aria-modal="true" aria-labelledby="start-title" onClick={(event) => event.stopPropagation()}>
+            <span><Icon name="sparkle" size={22} /></span>
+            <h2 id="start-title">AI 분석을 시작할까요?</h2>
+            <p>
+              등록된 자료 {registeredCount}개{allPending.length ? `와 등록 예정 ${allPending.length}개` : ""}를 바탕으로
+              <br />인수인계 항목과 질문을 준비해요.
+            </p>
+            <div><button type="button" onClick={() => setConfirmOpen(false)}>취소</button><button type="button" autoFocus onClick={() => void confirmStart()}>분석 시작</button></div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

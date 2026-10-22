@@ -161,3 +161,24 @@
 .mmw-btn.primary:hover:not(:disabled) { background: var(--mm-accent-hover); }
 .mmw-btn.primary:disabled { background: rgba(63, 67, 80, 0.08); color: rgba(63, 67, 80, 0.32); cursor: default; }
 @media (max-width: 860px) { .mmw-modal-backdrop { padding: 12px; } .mmw-modal-head, .mmw-modal-row, .mmw-modal-foot { padding-left: 16px; padding-right: 16px; } .mmw-modal-search, .mmw-modal-listhead { margin-left: 16px; margin-right: 16px; } }
+
+/* 고른 대화가 한눈에 보이게: 사이드바 위의 '내가 고른 대화' 목록, 고른 행 강조, 보낸 표시 */
+.mmw-tray { flex: none; max-height: 210px; margin: 8px 8px 4px; padding: 8px 6px 6px; overflow-y: auto; border: 1px solid rgba(61, 184, 135, 0.45); border-radius: 6px; background: rgba(61, 184, 135, 0.12); }
+.mmw-tray-title { padding: 2px 6px 5px; display: flex; align-items: center; gap: 6px; color: #fff; font-size: 12.5px; font-weight: 700; }
+.mmw-tray-title b { min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border-radius: 9px; background: #3db887; font-size: 12px; }
+.mmw-tray-title.sent { margin-top: 6px; color: rgba(255, 255, 255, 0.72); font-weight: 600; }
+.mmw-tray-title.sent b { background: rgba(255, 255, 255, 0.28); }
+.mmw-tray-item { min-height: 28px; display: flex; align-items: center; border-radius: 4px; color: rgba(255, 255, 255, 0.9); }
+.mmw-tray-item:hover { background: rgba(255, 255, 255, 0.1); }
+.mmw-tray-item.active { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.mmw-tray-open { min-width: 0; flex: 1; min-height: 28px; padding: 0 6px; display: flex; align-items: center; gap: 7px; border: 0; background: transparent; color: inherit; font-size: 13px; text-align: left; }
+.mmw-tray-open span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mmw-tray-open svg { flex: none; color: #5fe0aa; }
+.mmw-tray-x { width: 24px; height: 24px; flex: none; margin-right: 2px; border: 0; border-radius: 4px; background: transparent; color: rgba(255, 255, 255, 0.7); font-size: 16px; line-height: 1; }
+.mmw-tray-x:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+button.mmw-tray-item.sent { width: 100%; padding: 0 6px 0 24px; border: 0; background: transparent; color: rgba(255, 255, 255, 0.62); font-size: 13px; text-align: left; }
+button.mmw-tray-item.sent span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mmw-channel.picked:not(.active) { background: rgba(61, 184, 135, 0.2); }
+.mmw-channel.picked .mmw-picked-mark { width: 20px; height: 20px; box-shadow: 0 0 0 2px rgba(61, 184, 135, 0.35); }
+.mmw-sent-mark { flex: none; padding: 1px 6px; border-radius: 9px; background: rgba(255, 255, 255, 0.2); color: #fff; font-size: 11.5px; font-weight: 600; }
+.mmw-choose.has-picked { border-color: #3db887; background: rgba(61, 184, 135, 0.25); }
