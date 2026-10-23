@@ -101,7 +101,7 @@ export function DashboardCalendar() {
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") addEvent();
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) addEvent(); // 한글 조합 중 Enter 는 글자 확정이라 무시한다
               }}
               placeholder="일정 입력"
             />

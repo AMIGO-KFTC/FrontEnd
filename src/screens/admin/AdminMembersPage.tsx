@@ -71,7 +71,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
           <div className="member-detail-identity"><span>{selected.name.slice(0, 1)}</span><h2>{selected.name}</h2><p>{selected.position}{isMe ? " · 나" : ""}</p></div>
           <dl>
             <div><dt>소속</dt><dd>{selected.department}<br />{selected.team}</dd></div>
-            <div><dt>아이디</dt><dd>{selected.login_id}</dd></div>
+            <div><dt>사번</dt><dd>{selected.login_id}</dd></div>
             <div><dt>권한</dt><dd className={selected.is_admin ? "authority" : ""}>{authority(selected)}</dd></div>
             <div><dt>최근 로그인</dt><dd>{selected.last_login_at ? formatRelativeTime(selected.last_login_at) : "아직 없음"}</dd></div>
           </dl>

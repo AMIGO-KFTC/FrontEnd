@@ -1,19 +1,18 @@
-// 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 아이디(login_id)·비밀번호·이름·사번(employee_no)을 보낸다.
-// 아이디는 영문·숫자·._@- 3~50자, 사번은 숫자 7자리(아이디와 별개 값), 비밀번호는 8자 이상. 화면에서 먼저 검사하고, 서버 오류 문구(중복 아이디·사번 등)는 그대로 보여 준다.
+// 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번·비밀번호·이름을 보낸다. 사번(숫자 7자리)이 곧 로그인 아이디(login_id)다.
+// 비밀번호는 9~20자의 영문·숫자·특수문자 조합(비밀번호 재설정 화면과 같은 규칙). 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
 // 스마트보안카드 인증번호는 화면 흐름만 있고 서버 검증 API 는 아직 없다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 
-const LOGIN_ID = /^[A-Za-z0-9._@-]{3,50}$/;
 const EMPLOYEE_NO = /^\d{7}$/;
+const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{9,20}$/;
 const CODE_SECONDS = 30;
 
 type Props = { onBack: () => void; onRegistered?: (message: string) => void };
 
 export function SignupScreen({ onBack, onRegistered }: Props) {
   const [name, setName] = useState("");
-  const [id, setId] = useState("");
   const [employeeNo, setEmployeeNo] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -39,21 +38,16 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const loginId = id.trim();
-    if (!name.trim() || !loginId || !employeeNo || !password) {
-      setError("이름, 아이디, 사번, 비밀번호를 입력해 주세요.");
-      return;
-    }
-    if (!LOGIN_ID.test(loginId)) {
-      setError("아이디는 영문·숫자·._@- 로 3자 이상이어야 해요.");
+    if (!name.trim() || !employeeNo || !password) {
+      setError("이름, 사번, 비밀번호를 입력해 주세요.");
       return;
     }
     if (!EMPLOYEE_NO.test(employeeNo)) {
       setError("사번은 숫자 7자리여야 해요.");
       return;
     }
-    if (password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 해요.");
+    if (!PASSWORD_RULE.test(password)) {
+      setError("비밀번호는 9~20자의 영문, 숫자, 특수문자를 모두 포함해야 해요.");
       return;
     }
     if (password !== passwordConfirm) {
@@ -75,7 +69,7 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
     setBusy(true);
     setError("");
     try {
-      const result = await api.signup(loginId, password, name.trim(), employeeNo);
+      const result = await api.signup(employeeNo, password, name.trim(), employeeNo);
       setCompleted(result.message || "회원가입이 완료되었습니다. 로그인해 주세요.");
     } catch (e) {
       setError((e as Error).message);
@@ -108,14 +102,11 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
             <label>이름
               <div className="input-wrap"><Icon name="user" size={17} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름을 입력하세요" autoComplete="name" maxLength={50} disabled={busy} /></div>
             </label>
-            <label>아이디
-              <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value)} placeholder="로그인에 쓸 아이디 (영문·숫자 3자 이상)" autoComplete="username" maxLength={50} disabled={busy} /></div>
-            </label>
             <label>사번
-              <div className="input-wrap"><Icon name="user" size={17} /><input value={employeeNo} onChange={(event) => setEmployeeNo(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="사번 7자리 숫자" inputMode="numeric" maxLength={7} disabled={busy} /></div>
+              <div className="input-wrap"><Icon name="user" size={17} /><input value={employeeNo} onChange={(event) => setEmployeeNo(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="사번 7자리 숫자 (로그인에 사용)" inputMode="numeric" autoComplete="username" maxLength={7} disabled={busy} /></div>
             </label>
             <label>비밀번호
-              <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8자 이상" type="password" autoComplete="new-password" maxLength={128} disabled={busy} /></div>
+              <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="9~20자, 영문·숫자·특수문자 포함" type="password" autoComplete="new-password" maxLength={20} disabled={busy} /></div>
             </label>
             <label>비밀번호 확인
               <div className="input-wrap"><Icon name="shield" size={17} /><input value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} placeholder="비밀번호를 한 번 더 입력하세요" type="password" autoComplete="new-password" maxLength={128} disabled={busy} /></div>

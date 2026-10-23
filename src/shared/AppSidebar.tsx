@@ -52,15 +52,10 @@ export function AppSidebar({
       setProfileError("이름, 소속, 직책은 비워 둘 수 없어요.");
       return;
     }
-    draft.employeeId = draft.employeeId.trim();
-    if (draft.employeeId && !/^\d{7}$/.test(draft.employeeId)) {
-      setProfileError("사번은 숫자 7자리여야 해요.");
-      return;
-    }
     setProfileSaving(true);
     setProfileError(null);
     try {
-      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role, employee_no: draft.employeeId });
+      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role }); // 사번은 바꿀 수 없어서 보내지 않는다
       setProfile({ ...draft, employeeId: result.profile.employee_no ?? draft.employeeId, name: result.profile.name, division: result.profile.department, team: result.profile.team, role: result.profile.position });
       setProfileEditOpen(false);
     } catch (e) {
@@ -134,7 +129,7 @@ export function AppSidebar({
               <input ref={profilePhotoRef} type="file" accept="image/png,image/jpeg" onChange={(event) => changeProfilePhoto(event.target.files?.[0])} />
             </div>
             <label>이름<input value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} /></label>
-            <label>사번<input value={profileDraft.employeeId} onChange={(event) => setProfileDraft({ ...profileDraft, employeeId: event.target.value.replace(/\D/g, "").slice(0, 7) })} placeholder="숫자 7자리" inputMode="numeric" maxLength={7} /></label>
+            <label>사번<input value={profileDraft.employeeId} readOnly placeholder="미등록" title="사번은 바꿀 수 없어요." /></label>
             <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
             <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
             <label className="profile-role-field">직책<input value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })} /></label>

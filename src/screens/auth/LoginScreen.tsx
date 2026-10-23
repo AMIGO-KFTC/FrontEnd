@@ -57,14 +57,14 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
           <span className="eyebrow">WELCOME TO AMIGO</span>
           <h2>업무의 다음을 이어가세요</h2>
           <p className="form-intro">AMIGO에 로그인하고,<br />인수인계서를 손쉽게 작성해보세요.</p>
-          <label>아이디
-            <div className="input-wrap"><Icon name="user" size={18} /><input value={id} onChange={(e) => setId(e.target.value)} placeholder="업무용 아이디를 입력하세요" autoComplete="username" /></div>
+          <label>사번
+            <div className="input-wrap"><Icon name="user" size={18} /><input value={id} onChange={(e) => setId(e.target.value)} placeholder="사번을 입력하세요" autoComplete="username" /></div>
           </label>
           <label>비밀번호
             <div className="input-wrap"><Icon name="shield" size={18} /><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력하세요" type="password" autoComplete="current-password" /></div>
           </label>
           <div className="login-options">
-            <label className="check-label"><input type="checkbox" checked={saveId} onChange={(e) => setSaveId(e.target.checked)} /> <span>아이디 저장</span></label>
+            <label className="check-label"><input type="checkbox" checked={saveId} onChange={(e) => setSaveId(e.target.checked)} /> <span>사번 저장</span></label>
             <div className="login-links">
               <button type="button" className="text-button" onClick={onForgot}>비밀번호 재설정</button>
               <span />

@@ -20,23 +20,31 @@ type Props = {
   onUploadFiles: (files: File[]) => void;
   onAddLink: (url: string) => void;
   onDeleteSource: (source: Source) => void;
-  onImportMattermost: (conversationIds: string[]) => Promise<IntegrationImportResult | undefined>;
   onImportConfluence: (pageIds: string[]) => Promise<IntegrationImportResult | undefined>;
 };
 
-type SourceKey = "file" | "mail" | "confluence" | "messenger";
+type SourceKey = "file" | "mail" | "confluence";
 // 목록 한 줄. 등록 예정(고르기만 한 것)과 등록된 자료(서버에 저장된 것)를 같은 모양으로 그린다.
 type ListRow = { id: string; group: SourceKey; icon: IconName; title: string; sub: string; remove: () => void };
 
 const INTEGRATION_LABEL: Record<string, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지" };
+// 파일 업로드 예시. 어떤 자료를 올리면 좋은지 보여 준다(서버가 읽는 형식만).
+const FILE_EXAMPLES: { name: string; desc: string }[] = [
+  { name: "업무정의서.pdf", desc: "담당 업무와 범위" },
+  { name: "운영매뉴얼.hwpx", desc: "작업 절차·주의사항" },
+  { name: "주간회의록.docx", desc: "진행 중인 이슈와 결정" },
+  { name: "계정목록.xlsx", desc: "시스템·계정 현황" },
+  { name: "협조요청.eml", desc: "업무 메일 원문" },
+  { name: "화면캡처.png", desc: "스크린샷 속 글자도 읽어요" },
+  { name: "자료모음.zip", desc: "여러 파일을 묶어서 한 번에" },
+];
 const START_WAIT_MS = 120_000; // 등록한 자료를 다 읽을 때까지 기다리는 최대 시간
 
-// 자료 종류 4개. 하나를 누르면 그 내용이 가운데로 나오고, 나머지 셋은 아래쪽 줄로 내려간다.
+// 자료 종류 3개. 하나를 누르면 그 내용이 가운데로 나오고, 나머지 셋은 아래쪽 줄로 내려간다.
 const CARDS: { key: SourceKey; icon: IconName; title: string; desc: string; tag?: string; soon?: boolean }[] = [
-  { key: "file", icon: "upload", title: "파일 업로드", desc: "업무 매뉴얼부터 기안문서까지, 인수인계에 필요한 모든 자료 업로드", tag: "PDF · HWP · Word · PPT · Excel · JPG" },
+  { key: "file", icon: "upload", title: "파일 업로드", desc: "업무 매뉴얼부터 기안문서까지, 인수인계에 필요한 모든 자료 업로드", tag: "PDF · HWP · Word · PPT · Excel · PNG · JPG · ZIP" },
   { key: "mail", icon: "mail", title: "메일 연결", desc: "업무 메일 검색 및 선택", soon: true },
   { key: "confluence", icon: "folder", title: "컨플루언스 & 나누미 연결", desc: "업무 페이지 링크 가져오기" },
-  { key: "messenger", icon: "message", title: "메신저 & 매터모스트", desc: "최근 대화를 골라 등록하거나 캡처 이미지 업로드", tag: "대화 선택 · JPG · PDF · PNG" },
 ];
 
 function sourceStatus(source: Source): string {
@@ -62,7 +70,7 @@ function SourceCard({ card, onSelect, counts, compact = false, index = 0 }: { ca
   );
 }
 
-export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportMattermost, onImportConfluence }: Props) {
+export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, onLogout, onHome, onUploadFiles, onAddLink, onDeleteSource, onImportConfluence }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
@@ -76,20 +84,19 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     const ok = openPickerTab(kind); // 상태 갱신 함수 밖에서 연다(개발 모드는 갱신 함수를 두 번 실행해 탭이 두 번 열린다)
     setOpened((prev) => ({ ...prev, [kind]: ok }));
   };
-  // 고른 대화·페이지는 여기서 들고 있다. 다른 탭(선택 창)에서 보내 온 항목도 같은 곳에 들어오고, 등록은 이 창에서 한다.
-  const mattermostPicked = usePicked();
+  // 고른 페이지는 여기서 들고 있다. 다른 탭(선택 창)에서 보내 온 항목도 같은 곳에 들어오고, 등록은 이 창에서 한다.
   const confluencePicked = usePicked();
-  const { addMany: addMattermost } = mattermostPicked;
   const { addMany: addConfluence } = confluencePicked;
   const acceptPicks = useCallback(
     (kind: PickKind, items: PickItem[]): PickAck => {
+      if (kind !== "confluence") return { added: 0, skipped: items.length }; // 메신저(Mattermost) 연결은 없앴다
       const registered = new Set(sources.filter((source) => source.link_type === kind).map((source) => source.url));
       const fresh = items.filter((item) => !registered.has(item.url));
-      (kind === "mattermost" ? addMattermost : addConfluence)(fresh);
-      setActiveSource(kind === "mattermost" ? "messenger" : "confluence");
+      addConfluence(fresh);
+      setActiveSource("confluence");
       return { added: fresh.length, skipped: items.length - fresh.length };
     },
-    [sources, addMattermost, addConfluence],
+    [sources, addConfluence],
   );
   usePickReceiver(acceptPicks);
   const addFiles = (fileList: FileList | null) => {
@@ -114,17 +121,14 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   };
 
   // ---- 자료 목록: 종류별로 '등록 예정'(고르기만 함)과 '등록된 자료'(저장됨)를 나눠 둔다. 어느 쪽이든 ×로 뺄 수 있다.
-  const pendingRowsOf = (kind: PickKind): ListRow[] => {
-    const picked = kind === "mattermost" ? mattermostPicked : confluencePicked;
-    return picked.items.map((item) => ({
-      id: `pending-${kind}-${item.id}`,
-      group: kind === "mattermost" ? "messenger" : "confluence",
-      icon: kind === "mattermost" ? "message" : "folder",
-      title: item.title,
-      sub: `${INTEGRATION_LABEL[kind]} · 등록 전`,
-      remove: () => picked.toggle(item),
-    }));
-  };
+  const pendingConfluenceRows: ListRow[] = confluencePicked.items.map((item) => ({
+    id: `pending-confluence-${item.id}`,
+    group: "confluence",
+    icon: "folder",
+    title: item.title,
+    sub: `${INTEGRATION_LABEL.confluence} · 등록 전`,
+    remove: () => confluencePicked.toggle(item),
+  }));
   const savedRow = (source: Source, group: SourceKey, icon: IconName, sub: string): ListRow => ({
     id: `saved-${source.id}`,
     group,
@@ -135,16 +139,15 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   });
   const fileRows = files.map((file) => savedRow(file, "file", "file", `${(file.size / 1024 / 1024).toFixed(1)} MB`));
   const linkRows = links.map((item) => savedRow(item, "confluence", "link", "외부 링크"));
-  const mattermostRows = imported.filter((item) => item.link_type === "mattermost").map((item) => savedRow(item, "messenger", "message", INTEGRATION_LABEL.mattermost));
+  const mattermostRows = imported.filter((item) => item.link_type === "mattermost").map((item) => savedRow(item, "file", "message", INTEGRATION_LABEL.mattermost)); // 예전에 등록한 대화 자료. 지울 수 있게 목록에는 남긴다
   const confluenceRows = imported.filter((item) => item.link_type === "confluence").map((item) => savedRow(item, "confluence", "folder", INTEGRATION_LABEL.confluence));
   const groups: Record<SourceKey, { pending: ListRow[]; registered: ListRow[] }> = {
-    file: { pending: [], registered: fileRows },
+    file: { pending: [], registered: [...fileRows, ...mattermostRows] },
     mail: { pending: [], registered: [] },
-    confluence: { pending: pendingRowsOf("confluence"), registered: [...confluenceRows, ...linkRows] },
-    messenger: { pending: pendingRowsOf("mattermost"), registered: mattermostRows },
+    confluence: { pending: pendingConfluenceRows, registered: [...confluenceRows, ...linkRows] },
   };
   const countsOf = (key: SourceKey) => ({ pending: groups[key].pending.length, registered: groups[key].registered.length });
-  const allPending = [...groups.messenger.pending, ...groups.confluence.pending];
+  const allPending = groups.confluence.pending;
   const allRegistered = [...fileRows, ...linkRows, ...mattermostRows, ...confluenceRows];
 
   // ---- AI 분석 시작: 확인 → 고른(등록 예정) 대화·페이지를 먼저 등록 → 자료를 다 읽으면 분석 시작
@@ -168,14 +171,13 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     setConfirmOpen(false);
     setStarting(true);
     let created = 0;
-    for (const [picked, run] of [[mattermostPicked, onImportMattermost], [confluencePicked, onImportConfluence]] as const) {
-      if (!picked.items.length) continue;
-      const result = await run(picked.items.map((item) => item.id));
+    if (confluencePicked.items.length) {
+      const result = await onImportConfluence(confluencePicked.items.map((item) => item.id));
       if (!result) {
         setStarting(false); // 등록에 실패하면 서버 오류 문구가 화면에 뜬다. 고른 항목은 남겨 다시 시도할 수 있게 한다
         return;
       }
-      picked.clear();
+      confluencePicked.clear();
       created += result.sources.length;
     }
     setWaitFor(sources.length + created);
@@ -211,7 +213,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   // 지금 연 종류에 담긴 자료만 나란히 보여 준다(왼쪽 등록 예정 | 오른쪽 등록됨)
   const renderCompare = (key: SourceKey) => {
     const group = groups[key];
-    const withPending = key === "confluence" || key === "messenger";
+    const withPending = key === "confluence";
     return (
       <div className={`us-compare${withPending ? " two" : ""}`}>
         {withPending && (
@@ -274,6 +276,13 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                           <small className="source-formats">{active.tag}</small>
                           <button type="button">파일 선택</button>
                         </div>
+                        <div className="us-examples" aria-label="업로드 파일 예시">
+                          <strong>이런 자료를 올려 보세요</strong>
+                          <ul>
+                            {FILE_EXAMPLES.map((example) => <li key={example.name}><span>{example.name}</span><small>{example.desc}</small></li>)}
+                          </ul>
+                          <p>ZIP 파일은 안에 든 문서를 자동으로 풀어서 읽어요. 한 번에 최대 20개, 파일당 50MB까지 올릴 수 있어요.</p>
+                        </div>
                         {renderCompare("file")}
                       </>
                     )}
@@ -282,7 +291,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                       <div className="us-drop" {...dropProps}>
                         <Icon name="mail" size={26} />
                         <strong>메일 연결은 준비 중이에요</strong>
-                        <p>메일함 연동 API 가 생기면 여기서 바로 검색해 고를 수 있어요. 지금은 메일 화면 캡처(JPG · PNG · PDF)를 올려 주세요. 올린 파일은 '파일 업로드'에 담겨요.</p>
+                        <p>메일함 연동 API 가 생기면 여기서 바로 검색해 고를 수 있어요. 지금은 메일 화면 캡처(PNG · JPG)나 PDF, .eml 파일로 올려 주세요. 올린 파일은 '파일 업로드'에 담겨요.</p>
                         <button type="button">캡처 올리기</button>
                       </div>
                     )}
@@ -294,7 +303,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                             value={link}
                             onChange={(event) => setLink(event.target.value)}
                             onKeyDown={(event) => {
-                              if (event.key === "Enter") {
+                              if (event.key === "Enter" && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 무시한다
                                 event.preventDefault();
                                 addLink();
                               }
@@ -304,17 +313,6 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                           <button type="button" onClick={addLink}>추가</button>
                         </div>
                         {renderCompare("confluence")}
-                      </>
-                    )}
-                    {active.key === "messenger" && (
-                      <>
-                        <IntegrationLauncher kind="mattermost" busy={busy || starting} picked={mattermostPicked} showChips={false} onImport={onImportMattermost} onOpen={() => openPicker("mattermost")} opened={opened.mattermost} />
-                        {renderCompare("messenger")}
-                        <div className="us-drop slim" {...dropProps}>
-                          <Icon name="upload" size={18} />
-                          <div><strong>대화 캡처 이미지나 내보내기 파일도 올릴 수 있어요</strong><p>올린 파일은 '파일 업로드'에 담겨요.</p></div>
-                          <button type="button">파일 선택</button>
-                        </div>
                       </>
                     )}
                   </div>
@@ -329,7 +327,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
             <section className="us-side-section us-pending">
               <div className="added-list-title"><strong><Icon name="clock" size={15} /> 등록 예정 자료</strong><span>{allPending.length}개</span></div>
               <p className="us-side-desc">고르기만 한 자료예요. 'AI 분석 시작'을 누르면 등록돼요.</p>
-              {allPending.length === 0 ? <div className="empty-resource">고른 대화·페이지가 여기에 모여요.</div> : allPending.map((row) => renderRow(row, true))}
+              {allPending.length === 0 ? <div className="empty-resource">고른 페이지가 여기에 모여요.</div> : allPending.map((row) => renderRow(row, true))}
             </section>
             <section className="us-side-section us-registered">
               <div className="added-list-title"><strong><Icon name="folder" size={15} /> 등록된 자료</strong><span>{registeredCount}개</span></div>

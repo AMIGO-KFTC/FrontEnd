@@ -28,7 +28,7 @@ import type { HomeNav, SessionList } from "./screens/home/types";
 
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
-const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "" };
+const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "" };
 const EXPIRED = "로그인이 만료됐어요. 다시 로그인해 주세요.";
 const WORKSPACE_KEY = "amigo-workspace"; // 팀장이 고른 작업 공간(일반 / 팀 관리). 탭을 닫거나 로그아웃하면 다시 고른다.
 
@@ -275,6 +275,8 @@ function AppScreens() {
         successor: form.successor,
         successor_login_id: form.successorLoginId,
         handover_date: form.date,
+        leave_start: form.mode === "leave" ? form.leaveStart : "",
+        leave_end: form.mode === "leave" ? form.leaveEnd : "",
       });
       setMarkdown("");
       navigate({ kind: "session", id: created.id, step: "upload" });
@@ -286,7 +288,7 @@ function AppScreens() {
     }
   };
 
-  const uploadFiles = (files: File[]) => {
+  const uploadFiles = async (files: File[]): Promise<void> => {
     if (!sessionId) return;
     const max = (config?.max_upload_mb ?? 50) * 1024 * 1024;
     const allowed = new Set(config?.allowed_extensions ?? []);
@@ -302,7 +304,7 @@ function AppScreens() {
       }
       return true;
     });
-    if (ok.length) void run(() => api.upload(sessionId, ok));
+    if (ok.length) await run(() => api.upload(sessionId, ok)); // 화면이 '올리는 중' 표시를 끝낼 수 있게 끝날 때까지 기다린다
   };
 
   const analyze = async () => {
@@ -505,7 +507,6 @@ function AppScreens() {
         onUploadFiles={uploadFiles}
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
-        onImportMattermost={(ids) => (sessionId ? importIntegration(() => api.importMattermost(sessionId, ids)) : Promise.resolve(undefined))}
         onImportConfluence={(ids) => (sessionId ? importIntegration(() => api.importConfluence(sessionId, ids)) : Promise.resolve(undefined))}
       />
     );
@@ -550,7 +551,7 @@ function AppScreens() {
   if (step === "document") {
     // 인계자가 아닌 사람(인수자·팀장)이 열면 읽기 전용: 수정·완료 없이 보고 내려받기만. 돌아가기는 왔던 목록으로.
     const isOwner = !session.owner_login_id || session.owner_login_id === profile.loginId;
-    const isSuccessor = !!session.successor_login_id && session.successor_login_id === profile.loginId;
+    const isSuccessor = session.successor_login_id === profile.loginId || !profile.isAdmin; // 인계자가 전송해 준 사람(여러 명). 팀 관리자는 관리 화면에서 들어온다
     const readOnly = isOwner
       ? null
       : {
@@ -566,6 +567,12 @@ function AppScreens() {
         sessionId={session.id}
         markdown={markdown}
         onGanttEdit={(name, nth, months) => api.editGantt(session.id, name, nth, months).then((d) => setMarkdown(d.markdown))}
+        onSaveDocument={async (text) => {
+          const current = await api.document(session.id); // 일정표를 고쳤다면 그 새 버전을 기준으로 저장한다
+          await api.saveDocument(session.id, text, current.version);
+          setMarkdown(text);
+          void refresh();
+        }}
         loading={docLoading}
         sourceCount={citationTotal ?? citationCount(session)}
         failedMessage={session.status === "error" ? session.error : null}

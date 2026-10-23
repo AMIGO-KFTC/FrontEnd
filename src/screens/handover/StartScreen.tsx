@@ -23,10 +23,11 @@ type Props = { mode: HandoverMode; onStart: (data: StartData) => void; onLogout:
 
 export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, error = null }: Props) {
   const [profile] = useProfile();
-  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "" });
+  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "" });
   const [taskDraft, setTaskDraft] = useState("");
   const [missing, setMissing] = useState<string[]>([]);
-  // 인수자 선택 목록: 프로필을 입력한 다른 계정. 고르면 그 계정의 '받은 인수인계'에 이 작업이 나타난다(못 불러오면 비워 둔다).
+  const [leaveError, setLeaveError] = useState("");
+  // 인수자(예정) 선택 목록: 프로필을 입력한 다른 계정. 문서에 적힐 이름일 뿐 바로 전달되지 않는다. 전달은 완성 문서 화면의 '인수자에게 전송하기'에서 한다(못 불러오면 비워 둔다).
   const [members, setMembers] = useState<Member[]>([]);
   useEffect(() => {
     api
@@ -59,9 +60,15 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       [!next.division, "본부"],
       [!next.team, "팀"],
       [!allTasks.length, "담당 업무"],
+      [mode === "leave" && (!next.leaveStart || !next.leaveEnd), "휴가 기간"],
     ].filter(([isEmpty]) => isEmpty).map(([, label]) => label as string);
     setMissing(empty);
     if (empty.length) return;
+    if (mode === "leave" && next.leaveEnd < next.leaveStart) {
+      setLeaveError("휴가 종료일은 시작일보다 빠를 수 없어요.");
+      return;
+    }
+    setLeaveError("");
     if (pendingTask) {
       setData(next);
       setTaskDraft("");
@@ -115,7 +122,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
                   {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
                 </select>
               </label>
-              <label>인수자
+              <label>인수자 (예정)
                 <select value={data.successorLoginId} onChange={(e) => pickSuccessor(e.target.value)}>
                   <option value="">나중에 정할게요</option>
                   {members.map((member) => <option key={member.login_id} value={member.login_id}>{member.name} {member.position} · {member.team || member.department}</option>)}
@@ -133,7 +140,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
                       value={taskDraft}
                       onChange={(event) => setTaskDraft(event.target.value)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") {
+                        if (event.key === "Enter" && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 무시한다
                           event.preventDefault();
                           addTask();
                         }
@@ -144,9 +151,15 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
                   </div>
                 </div>
               </label>
+              {mode === "leave" && (
+                <div className="wide-field leave-period-field">
+                  <label>휴가 시작일 <i>*</i><input type="date" value={data.leaveStart} max={data.leaveEnd || undefined} onChange={(e) => update("leaveStart", e.target.value)} /></label>
+                  <label>휴가 종료일 <i>*</i><input type="date" value={data.leaveEnd} min={data.leaveStart || undefined} onChange={(e) => update("leaveEnd", e.target.value)} /></label>
+                </div>
+              )}
               <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>
             </div>
-          <ErrorNote message={error ?? (missing.length ? `필수 항목을 입력해 주세요: ${missing.join(", ")}` : null)} />
+          <ErrorNote message={error ?? (leaveError || null) ?? (missing.length ? `필수 항목을 입력해 주세요: ${missing.join(", ")}` : null)} />
           <div className="onboarding-actions">
             <button className="primary-button onboarding-next" disabled={busy} onClick={submit}>{busy ? "작업을 만들고 있어요…" : "다음 단계로 이동"} <Icon name="arrow" size={18} /></button>
           </div>

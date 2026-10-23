@@ -21,7 +21,7 @@ type Props = {
   onSend: (text: string) => void;
   onSkip: () => void;
   onReopen: (gapId: string) => void; // 이미 답한·건너뛴 질문으로 돌아가 다시 답한다
-  onUploadFiles: (files: File[]) => void;
+  onUploadFiles: (files: File[]) => void | Promise<void>;
   onRetry: () => void;
   onComplete: () => void;
   onLogout: () => void;
@@ -43,10 +43,14 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [answer, setAnswer] = useState("");
+  const [uploading, setUploading] = useState(false); // 대화 중 자료를 서버에 올리는 동안
+  const [uploadedCount, setUploadedCount] = useState(0); // 방금 올린 자료 수(안내를 잠깐 보여 주는 데 쓴다)
   const specs = config?.slots ?? [];
   const slotTitle = (key: string | undefined) => specs.find((spec) => spec.key === key)?.title ?? "";
   const failed = session.status === "error";
-  const waiting = busy || session.status === "running" || session.stage !== "qna";
+  // 문서가 만들어진 뒤(review)에도 서버는 답변·검토 의견을 받는다. 그때 질의응답으로 돌아와도 입력이 막히지 않게 한다.
+  const inQna = session.stage === "qna";
+  const waiting = busy || session.status === "running" || !(inQna || session.stage === "review");
 
   // 현재 질문 = 마지막 question 메시지. 그 뒤의 답변·확인 요청·안내가 이 질문의 대화 묶음이다.
   const asking = messages.filter((m) => m.role === "assistant" && m.kind === "question").at(-1);
@@ -65,9 +69,10 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const activeSpecs = specs.filter((spec) => spec.key in session.slots);
   const coverage = (activeSpecs.length ? activeSpecs : specs).map((spec) => session.slots[spec.key]?.coverage ?? "missing");
   const countOf = (value: Coverage) => coverage.filter((c) => c === value).length;
-  const extraSources = session.sources.filter((source) => source.added_stage !== "setup");
-  const extraReading = extraSources.some((source) => source.status === "pending" || source.status === "processing");
-  const extraNote = extraSources.length ? `대화 중 올린 자료 ${extraSources.length}건${extraReading ? "을 읽고 있어요" : "이 분석에 반영됐어요"}` : null;
+  // 방금 이 대화에서 올린 자료 안내. 질문마다 계속 떠 있으면 방금 올린 건지 헷갈리므로, 올린 직후에만 대화 맨 아래에 보이고
+  // 다음 답변을 보내거나 시간이 지나면 사라진다.
+  const extraReading = session.sources.some((source) => source.added_stage !== "setup" && (source.status === "pending" || source.status === "processing"));
+  const extraNote = uploadedCount ? `올린 자료 ${uploadedCount}건${extraReading ? "을 읽고 있어요" : "이 분석에 반영됐어요"}` : null;
 
   // 새 메시지가 오면(답변·확인 요청·다음 질문) 대화 영역을 맨 아래로 내려 최신 내용이 보이게 한다.
   useEffect(() => {
@@ -75,10 +80,26 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
     if (box) box.scrollTop = box.scrollHeight;
   }, [messages.length, session.status]);
 
+  const uploadFiles = async (files: File[]) => {
+    setUploading(true);
+    try {
+      await onUploadFiles(files);
+      setUploadedCount(files.length);
+    } finally {
+      setUploading(false);
+    }
+  };
+  useEffect(() => {
+    if (!uploadedCount || extraReading) return;
+    const timer = window.setTimeout(() => setUploadedCount(0), 8000); // 다 읽은 뒤 8초 지나면 안내를 걷는다
+    return () => window.clearTimeout(timer);
+  }, [uploadedCount, extraReading]);
+
   const submitAnswer = (value = answer) => {
     const nextAnswer = value.trim();
     if (!nextAnswer || waiting) return;
     setAnswer("");
+    setUploadedCount(0);
     onSend(nextAnswer);
   };
 
@@ -122,7 +143,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                   <div><small>{slotTitle(item.slot)}{item.status === "skipped" ? " · 건너뜀" : ""}</small><strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
-                    <button type="button" className="question-reopen" disabled={waiting} onClick={() => onReopen(item.id)} title="이 질문으로 돌아가 답을 고칩니다">
+                    <button type="button" className="question-reopen" disabled={waiting || !inQna} onClick={() => onReopen(item.id)} title="이 질문으로 돌아가 답을 고칩니다">
                       {item.status === "skipped" ? "답하러 가기" : "다시 답하기"}
                     </button>
                   )}
@@ -162,13 +183,16 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 ))}
               </div>
             )}
-            {waiting && !failed && session.status === "running" && (
-              <div className="question-chat-thread"><div className="question-chat-message ai"><span><Icon name="sparkle" size={12} /></span><p>{session.progress.message || "AMIGO가 답변을 정리하고 있어요…"}</p></div></div>
+            {!failed && (session.status === "running" || (busy && !uploading)) && (
+              <div className="question-chat-thread" role="status"><div className="question-chat-message ai"><span><Icon name="sparkle" size={12} /></span><p><span className="typing-dots" aria-hidden="true"><i /><i /><i /></span>{session.progress.message || "AMIGO가 답변을 정리하고 있어요…"}</p></div></div>
+            )}
+            {extraNote && !uploading && <ErrorNote message={extraNote} tone="info" />}
+            {uploading && (
+              <div className="question-chat-thread" role="status"><div className="question-chat-message ai"><span><Icon name="paperclip" size={12} /></span><p><span className="spinner" aria-hidden="true" />자료를 AMIGO에게 보내는 중이에요…</p></div></div>
             )}
             <div className="answer-suggestions">
               {suggestions.map((suggestion) => <button key={suggestion} disabled={waiting} onClick={() => submitAnswer(suggestion)}>{suggestion}</button>)}
             </div>
-            <ErrorNote message={extraNote} tone="info" />
           </div>
           <ErrorNote message={error ?? (failed ? session.error || "AI 처리 중 문제가 생겼어요. 다시 시도해 주세요." : null)} />
           <section className="answer-compose">
@@ -176,21 +200,21 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
               value={answer}
               onChange={(event) => setAnswer(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 보내지 않는다
                   event.preventDefault();
                   submitAnswer();
                 }
               }}
-              placeholder={failed ? "오류를 해결한 뒤 다시 시도해 주세요" : "답변을 입력해 주세요"}
+              placeholder={failed ? "오류를 해결한 뒤 다시 시도해 주세요" : inQna ? "답변을 입력해 주세요" : "문서에 반영할 보충·수정 내용을 입력해 주세요"}
             />
             <div>
-              <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) onUploadFiles(files); event.target.value = ""; }} />
-              <button className="answer-attach" onClick={() => fileRef.current?.click()}><Icon name="paperclip" size={17} /> 자료 첨부</button>
+              <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void uploadFiles(files); event.target.value = ""; }} />
+              <button className="answer-attach" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? <><span className="spinner" aria-hidden="true" /> 올리는 중…</> : <><Icon name="paperclip" size={17} /> 자료 첨부</>}</button>
               <button className="answer-send" disabled={waiting && !failed} onClick={() => (failed ? onRetry() : submitAnswer())}>{failed ? "다시 시도" : busy ? "보내는 중…" : "답변 보내기"} <Icon name="arrow" size={17} /></button>
             </div>
           </section>
           <div className="question-complete-row">
-            <button className="question-skip" disabled={waiting} onClick={onSkip}>이 질문 건너뛰기</button>
+            <button className="question-skip" disabled={waiting || !inQna} onClick={onSkip}>이 질문 건너뛰기</button>
           </div>
         </section>
         <div className="question-page-actions">

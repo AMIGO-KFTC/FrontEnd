@@ -30,7 +30,7 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
     event.preventDefault();
     if (step === 1) {
       if (!id.trim()) {
-        setError("아이디를 입력해 주세요.");
+        setError("사번을 입력해 주세요.");
         return;
       }
       setError("");
@@ -86,8 +86,8 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
             <span className="eyebrow">{step === 1 ? "RESET YOUR PASSWORD" : step === 2 ? "SECOND VERIFICATION" : "CREATE NEW PASSWORD"}</span>
             <h2 id="recovery-title">{step === 1 ? "비밀번호 재설정" : step === 2 ? "스마트보안카드 인증" : "새 비밀번호 설정"}</h2>
             {step === 1 ? (
-              <label>아이디
-                <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value)} placeholder="아이디를 입력하세요" autoComplete="username" /></div>
+              <label>사번
+                <div className="input-wrap"><Icon name="user" size={17} /><input value={id} onChange={(event) => setId(event.target.value)} placeholder="사번을 입력하세요" autoComplete="username" /></div>
               </label>
             ) : step === 2 ? (
               <label>스마트보안카드 인증번호
@@ -110,7 +110,7 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
             ) : (
               <>
                 <div className="password-guide"><Icon name="shield" size={17} /><span>9~20자의 영문, 숫자, 특수문자를 모두 사용해 주세요.</span></div>
-                <div className="recovery-account"><span>아이디</span><strong>{id}</strong></div>
+                <div className="recovery-account"><span>사번</span><strong>{id}</strong></div>
                 <label>새 비밀번호
                   <div className="input-wrap"><Icon name="shield" size={17} /><input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="새 비밀번호" type="password" autoComplete="new-password" autoFocus /></div>
                 </label>
