@@ -9,6 +9,8 @@ import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
 import type { StartData } from "@/shared/handover";
 import { documentRehypePlugins } from "@/shared/documentMarkdown";
+import { useProfile } from "@/shared/profile";
+import { TransferDialog } from "./TransferDialog";
 import { MermaidDiagram } from "@/shared/MermaidDiagram";
 import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
 
@@ -17,6 +19,7 @@ type Props = {
   sessionId: string;
   markdown: string;
   onGanttEdit: (name: string, nth: number, months: number[]) => Promise<void>;
+  onSaveDocument: (markdown: string) => Promise<void>; // 직접 고친 문서를 새 버전으로 저장
   loading: boolean;
   sourceCount: number;
   failedMessage: string | null;
@@ -42,9 +45,29 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
+// 표(일정표 등)가 든 장은 글로 고치지 않고 화면에서 끌어서 고친다.
+const hasTable = (body: string) => /<t[dh][\s>]/i.test(body);
+
+// 고친 장(章)의 본문만 바꿔 문서 전체 Markdown 을 다시 만든다. 고치지 않은 부분은 글자 그대로 둔다. edits 의 키는 장 번호(0부터).
+function rebuildMarkdown(markdown: string, edits: Record<string, string>): string {
+  return markdown
+    .split(/^##\s+/m)
+    .map((chunk, index) => {
+      if (index === 0) return chunk;
+      const body = edits[String(index - 1)];
+      if (body === undefined) return `## ${chunk}`;
+      return `## ${chunk.split("\n")[0]}\n\n${body.trim()}\n\n`;
+    })
+    .join("");
+}
+
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
+  const [profile] = useProfile();
+  const [transferOpen, setTransferOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({}); // 직접 고치는 중인 장 본문(장 번호 → 글)
+  const [saveError, setSaveError] = useState("");
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [revision, setRevision] = useState("");
@@ -67,6 +90,32 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
     },
   }), [isEditing, onGanttEdit]);
   const sections = parsed.map((section) => section.title);
+  // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
+  const finishEditing = async () => {
+    const changed = Object.fromEntries(Object.entries(drafts).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
+    if (Object.keys(changed).length === 0) {
+      setIsEditing(false);
+      setDrafts({});
+      return;
+    }
+    setSaveState("saving");
+    setSaveError("");
+    try {
+      await onSaveDocument(rebuildMarkdown(markdown, changed));
+      setSaveState("saved");
+      setIsEditing(false);
+      setDrafts({});
+    } catch (e) {
+      setSaveState("failed");
+      setSaveError((e as Error).message);
+    }
+  };
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setDrafts({});
+    setSaveError("");
+    setSaveState("");
+  };
   const goTo = (index: number) => {
     setActiveSection(index);
     document.getElementById(`paper-section-${index}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -114,6 +163,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             <button className="document-back" onClick={readOnly.onExit}><Icon name="arrow" size={15} /> {readOnly.exitLabel}</button>
           ) : (
             <>
+              <button className="send-handover" onClick={() => setTransferOpen(true)}><Icon name="mail" size={15} /> 인수자에게 전송하기</button>
               <button className="finish-handover" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
               <button className="document-back" onClick={onBack}><Icon name="arrow" size={15} /> 질의응답으로 돌아가기</button>
             </>
@@ -125,12 +175,16 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
               <div><small className="gantt-hint">{readOnly.note}</small></div>
             ) : (
             <div>
-              <button className={`edit-toggle ${isEditing ? "editing" : ""}`} onClick={() => setIsEditing((current) => !current)}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? "수정 완료" : "직접 수정하기"}</button>
-              {isEditing && <small className="gantt-hint">월별 일정표는 칸을 끌어서 막대를 늘리거나 줄일 수 있어요.{saveState === "saving" ? " 저장 중…" : saveState === "saved" ? " 저장됨" : saveState === "failed" ? " 저장 실패" : ""}</small>}
+              <button className={`edit-toggle ${isEditing ? "editing" : ""}`} disabled={saveState === "saving"} onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? (saveState === "saving" ? "저장 중…" : "수정 완료") : "직접 수정하기"}</button>
+              {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
+              {isEditing && <small className="gantt-hint">글을 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요. 월별 일정표는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => setRevisionOpen((current) => !current)}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
             )}
           </div>
+          {revising && (
+            <div className="revise-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>AMIGO가 수정 요청을 반영하고 있어요</strong><small>새 버전의 인수인계서를 쓰는 중이에요. 잠시만 기다려 주세요.</small></div></div>
+          )}
           {revisionOpen && (
             <section className="revision-compose">
               <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요. 작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
@@ -138,7 +192,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
                 value={revision}
                 onChange={(event) => setRevision(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
+                  if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 보내지 않는다
                     event.preventDefault();
                     sendRevision();
                   }
@@ -159,7 +213,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             </div>
           )}
           <GanttContext.Provider value={gantt}>
-          <article className={`final-paper ${isEditing ? "is-editing" : ""}`} contentEditable={isEditing} suppressContentEditableWarning>
+          <article className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
@@ -168,7 +222,9 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
                 <div><small>인계자</small><strong>{data.name}</strong></div>
                 <div><small>소속</small><strong>{data.division} · {data.team}</strong></div>
                 <div><small>직책</small><strong>{data.role || "—"}</strong></div>
-                <div><small>인계 예정일</small><strong>{data.date || "미정"}</strong></div>
+                {data.mode === "leave"
+                  ? <div><small>휴가 기간</small><strong>{data.leaveStart && data.leaveEnd ? `${data.leaveStart} ~ ${data.leaveEnd}` : "미정"}</strong></div>
+                  : <div><small>인계 예정일</small><strong>{data.date || "미정"}</strong></div>}
               </div>
             </header>
             {parsed.length === 0 && failedMessage !== null && (
@@ -181,6 +237,16 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
             {parsed.map((section, index) => (
               <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${index}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
+                {isEditing && !hasTable(section.body) ? (
+                  <textarea
+                    className="paper-section-editor"
+                    value={drafts[String(index)] ?? section.body}
+                    onChange={(event) => setDrafts({ ...drafts, [String(index)]: event.target.value })}
+                    rows={Math.max(4, (drafts[String(index)] ?? section.body).split("\n").length + 1)}
+                    spellCheck={false}
+                    aria-label={`${section.title} 내용 수정`}
+                  />
+                ) : (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={documentRehypePlugins}
@@ -191,12 +257,14 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, lo
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
                   }}
                 >{section.body}</ReactMarkdown>
+                )}
               </section>
             ))}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </GanttContext.Provider>
         </section>
+        {transferOpen && <TransferDialog sessionId={sessionId} selfLoginId={profile.loginId} onClose={() => setTransferOpen(false)} />}
         {!readOnly && <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>}
       </main>
     </div>

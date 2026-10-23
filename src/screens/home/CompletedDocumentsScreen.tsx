@@ -1,5 +1,5 @@
 // 완성 문서 목록. 서버 세션 중 문서가 만들어진 작업을 보여 주고, 문서 열기는 문서 화면으로, PDF 는 다운로드 API 로 연결한다.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
@@ -11,6 +11,12 @@ type Props = HomeNav & { list: SessionList };
 export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onLogout, onDocuments }: Props) {
   const documents = list.sessions ? completedSessions(list.sessions) : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 직접 고친 문서인지(현재 버전을 만든 쪽). 목록을 다시 불러올 때마다 함께 갱신한다.
+  const [origins, setOrigins] = useState<Record<string, string>>({});
+  useEffect(() => {
+    api.myDocuments().then((result) => setOrigins(Object.fromEntries(result.documents.map((item) => [item.session_id, item.origin])))).catch(() => setOrigins({}));
+  }, [list.sessions]);
+  const stateLabel = (id: string) => (origins[id] === "user" ? "직접 수정" : origins[id] === "restore" ? "이전 버전 복원" : "생성 완료");
   const selected = documents?.find((document) => document.id === selectedId) ?? documents?.[0];
 
   return (
@@ -34,7 +40,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                 {documents.map((document) => (
                   <button className={selected.id === document.id ? "active" : ""} key={document.id} onClick={() => setSelectedId(document.id)}>
                     <span className={`document-list-icon ${sessionTone(document.id)}`}><Icon name="file" size={18} /></span>
-                    <div><em>v{document.document_version} 생성 완료</em><strong>{sessionTitle(document)}</strong><small>{document.organization || "소속 미입력"} · {formatDate(document.updated_at)}</small></div>
+                    <div><em>v{document.document_version} {stateLabel(document.id)}</em><strong>{sessionTitle(document)}</strong><small>{document.organization || "소속 미입력"} · {formatDate(document.updated_at)}</small></div>
                     <Icon name="chevron" size={13} />
                   </button>
                 ))}
@@ -42,10 +48,10 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
               <article className="document-preview-card">
                 <header>
                   <div><span>HANDOVER DOCUMENT</span><h2>{sessionTitle(selected)}</h2><p>{MODE_LABEL[selected.mode]} · 인계자 {selected.owner_name}{selected.position ? ` ${selected.position}` : ""}</p></div>
-                  <span className="document-complete-label"><Icon name="check" size={13} /> 생성 완료</span>
+                  <span className="document-complete-label"><Icon name="check" size={13} /> {stateLabel(selected.id)}</span>
                 </header>
                 <div className="document-preview-meta">
-                  <div><small>마지막 생성</small><strong>{formatDate(selected.updated_at)}</strong></div>
+                  <div><small>{origins[selected.id] === "user" ? "마지막 수정" : "마지막 생성"}</small><strong>{formatDate(selected.updated_at)}</strong></div>
                   <div><small>문서 버전</small><strong>v{selected.document_version}</strong></div>
                   <div><small>현재 단계</small><strong>{selected.stage === "review" ? "문서 검토" : selected.stage === "composing" ? "새 버전 생성 중" : "질의응답 보완 중"}</strong></div>
                 </div>

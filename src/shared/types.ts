@@ -81,6 +81,8 @@ export interface SessionSummary {
   successor: string;
   successor_login_id: string; // 인수자가 이 시스템 계정이면 그 아이디(그 계정의 '받은 인수인계'에 나타난다)
   handover_date: string;
+  leave_start?: string; // 장기휴가 시작일(YYYY-MM-DD)
+  leave_end?: string; // 장기휴가 종료일
   stage: Stage;
   status: Status;
   document_version: number;
@@ -169,6 +171,8 @@ export interface SessionCreate {
   successor: string;
   successor_login_id?: string; // 인수자가 이 시스템 계정이면 그 아이디(예전 화면은 보내지 않는다)
   handover_date: string;
+  leave_start?: string; // 장기휴가일 때 휴가 시작일
+  leave_end?: string; // 장기휴가일 때 휴가 종료일
   mode: HandoverMode;
   task_name: string;
 }
@@ -282,7 +286,15 @@ export interface Member {
   organization: string;
 }
 
-// 받은 인수인계(GET /api/handovers/received): 내가 인수자로 지정된 세션. 읽기(문서·PDF)만 할 수 있다.
+// 인계자가 이 인수인계서를 보낸 기록(GET /api/sessions/{id}/transfers). 받는 사람마다 한 건이다.
+export interface SentTransfer {
+  id: string;
+  recipient: { user_id: number; name: string; login_id: string; department: string; team: string; position: string };
+  created_at: string;
+  is_read: boolean;
+}
+
+// 받은 인수인계(GET /api/handovers/received): 인계자가 나에게 전송한 세션. 읽기(문서·PDF)만 할 수 있다.
 export interface ReceivedHandover {
   id: string;
   title: string;

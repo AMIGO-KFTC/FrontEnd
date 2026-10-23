@@ -18,6 +18,7 @@ import type {
   Member,
   ProfileResult,
   ReceivedHandover,
+  SentTransfer,
   SessionCreate,
   SessionDetail,
   SessionSummary,
@@ -87,6 +88,8 @@ export const api = {
 
   // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용
   members: () => request<{ members: Member[] }>("/api/members"),
+  sessionTransfers: (id: string) => request<{ transfers: SentTransfer[] }>(`/api/sessions/${id}/transfers`),
+  sendTransfer: (id: string, recipientId: number, message: string) => post<{ message: string }>(`/api/sessions/${id}/transfers`, { recipient_id: recipientId, message }),
   receivedHandovers: () => request<{ handovers: ReceivedHandover[] }>("/api/handovers/received"),
   adminMembers: () => request<{ organization: string; members: AdminMember[] }>("/api/admin/members"),
   adminHandovers: () => request<{ organization: string; handovers: AdminHandover[] }>("/api/admin/handovers"),
@@ -118,6 +121,11 @@ export const api = {
   retry: (id: string) => post<SessionDetail>(`/api/sessions/${id}/retry`),
 
   document: (id: string) => request<{ markdown: string; version: number }>(`/api/sessions/${id}/document`),
+  // 화면에서 직접 고친 문서 전체를 새 버전으로 저장한다(PUT /document). baseVersion 이 현재 버전과 다르면 서버가 409 로 막는다.
+  saveDocument: (id: string, markdown: string, baseVersion: number) =>
+    request<{ message: string; saved: boolean }>(`/api/sessions/${id}/document`, { method: "PUT", body: JSON.stringify({ markdown, base_version: baseVersion }) }),
+  // 내가 작성한 인수인계서 목록(GET /api/documents). origin 은 현재 버전을 만든 쪽(ai | user | restore).
+  myDocuments: () => request<{ documents: { session_id: string; version: number; origin: string; origin_label: string; updated_at: string }[] }>("/api/documents"),
   citations: (id: string) => request<CitationsResult>(`/api/sessions/${id}/citations`),
   editGantt: (id: string, name: string, nth: number, months: number[]) =>
     request<{ markdown: string; version: number }>(`/api/sessions/${id}/document/gantt`, {

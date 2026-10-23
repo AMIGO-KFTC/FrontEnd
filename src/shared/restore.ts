@@ -15,5 +15,7 @@ export function dataFromSession(session: SessionDetail): StartData {
     date: session.handover_date,
     successor: session.successor,
     successorLoginId: session.successor_login_id,
+    leaveStart: session.leave_start ?? "",
+    leaveEnd: session.leave_end ?? "",
   };
 }
