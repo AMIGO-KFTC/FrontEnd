@@ -3136,3 +3136,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .final-paper .cite-pop-quote { margin: 2px 0 0; color: #e7e3ef; }
 .final-paper .cite-pop-empty { margin: 0; color: #b9b3c6; }
 @media print { .final-paper .cite-ref { display: none; } }
+
+/* '직접 수정하기': 표 칸·항목 이름을 그 자리에서 고치는 입력칸 */
+.final-paper .cell-edit { display: inline-block; min-width: 2em; min-height: 1.4em; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; outline: 1px dashed #c7b9ef; background: #fbf9ff; white-space: pre-wrap; cursor: text; }
+.final-paper .cell-edit:focus { outline: 2px solid #7055c8; background: #fff; }
+.final-paper td > .cell-edit { display: block; }
+.final-paper h3 > .cell-edit { margin: 0 0 0 4px; }
