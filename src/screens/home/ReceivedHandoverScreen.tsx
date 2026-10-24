@@ -14,7 +14,7 @@ export function receivedStatus(handover: ReceivedHandover): { label: string; don
   return hasDocument(handover) ? { label: "확인 필요", done: false } : { label: "작성 중", done: true };
 }
 
-export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onLogout }: Props) {
+export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onChat, onLogout }: Props) {
   const [handovers, setHandovers] = useState<ReceivedHandover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
 
   return (
     <div className="app-shell received-page">
-      <AppSidebar active="received" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} />
+      <AppSidebar active="received" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
       <main className="received-main">
         <header className="dashboard-header received-header">
           <div><span>MY WORKSPACE</span><strong>받은 인수인계</strong></div>

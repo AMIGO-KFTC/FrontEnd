@@ -4,7 +4,10 @@ import type {
   AdminMember,
   AppConfig,
   AuthUser,
+  ChatAnswer,
+  ChatScope,
   ChatMessage,
+  ChatTurn,
   CitationsResult,
   ConfluencePage,
   ConfluenceSearchResult,
@@ -12,6 +15,10 @@ import type {
   TeamGuidelineItem,
   TeamGuidelines,
   LoginResult,
+  MailDetail,
+  MailImportResult,
+  MailList,
+  MailQueryParams,
   MattermostConversation,
   MattermostConversationDetail,
   ProfileInput,
@@ -90,6 +97,10 @@ export const api = {
   members: () => request<{ members: Member[] }>("/api/members"),
   sessionTransfers: (id: string) => request<{ transfers: SentTransfer[] }>(`/api/sessions/${id}/transfers`),
   sendTransfer: (id: string, recipientId: number, message: string) => post<{ message: string }>(`/api/sessions/${id}/transfers`, { recipient_id: recipientId, message }),
+  // 인수인계 챗봇: 질문할 수 있는 업무(올린 자료 · 인수인계서)와 질문. 대화는 서버에 저장하지 않고 history 로 보낸다.
+  chatScopes: () => request<{ scopes: ChatScope[] }>("/api/handover-chat/scopes"),
+  askHandover: (question: string, history: ChatTurn[], scopeIds: string[] | null) =>
+    post<ChatAnswer>("/api/handover-chat", { question, history, scope_ids: scopeIds }),
   receivedHandovers: () => request<{ handovers: ReceivedHandover[] }>("/api/handovers/received"),
   adminMembers: () => request<{ organization: string; members: AdminMember[] }>("/api/admin/members"),
   adminHandovers: () => request<{ organization: string; handovers: AdminHandover[] }>("/api/admin/handovers"),
@@ -134,7 +145,23 @@ export const api = {
       body: JSON.stringify({ name, nth, months }),
     }),
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
+  session: (id: string) => request<SessionDetail>(`/api/sessions/${id}`), // 업무 상세(올린 자료 sources 포함)
+  sourcesArchiveUrl: (id: string) => `${BASE}/api/sessions/${id}/sources/archive`, // 올린 파일 전체를 ZIP 한 개로
   sourceFileUrl: (id: string, sourceId: string) => `${BASE}/api/sessions/${id}/sources/${sourceId}/file`, // 올린 파일 원본 내려받기
+
+  // 메일함: 목록·상세 조회와 고른 메일을 업무 자료(.eml)로 가져오기. 검색은 제목(subject)·관련 사람(person: 보낸 사람·받는 사람·참조)·폴더·첨부 여부로 한다.
+  mailMessages: (params: MailQueryParams = {}) => {
+    const query = new URLSearchParams({ page: String(params.page ?? 1), size: String(params.size ?? 20) });
+    if (params.subject) query.set("subject", params.subject);
+    if (params.person) query.set("person", params.person);
+    if (params.folder) query.set("folder", params.folder);
+    if (params.hasAttachments) query.set("has_attachments", "true");
+    if (params.important) query.set("important", "true");
+    if (params.dateFrom) query.set("date_from", params.dateFrom);
+    return request<MailList>(`/api/mail/messages?${query}`);
+  },
+  mailMessage: (messageId: string) => request<MailDetail>(`/api/mail/messages/${encodeURIComponent(messageId)}`),
+  importMails: (sessionId: string, messageIds: string[]) => post<MailImportResult>(`/api/sessions/${sessionId}/mails`, { message_ids: messageIds }),
 
   // 가상 Mattermost · Confluence(실제 API 대신 BackEnd 의 예시 데이터)
   mattermostConversations: (q = "") =>

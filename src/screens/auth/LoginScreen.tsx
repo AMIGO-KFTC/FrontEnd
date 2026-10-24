@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
+import { useCapsLock } from "@/shared/useCapsLock";
 import { AuthVisual } from "./AuthVisual";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
@@ -31,6 +32,7 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
   const [ssoOpen, setSsoOpen] = useState(false);
+  const caps = useCapsLock();
   const ssoLogin = async () => {
     if (busy) return;
     setSsoOpen(false);
@@ -61,7 +63,8 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
             <div className="input-wrap"><Icon name="user" size={18} /><input value={id} onChange={(e) => setId(e.target.value)} placeholder="사번을 입력하세요" autoComplete="username" /></div>
           </label>
           <label>비밀번호
-            <div className="input-wrap"><Icon name="shield" size={18} /><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력하세요" type="password" autoComplete="current-password" /></div>
+            <div className="input-wrap"><Icon name="shield" size={18} /><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력하세요" type="password" autoComplete="current-password" {...caps.handlers} /></div>
+            {caps.capsLock && <p className="caps-warning" role="status"><Icon name="alert" size={14} /> Caps Lock이 켜져 있어요. 대문자로 입력될 수 있어요.</p>}
           </label>
           <div className="login-options">
             <label className="check-label"><input type="checkbox" checked={saveId} onChange={(e) => setSaveId(e.target.checked)} /> <span>사번 저장</span></label>

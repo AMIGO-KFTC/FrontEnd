@@ -14,9 +14,10 @@ type Props = {
   showChips?: boolean; // 고른 항목 이름표를 여기서 보여 줄지(자료 등록 화면은 오른쪽 '등록 예정 자료'에 보여 준다)
 };
 
-const TEXT: Record<PickKind, { icon: "message" | "folder"; title: string; app: string; noun: string }> = {
-  mattermost: { icon: "message", title: "Mattermost 에서 대화 고르기", app: "Mattermost", noun: "대화" },
-  confluence: { icon: "folder", title: "컨플루언스에서 페이지 고르기", app: "컨플루언스", noun: "페이지" },
+const TEXT: Record<PickKind, { icon: "message" | "folder" | "mail"; title: string; app: string; noun: string; obj: string; subj: string }> = {
+  mattermost: { icon: "message", title: "Mattermost 에서 대화 고르기", app: "Mattermost", noun: "대화", obj: "대화를", subj: "대화가" },
+  confluence: { icon: "folder", title: "컨플루언스에서 페이지 고르기", app: "컨플루언스", noun: "페이지", obj: "페이지를", subj: "페이지가" },
+  mail: { icon: "mail", title: "메일함에서 메일 고르기", app: "메일함", noun: "메일", obj: "메일을", subj: "메일이" },
 };
 
 // 자료 등록 화면의 Mattermost·컨플루언스 영역. 고르기는 새 탭의 전용 화면에서 하고, 여기서는 넘어온 항목을 확인해 자료로 등록한다.
@@ -43,7 +44,7 @@ export function IntegrationLauncher({ kind, busy, picked, onImport, onOpen, open
         <span><Icon name={text.icon} size={15} /></span>
         <div>
           <strong>{text.title}</strong>
-          <p>{text.app} 창이 새 탭으로 열려요. 거기서 인수인계에 쓸 {text.noun}를 고르면 이 화면으로 넘어와요.</p>
+          <p>{text.app} 창이 새 탭으로 열려요. 거기서 인수인계에 쓸 {text.obj} 고르면 이 화면으로 넘어와요.</p>
         </div>
         <button type="button" className="integration-popout" onClick={onOpen}>
           <Icon name="chevron" size={11} /> {text.app} 열기
@@ -54,10 +55,10 @@ export function IntegrationLauncher({ kind, busy, picked, onImport, onOpen, open
           새 탭이 열리지 않았어요. 브라우저가 팝업을 막았을 수 있어요. 위의 '{text.app} 열기' 를 다시 누르거나 팝업을 허용해 주세요.
         </p>
       )}
-      {!picked.items.length && !notice && <p className="integration-empty">아직 고른 {text.noun}가 없어요. 열린 {text.app} 창에서 {text.noun}를 골라 보내 주세요.</p>}
+      {!picked.items.length && !notice && <p className="integration-empty">아직 고른 {text.subj} 없어요. 열린 {text.app} 창에서 {text.obj} 골라 보내 주세요.</p>}
       {showChips && <PickedChips picked={picked} />}
       <div className="integration-foot">
-        <span>{picked.items.length ? `${picked.items.length}개 ${text.noun}가 넘어왔어요` : ""}</span>
+        <span>{picked.items.length ? `${picked.items.length}개 ${text.subj} 넘어왔어요` : ""}</span>
         {notice && <em className="integration-notice">{notice}</em>}
         <button type="button" className="integration-submit" disabled={!picked.items.length || busy || importing} onClick={submit}>
           <Icon name="check" size={13} /> 선택한 {text.noun} 자료로 등록

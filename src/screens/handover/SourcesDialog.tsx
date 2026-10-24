@@ -1,5 +1,6 @@
 // 완성 문서 화면 왼쪽의 "출처 N개 연결됨"을 누르면 뜨는 창. 이 인수인계서에 올린 자료 파일을 쭉 보여 주고,
-// 파일을 고르면 원본을 내려받는다(GET /api/sessions/{id}/sources/{source_id}/file). 문장별 근거는 본문 번호에 마우스를 올려 본다.
+// 파일을 고르면 원본을 내려받고(GET /api/sessions/{id}/sources/{source_id}/file), '모두 내려받기'는 ZIP 한 개로 받는다(GET …/sources/archive).
+// 문장별 근거는 본문 번호에 마우스를 올려 본다.
 import { useEffect } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
@@ -53,7 +54,10 @@ export function SourcesDialog({ sessionId, files, config, onClose }: Props) {
             </li>
           ))}
         </ul>
-        <div className="transfer-actions"><button type="button" className="primary" onClick={onClose}>닫기</button></div>
+        <div className="transfer-actions">
+          {files.length > 0 && <a className="sources-zip" href={api.sourcesArchiveUrl(sessionId)} download title="올린 자료 파일을 ZIP 한 개로 내려받아요"><Icon name="download" size={14} /> 모두 내려받기 (ZIP)</a>}
+          <button type="button" className="primary" onClick={onClose}>닫기</button>
+        </div>
       </section>
     </div>
   );

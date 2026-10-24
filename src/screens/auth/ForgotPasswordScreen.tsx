@@ -1,6 +1,7 @@
 // 비밀번호 재설정(새 디자인, 3단계). BackEnd 에 재설정 API 가 아직 없어 화면 안에서만 동작한다.
 import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/shared/Icon";
+import { checkSecurityCard } from "@/shared/securityCard";
 
 function generateCaptcha() {
   const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -46,8 +47,9 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
         setError("인증 시간이 만료되었습니다. 다시 요청해 주세요.");
         return;
       }
-      if (!/^\d{6}$/.test(securityCode)) {
-        setError("6자리 인증번호를 입력해 주세요.");
+      const cardError = checkSecurityCard(securityCode);
+      if (cardError) {
+        setError(cardError);
         return;
       }
       setError("");

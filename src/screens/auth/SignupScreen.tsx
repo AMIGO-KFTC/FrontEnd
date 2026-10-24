@@ -1,9 +1,10 @@
 // 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번·비밀번호·이름을 보낸다. 사번(숫자 7자리)이 곧 로그인 아이디(login_id)다.
 // 비밀번호는 9~20자의 영문·숫자·특수문자 조합(비밀번호 재설정 화면과 같은 규칙). 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
-// 스마트보안카드 인증번호는 화면 흐름만 있고 서버 검증 API 는 아직 없다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
+// 스마트보안카드 인증번호는 서버 검증 API 가 아직 없어 화면에서 고정 번호(shared/securityCard.ts)로 확인한다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
+import { checkSecurityCard } from "@/shared/securityCard";
 
 const EMPLOYEE_NO = /^\d{7}$/;
 const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{9,20}$/;
@@ -62,8 +63,9 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
       setError("인증 시간이 만료되었습니다. 다시 요청해 주세요.");
       return;
     }
-    if (!/^\d{6}$/.test(securityCard)) {
-      setError("6자리 인증번호를 입력해 주세요.");
+    const cardError = checkSecurityCard(securityCard);
+    if (cardError) {
+      setError(cardError);
       return;
     }
     setBusy(true);

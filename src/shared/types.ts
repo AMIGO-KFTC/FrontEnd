@@ -345,3 +345,44 @@ export interface TeamGuidelines {
   editable: boolean;
   prompt_preview: string;
 }
+
+// 인수인계 챗봇(GET /api/handover-chat/scopes, POST /api/handover-chat): 올린 자료·인계자 답변·인수인계서를 근거로 답한다.
+export type ChatScope = {
+  id: string; // 질문 범위 = 업무(세션) ID. 지워진 인계 세션의 보낸 시점 문서는 'transfer:<ID>'
+  title: string;
+  task_name: string;
+  owner_name: string;
+  kind: "mine" | "received"; // received 는 인계자가 전송한 인수인계서만 근거가 된다(원본 자료는 공유되지 않는다)
+  version: number; // 인수인계서 버전(아직 없으면 0)
+  has_document: boolean;
+  source_count: number; // 근거가 되는 올린 자료 수
+  session_id: string | null; // 인수인계서를 열 수 있는 세션(없으면 null)
+  updated_at: string;
+};
+export type ChatSourceKind = "document" | "answer" | "mail" | "link" | "file" | "note";
+export type ChatSource = { scope_id: string; scope_title: string; scope_task: string; scope_kind: "mine" | "received"; scope_owner: string; session_id: string | null; kind: ChatSourceKind; label: string; source_id: string | null }; // source_id: 올린 파일·메일의 ID(원본 내려받기에 쓴다)
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+export type ChatAnswer = { answer: string; grounded: boolean; sources: ChatSource[]; searched: number; engine: string };
+
+// 메일함(GET /api/mail/messages, GET /api/mail/messages/{id}, POST /api/sessions/{id}/mails). 지금은 가상 메일함이 응답한다.
+export type MailAddress = { name: string; email: string };
+export type MailSummary = {
+  id: string;
+  folder: "inbox" | "sent" | string;
+  subject: string;
+  sender: MailAddress;
+  to: MailAddress[];
+  sent_at: string;
+  snippet: string;
+  has_attachments: boolean;
+  attachment_count: number;
+  important: boolean;
+  relevance: number;
+  recommended: boolean; // 이 업무와 관련 있어 보이는 메일
+  imported: boolean; // 이미 이 업무 자료로 가져온 메일
+};
+export type MailAttachment = { name: string; size: number; content_type: string };
+export type MailDetail = MailSummary & { cc: MailAddress[]; body: string; attachments: MailAttachment[] };
+export type MailList = { message: string; provider: string; mailbox: MailAddress; messages: MailSummary[]; total: number; page: number; size: number; has_next: boolean; keywords: string[] };
+export type MailQueryParams = { subject?: string; person?: string; folder?: "" | "inbox" | "sent"; hasAttachments?: boolean; important?: boolean; dateFrom?: string; page?: number; size?: number };
+export type MailImportResult = { success: boolean; message: string; session_id: string; files: Source[]; skipped: string[]; analysis_scheduled: boolean };
