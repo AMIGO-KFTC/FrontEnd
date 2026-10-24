@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { EditableCell } from "./EditableCell";
 
 // 월별 일정표(업무 단위 요약 + 일정 명세표)의 막대를 화면에서 마우스로 고친다.
 // 고친 월 목록은 서버로 보내 계획기간으로 확정되고(재생성해도 유지), 서버가 다시 만든 문서가 돌아와 표가 갱신된다(GanttContext.onChange).
@@ -37,7 +38,17 @@ export function isGanttTable(table: Hast): boolean {
   return headerRows(table) > 0;
 }
 
-function monthsOfRow(row: Hast): { name: string; months: Set<number>; note: string } | null {
+// '직접 수정하기' 중이면 칸 안에 입력칸 표시(<span data-cell>)가 있다. 그 번호(없으면 null).
+function editId(node: Hast): number | null {
+  if (node.type === "element" && node.tagName === "span" && node.properties?.dataCell !== undefined) return Number(node.properties.dataCell);
+  for (const child of node.children ?? []) {
+    const id = editId(child);
+    if (id !== null) return id;
+  }
+  return null;
+}
+
+function monthsOfRow(row: Hast): { name: string; months: Set<number>; note: string; nameId: number | null; noteId: number | null } | null {
   const cells = elements(row, "td");
   if (cells.length < 3) return null;
   const months = new Set<number>();
@@ -48,10 +59,11 @@ function monthsOfRow(row: Hast): { name: string; months: Set<number>; note: stri
     month += span;
   }
   if (month !== 13) return null; // 1~12월 칸이 아닌 행은 손대지 않는다
-  return { name: textOf(cells[0]).trim(), months, note: textOf(cells[cells.length - 1]) };
+  const last = cells[cells.length - 1];
+  return { name: textOf(cells[0]).trim(), months, note: textOf(last), nameId: editId(cells[0]), noteId: editId(last) };
 }
 
-function GanttRow({ name, months, note, nth }: { name: string; months: Set<number>; note: string; nth: number }) {
+function GanttRow({ name, months, note, nth, nameId, noteId }: { name: string; months: Set<number>; note: string; nth: number; nameId: number | null; noteId: number | null }) {
   const { editable, onChange } = useContext(GanttContext);
   const [draft, setDraft] = useState<Set<number> | null>(null);
   const drag = useRef<{ paint: boolean; current: Set<number>; last: number } | null>(null);
@@ -105,7 +117,13 @@ function GanttRow({ name, months, note, nth }: { name: string; months: Set<numbe
       >{on ? " " : ""}</td>,
     );
   }
-  return <tr><td>{name}</td>{cells}<td>{note}</td></tr>;
+  return (
+    <tr>
+      <td>{nameId !== null ? <EditableCell id={nameId} /> : name}</td>
+      {cells}
+      <td>{noteId !== null ? <EditableCell id={noteId} /> : note}</td>
+    </tr>
+  );
 }
 
 /** react-markdown 의 table 자리에 끼우는 컴포넌트. 월별 일정표가 아니면 평범한 표로 그린다. */
