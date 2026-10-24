@@ -33,8 +33,9 @@ function plain(text: string): string {
   return text.replace(/\*\*/g, "").replace(/^\[[^\]]+\]\s*/, "").trim();
 }
 
-function gapState(gap: Gap): "active" | "done" | "waiting" {
-  if (gap.status === "asked") return "active";
+// review(문서 검토) 단계에서는 묻는 중인 질문이 없다(문서를 만들 때 묻던 질문도 '대기'로 보여 준다).
+function gapState(gap: Gap, inReview: boolean): "active" | "done" | "waiting" {
+  if (gap.status === "asked") return inReview ? "waiting" : "active";
   if (gap.status === "open") return "waiting";
   return "done";
 }
@@ -50,6 +51,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const failed = session.status === "error";
   // 문서가 만들어진 뒤(review)에도 서버는 답변·검토 의견을 받는다. 그때 질의응답으로 돌아와도 입력이 막히지 않게 한다.
   const inQna = session.stage === "qna";
+  const inReview = session.stage === "review";
   const waiting = busy || session.status === "running" || !(inQna || session.stage === "review");
 
   // 현재 질문 = 마지막 question 메시지. 그 뒤의 답변·확인 요청·안내가 이 질문의 대화 묶음이다.
@@ -136,14 +138,26 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
           <div className="question-list-items" role="list">
             {session.gaps.length === 0 && <div className="question-list-empty">{session.stage === "qna" ? "확인할 빈 항목이 없어요. 바로 문서를 만들 수 있어요." : "AMIGO가 빈 항목을 정리하고 있어요."}</div>}
             {session.gaps.map((item, index) => {
-              const state = gapState(item);
+              const state = gapState(item, inReview);
+              // 지금 묻는 질문이 아니면 눌러서 그 질문으로 이동한다(답한·건너뛴 질문은 다시 답하기, 아직 안 물은 질문은 먼저 답하기).
+              // 문서 검토 중에 고르면 답한 뒤 인수인계서를 다시 만든다.
+              const canJump = !waiting && (inQna || inReview) && state !== "active";
+              const jump = () => canJump && onReopen(item.id);
               return (
-                <div className={`question-list-item ${state}`} role="listitem" key={item.id} title={`${slotTitle(item.slot)} · ${COVERAGE_LABEL[session.slots[item.slot]?.coverage ?? "missing"]}`}>
+                <div
+                  className={`question-list-item ${state}${canJump ? " jumpable" : ""}`}
+                  role="listitem"
+                  key={item.id}
+                  title={canJump ? "이 질문으로 이동해 답합니다" : `${slotTitle(item.slot)} · ${COVERAGE_LABEL[session.slots[item.slot]?.coverage ?? "missing"]}`}
+                  tabIndex={canJump ? 0 : -1}
+                  onClick={jump}
+                  onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && (event.preventDefault(), jump())}
+                >
                   <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : index + 1}</span>
                   <div><small>{slotTitle(item.slot)}{item.status === "skipped" ? " · 건너뜀" : ""}</small><strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
-                    <button type="button" className="question-reopen" disabled={waiting || !inQna} onClick={() => onReopen(item.id)} title="이 질문으로 돌아가 답을 고칩니다">
+                    <button type="button" className="question-reopen" disabled={!canJump} onClick={(event) => { event.stopPropagation(); jump(); }} title="이 질문으로 돌아가 답을 고칩니다">
                       {item.status === "skipped" ? "답하러 가기" : "다시 답하기"}
                     </button>
                   )}
