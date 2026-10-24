@@ -8,7 +8,7 @@ import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList; onNew: () => void };
 
-export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocuments, onReceived, onLogout }: Props) {
+export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocuments, onReceived, onChat, onLogout }: Props) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null); // 삭제 확인 창을 띄운 세션
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -27,7 +27,7 @@ export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocum
 
   return (
     <div className="app-shell ongoing-page">
-      <AppSidebar active="handover" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} />
+      <AppSidebar active="handover" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
       <main className="ongoing-main">
         <header className="dashboard-header">
           <div><span>MY WORKSPACE</span><strong>진행 중인 인수인계</strong></div>

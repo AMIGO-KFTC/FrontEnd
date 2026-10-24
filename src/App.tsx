@@ -22,6 +22,7 @@ import { StartScreen } from "./screens/handover/StartScreen";
 import { UploadStepScreen } from "./screens/handover/UploadStepScreen";
 import { CompletedDocumentsScreen } from "./screens/home/CompletedDocumentsScreen";
 import { DashboardScreen } from "./screens/home/DashboardScreen";
+import { HandoverChatScreen } from "./screens/home/HandoverChatScreen";
 import { OngoingHandoverScreen } from "./screens/home/OngoingHandoverScreen";
 import { ReceivedHandoverScreen } from "./screens/home/ReceivedHandoverScreen";
 import type { HomeNav, SessionList } from "./screens/home/types";
@@ -402,6 +403,7 @@ function AppScreens() {
     onHandover: () => go({ kind: "home", page: "handover" }),
     onDocuments: () => go({ kind: "home", page: "documents" }),
     onReceived: () => go({ kind: "home", page: "received" }),
+    onChat: (docId) => go({ kind: "home", page: "chat", docId }),
     onLogout: logout,
   };
   const list: SessionList = {
@@ -466,6 +468,7 @@ function AppScreens() {
     if (route.page === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={startNew} />;
     if (route.page === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
     if (route.page === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
+    if (route.page === "chat") return <HandoverChatScreen key={route.docId ?? "all"} {...nav} list={list} initialDocId={route.docId} onOpenDocument={list.openDocument} />;
     return <DashboardScreen {...nav} list={list} notice={homeNotice} onDismissNotice={() => setHomeNotice(null)} onNew={startNew} isAdmin={profile.isAdmin} onAdmin={enterAdmin} />;
   }
   if (route.kind === "new") {
@@ -508,6 +511,7 @@ function AppScreens() {
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
         onImportConfluence={(ids) => (sessionId ? importIntegration(() => api.importConfluence(sessionId, ids)) : Promise.resolve(undefined))}
+        onImportMails={(ids) => (sessionId ? importIntegration(() => api.importMails(sessionId, ids).then((r) => ({ message: r.message, sources: r.files, skipped: r.skipped }))) : Promise.resolve(undefined))}
       />
     );
   }

@@ -18,8 +18,9 @@ export function AppSidebar({
   onHandover,
   onDocuments,
   onReceived,
+  onChat,
 }: {
-  active?: "home" | "handover" | "received" | "documents";
+  active?: "home" | "handover" | "received" | "documents" | "chat";
   sessions: SessionSummary[] | null;
   onOpenSession: (id: string) => void;
   onLogout?: () => void;
@@ -27,6 +28,7 @@ export function AppSidebar({
   onHandover?: () => void;
   onDocuments?: () => void;
   onReceived?: () => void;
+  onChat?: () => void;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
@@ -92,6 +94,7 @@ export function AppSidebar({
       <nav className="sidebar-nav sidebar-nav-secondary">
         <button className={active === "documents" ? "active" : ""} onClick={onDocuments}><Icon name="file" size={17} /><span>완성 문서</span></button>
         <button className={active === "received" ? "active" : ""} onClick={onReceived}><Icon name="download" size={17} /><span>받은 인수인계</span></button>
+        {onChat && <button className={active === "chat" ? "active" : ""} onClick={onChat}><Icon name="sparkle" size={17} /><span>인수인계 챗봇</span></button>}
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile">

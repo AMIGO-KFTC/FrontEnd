@@ -33,7 +33,7 @@ function notificationsFrom(received: ReceivedHandover[], onReceived: () => void)
 
 type Props = HomeNav & { list: SessionList; notice?: string | null; onDismissNotice?: () => void; onNew: () => void; isAdmin: boolean; onAdmin: () => void };
 
-export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, isAdmin, onAdmin, onLogout, onHome, onHandover, onDocuments, onReceived }: Props) {
+export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, isAdmin, onAdmin, onLogout, onHome, onHandover, onDocuments, onReceived, onChat }: Props) {
   const [profile] = useProfile();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [allNotificationsOpen, setAllNotificationsOpen] = useState(false);
@@ -55,6 +55,7 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
       note: ongoing ? (ongoing[0] ? `최근 수정 ${formatRelativeTime(ongoing[0].updated_at)}` : "진행 중인 작업이 없어요") : "목록을 불러오지 못했어요",
       icon: "message" as IconName,
       tone: "violet",
+      onClick: onHandover,
     },
     {
       label: "완료한 인수인계",
@@ -62,6 +63,7 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
       note: completed ? (completed[0] ? `최근 완성 ${formatRelativeTime(completed[0].updated_at)}` : "완성된 문서가 아직 없어요") : "목록을 불러오지 못했어요",
       icon: "check" as IconName,
       tone: "green",
+      onClick: onDocuments,
     },
     {
       label: "받은 인수인계",
@@ -69,6 +71,7 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
       note: received ? (received.length ? `확인 필요 ${receivedReady}건 · 작성 중 ${received.length - receivedReady}건` : "받은 인수인계가 없어요") : "목록을 불러오지 못했어요",
       icon: "download" as IconName,
       tone: "blue",
+      onClick: onReceived,
     },
   ];
   const notifications = notificationsFrom(received ?? [], onReceived);
@@ -76,7 +79,7 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
 
   return (
     <div className="app-shell dashboard-page">
-      <AppSidebar active="home" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} />
+      <AppSidebar active="home" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
       <main className="dashboard-main">
         <header className="dashboard-header">
           <div>
@@ -123,10 +126,10 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
 
           <section className="dashboard-stats">
             {stats.map((stat) => (
-              <article className="dashboard-stat" key={stat.label}>
+              <button type="button" className="dashboard-stat clickable" key={stat.label} onClick={stat.onClick}>
                 <span className={`stat-icon ${stat.tone}`}><Icon name={stat.icon} size={17} /></span>
                 <div><small>{stat.label}</small><strong className={stat.value === unavailable ? "unavailable" : ""}>{stat.value}</strong><p>{stat.note}</p></div>
-              </article>
+              </button>
             ))}
             {notice && (
               <div className="list-notice" role="status">

@@ -6,6 +6,7 @@ export type HomeNav = {
   onHandover: () => void;
   onDocuments: () => void;
   onReceived: () => void;
+  onChat: (docId?: string) => void; // 인수인계서 챗봇(문서를 주면 그 문서에 대해서만 물어본다)
   onLogout: () => void;
 };
 

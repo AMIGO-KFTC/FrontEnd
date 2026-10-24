@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 export type IconName =
+  | "alert"
   | "arrow"
   | "bell"
   | "bolt"
@@ -27,6 +28,7 @@ export type IconName =
   | "user";
 
 const paths: Record<IconName, ReactNode> = {
+  alert: <><path d="M12 3 2 20h20L12 3Z" /><path d="M12 10v4M12 17.5v.5" /></>,
   arrow: <><path d="M5 12h14M14 7l5 5-5 5" /></>,
   bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
   bolt: <path d="m13 2-7 11h6l-1 9 7-12h-6l1-8Z" />,

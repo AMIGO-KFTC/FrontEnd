@@ -4,11 +4,13 @@ import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
 import { completedSessions, formatDate, MODE_LABEL, sessionTitle, sessionTone } from "@/shared/sessions";
+import type { Source } from "@/shared/types";
+import { SourcesDialog } from "../handover/SourcesDialog";
 import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
 
-export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onLogout, onDocuments }: Props) {
+export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onChat, onLogout, onDocuments }: Props) {
   const documents = list.sessions ? completedSessions(list.sessions) : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 직접 고친 문서인지(현재 버전을 만든 쪽). 목록을 다시 불러올 때마다 함께 갱신한다.
@@ -18,10 +20,26 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
   }, [list.sessions]);
   const stateLabel = (id: string) => (origins[id] === "user" ? "직접 수정" : origins[id] === "restore" ? "이전 버전 복원" : "생성 완료");
   const selected = documents?.find((document) => document.id === selectedId) ?? documents?.[0];
+  // 선택한 문서를 만드는 데 올린 자료 파일(링크·처리 실패 파일은 내려받을 수 없어 뺀다). 선택이 바뀔 때마다 불러온다.
+  const [usedFiles, setUsedFiles] = useState<Source[] | null>(null);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const selectedKey = selected?.id;
+  useEffect(() => {
+    if (!selectedKey) return;
+    let cancelled = false;
+    setUsedFiles(null);
+    api
+      .session(selectedKey)
+      .then((detail) => !cancelled && setUsedFiles(detail.sources.filter((source) => source.kind === "file" && source.status !== "failed")))
+      .catch(() => !cancelled && setUsedFiles([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedKey, list.sessions]);
 
   return (
     <div className="app-shell completed-documents-page">
-      <AppSidebar active="documents" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} />
+      <AppSidebar active="documents" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
       <main className="completed-documents-main">
         <header className="dashboard-header">
           <div><span>MY WORKSPACE</span><strong>완성 문서</strong></div>
@@ -66,6 +84,8 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                 </div>
                 <footer>
                   <button onClick={() => list.open(selected.id)}><Icon name="file" size={14} /> 문서 열기</button>
+                  <button onClick={() => setSourcesOpen(true)} disabled={!usedFiles?.length} title="이 인수인계서를 만드는 데 올린 자료 파일을 내려받아요"><Icon name="download" size={14} /> 사용한 자료{usedFiles ? ` ${usedFiles.length}개` : ""}</button>
+                  <button onClick={() => onChat(selected.id)}><Icon name="sparkle" size={14} /> 이 업무에 질문하기</button>
                   <button onClick={() => { window.location.href = api.downloadUrl(selected.id, "pdf"); }}><Icon name="download" size={14} /> PDF 내려받기</button>
                 </footer>
               </article>
@@ -73,6 +93,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
           )}
         </div>
       </main>
+      {sourcesOpen && selected && usedFiles && <SourcesDialog sessionId={selected.id} files={usedFiles} config={null} onClose={() => setSourcesOpen(false)} />}
     </div>
   );
 }
