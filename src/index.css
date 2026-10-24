@@ -3200,3 +3200,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .chat-composer button:disabled { background: #d9d3d6; cursor: default; }
 .chat-error { margin: 0; padding: 8px 12px; border: 1px solid #efc4c0; border-radius: 10px; background: #fff8f7; color: #b24a41; font-size: 13.5px; }
 @media (max-width: 760px) { .handover-chat-main { height: auto; min-height: 100vh; } .handover-chat-body { height: calc(100vh - 54px); padding: 12px 14px; } }
+
+/* '직접 수정하기': 표 칸·항목 이름을 그 자리에서 고치는 입력칸 */
+.final-paper .cell-edit { display: inline-block; min-width: 2em; min-height: 1.4em; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; outline: 1px dashed #c7b9ef; background: #fbf9ff; white-space: pre-wrap; cursor: text; }
+.final-paper .cell-edit:focus { outline: 2px solid #7055c8; background: #fff; }
+.final-paper td > .cell-edit { display: block; }
+.final-paper h3 > .cell-edit { margin: 0 0 0 4px; }

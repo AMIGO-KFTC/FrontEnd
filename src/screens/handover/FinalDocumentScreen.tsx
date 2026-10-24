@@ -16,6 +16,8 @@ import type { AppConfig, DocumentCitation, Gap, Source } from "@/shared/types";
 import { MermaidDiagram } from "@/shared/MermaidDiagram";
 import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
 import { CitationContext, CitationRef } from "@/shared/CitationRef";
+import { EditableCell, EditCellsContext } from "@/shared/EditableCell";
+import { applyCellEdits, cellText, findCells, markCells } from "@/shared/editableCells";
 
 type Props = {
   data: StartData;
@@ -56,8 +58,6 @@ const HIDDEN_SECTION = /^(확인 필요 사항|근거 자료)$/;
 // 문서에 넣지 않고 오른쪽 목록으로 보여 줄 질문 상태와 그 이름
 const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", answered: "확인 대기", skipped: "인계자 미확인" };
 
-// 표(일정표 등)가 든 장은 글로 고치지 않고 화면에서 끌어서 고친다.
-const hasTable = (body: string) => /<t[dh][\s>]/i.test(body);
 
 // 고친 장(章)의 본문만 바꿔 문서 전체 Markdown 을 다시 만든다. 고치지 않은 부분은 글자 그대로 둔다. edits 의 키는 장 번호(0부터).
 function rebuildMarkdown(markdown: string, edits: Record<string, string>): string {
@@ -77,7 +77,9 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const [transferOpen, setTransferOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, string>>({}); // 직접 고치는 중인 장 본문(장 번호 → 글)
+  const [drafts, setDrafts] = useState<Record<string, string>>({}); // 직접 고치는 중인 장 본문(장 번호 → 글). 표가 없는 장
+  // 표가 있는 장은 칸마다 그 자리에서 고친다(장 번호 → 칸 번호 → 고친 글). 입력할 때마다 다시 그리지 않도록 ref 에 모은다.
+  const cellDrafts = useRef<Record<string, Record<number, string>>>({});
   const [saveError, setSaveError] = useState("");
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const [revisionOpen, setRevisionOpen] = useState(false);
@@ -139,10 +141,16 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const sections = visible.map((section) => section.title);
   // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
   const finishEditing = async () => {
-    const changed = Object.fromEntries(Object.entries(drafts).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
+    const edited: Record<string, string> = { ...drafts };
+    for (const [index, edits] of Object.entries(cellDrafts.current)) {
+      const body = parsed[Number(index)]?.body;
+      if (body !== undefined) edited[index] = applyCellEdits(body, edits);
+    }
+    const changed = Object.fromEntries(Object.entries(edited).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
     if (Object.keys(changed).length === 0) {
       setIsEditing(false);
       setDrafts({});
+      cellDrafts.current = {};
       return;
     }
     setSaveState("saving");
@@ -152,6 +160,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
       setSaveState("saved");
       setIsEditing(false);
       setDrafts({});
+      cellDrafts.current = {};
     } catch (e) {
       setSaveState("failed");
       setSaveError((e as Error).message);
@@ -160,6 +169,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const cancelEditing = () => {
     setIsEditing(false);
     setDrafts({});
+    cellDrafts.current = {};
     setSaveError("");
     setSaveState("");
   };
@@ -224,7 +234,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} disabled={saveState === "saving"} onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? (saveState === "saving" ? "저장 중…" : "수정 완료") : "직접 수정하기"}</button>
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
-              {isEditing && <small className="gantt-hint">글을 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요. 월별 일정표는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
+              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요. 월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => setRevisionOpen((current) => !current)}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
             )}
@@ -283,10 +293,19 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </section>
             )}
             {loading && parsed.length === 0 && failedMessage === null && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
-            {visible.map(({ index: original, ...section }, index) => (
+            {visible.map(({ index: original, ...section }, index) => {
+              // 수정 중이면 표 칸·항목 이름을 입력칸으로 그린다. 고칠 칸이 없는(표가 없는) 장은 글 상자로 고친다.
+              const cells = isEditing ? findCells(section.body) : [];
+              const editCells = {
+                text: (id: number) => (cells[id] ? cellText(cells[id]) : ""),
+                onChange: (id: number, text: string) => {
+                  cellDrafts.current[String(original)] = { ...(cellDrafts.current[String(original)] ?? {}), [id]: text };
+                },
+              };
+              return (
               <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${original}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
-                {isEditing && !hasTable(section.body) ? (
+                {isEditing && cells.length === 0 ? (
                   <textarea
                     className="paper-section-editor"
                     value={drafts[String(original)] ?? section.body}
@@ -296,11 +315,16 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                     aria-label={`${section.title} 내용 수정`}
                   />
                 ) : (
+                <EditCellsContext.Provider value={isEditing ? editCells : null}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={documentRehypePlugins}
                   components={{
                     table: GanttAwareTable,
+                    span: ({ node, children, ...rest }) => {
+                      const id = node?.properties?.dataCell;
+                      return isEditing && id !== undefined ? <EditableCell id={Number(id)} /> : <span {...rest}>{children}</span>;
+                    },
                     sup: ({ node, children, ...rest }) => {
                       const number = Number(node?.properties?.dataCite);
                       return number ? <CitationRef number={number} /> : <sup {...rest}>{children}</sup>;
@@ -309,10 +333,12 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
                   }}
-                >{section.body}</ReactMarkdown>
+                >{isEditing ? markCells(section.body, cells) : section.body}</ReactMarkdown>
+                </EditCellsContext.Provider>
                 )}
               </section>
-            ))}
+              );
+            })}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </CitationContext.Provider>
