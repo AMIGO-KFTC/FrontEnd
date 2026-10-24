@@ -134,6 +134,7 @@ export const api = {
       body: JSON.stringify({ name, nth, months }),
     }),
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
+  sourceFileUrl: (id: string, sourceId: string) => `${BASE}/api/sessions/${id}/sources/${sourceId}/file`, // 올린 파일 원본 내려받기
 
   // 가상 Mattermost · Confluence(실제 API 대신 BackEnd 의 예시 데이터)
   mattermostConversations: (q = "") =>

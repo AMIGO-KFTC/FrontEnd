@@ -13,4 +13,32 @@ const schema = {
   },
 };
 
-export const documentRehypePlugins: PluggableList = [rehypeRaw, [rehypeSanitize, schema]];
+// 본문 글 뒤의 근거 번호(' [1]')를 <sup class="cite-ref" data-cite="1"> 로 바꾼다(화면이 마우스를 올리면 출처를 띄우는 번호로 그린다).
+// 소독(sanitize) 뒤에 돌려서 코드가 만든 이 태그만 남긴다. 코드 블록 안의 글은 건드리지 않는다.
+type HastNode = { type: string; tagName?: string; value?: string; properties?: Record<string, unknown>; children?: HastNode[] };
+const CITATION_MARK = / ?\[(\d+)\]/g;
+
+function splitMarks(node: HastNode): void {
+  if (!node.children || node.tagName === "code" || node.tagName === "pre") return;
+  const next: HastNode[] = [];
+  for (const child of node.children) {
+    if (child.type !== "text" || !child.value || !/\[\d+\]/.test(child.value)) {
+      splitMarks(child);
+      next.push(child);
+      continue;
+    }
+    let last = 0;
+    for (const match of child.value.matchAll(CITATION_MARK)) {
+      const at = match.index ?? 0;
+      if (at > last) next.push({ type: "text", value: child.value.slice(last, at) });
+      next.push({ type: "element", tagName: "sup", properties: { className: ["cite-ref"], dataCite: match[1] }, children: [{ type: "text", value: match[1] }] });
+      last = at + match[0].length;
+    }
+    if (last < child.value.length) next.push({ type: "text", value: child.value.slice(last) });
+  }
+  node.children = next;
+}
+
+const rehypeCitationMarks = () => (tree: HastNode) => splitMarks(tree);
+
+export const documentRehypePlugins: PluggableList = [rehypeRaw, [rehypeSanitize, schema], rehypeCitationMarks];

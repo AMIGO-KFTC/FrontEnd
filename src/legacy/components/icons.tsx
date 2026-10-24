@@ -9,6 +9,7 @@ import {
   KeyRound,
   ListChecks,
   Mail,
+  Phone,
   Presentation,
   Repeat,
   Users,
@@ -51,11 +52,12 @@ export const SLOT_ICONS: Record<string, LucideIcon> = {
   overview: Briefcase,
   stakeholders: Users,
   regular: Repeat,
+  partners: Users,
   irregular: ListChecks,
   systems: KeyRound,
   dept_notes: AlertTriangle,
-  leave_units: Briefcase,
   leave_tasks: Repeat,
+  contacts: Phone,
 };
 
 export function formatSize(bytes: number): string {

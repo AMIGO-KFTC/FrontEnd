@@ -77,7 +77,7 @@ function AppScreens() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [docLoading, setDocLoading] = useState(false);
-  // 문서에 번호가 달린 근거 수(문서의 '근거 자료' 목록과 같은 수). 항목마다 달린 근거를 모두 더한 수와 달라 따로 받아 둔다.
+  // 서버가 매긴 근거 수(GET /citations, 문서 화면 '출처' 창 목록과 같은 수). 항목마다 달린 근거를 모두 더한 수와 달라 따로 받아 둔다.
   const [citationTotal, setCitationTotal] = useState<number | null>(null);
   const [busy, setBusy] = useState(false); // 세션 생성·분석 시작처럼 화면을 바꾸는 요청
   const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
@@ -203,7 +203,7 @@ function AppScreens() {
     };
   }, [step, sessionId, documentVersion]);
 
-  // 문서·완료 화면의 '출처 N개' 는 문서에 번호가 달린 근거 수로 보여 준다(못 받으면 항목별 근거 합계로 대신).
+  // 완료 화면의 근거 수는 서버가 매긴 근거 수로 보여 준다(못 받으면 항목별 근거 합계로 대신). 문서 화면의 '출처 N개'는 올린 파일 수다.
   useEffect(() => {
     if ((step !== "document" && step !== "complete") || !sessionId || documentVersion === 0) return;
     let cancelled = false;
@@ -574,7 +574,9 @@ function AppScreens() {
           void refresh();
         }}
         loading={docLoading}
-        sourceCount={citationTotal ?? citationCount(session)}
+        gaps={session.gaps}
+        sources={session.sources}
+        config={config}
         failedMessage={session.status === "error" ? session.error : null}
         revising={acting || session.status === "running"}
         onRevise={(text) => void revise(text)}
