@@ -21,12 +21,20 @@ const isBar = (cell: Hast) => {
 
 const rowsOf = (table: Hast) => elements(table, "thead").concat(elements(table, "tbody")).flatMap((part) => elements(part, "tr")).concat(elements(table, "tr"));
 
-/** 첫 행이 '이름 | 1월 … 12월 | 비고' 인 표인지. */
+const isMonthRow = (cells: Hast[], from: number) => cells.length >= from + 12 && textOf(cells[from]).trim() === "1월" && textOf(cells[from + 11]).trim() === "12월";
+
+/** 머리글 행 수: 2행('단위업무명 | 계획기간(12칸 병합) | 진행상황 요약' + '1월 … 12월'), 예전 문서의 1행('이름 | 1월 … 12월 | 진행상황 요약'), 일정표가 아니면 0. */
+function headerRows(table: Hast): number {
+  const [first, second] = rowsOf(table);
+  if (!first) return 0;
+  const top = elements(first, "th");
+  if (top.length === 14 && isMonthRow(top, 1)) return 1;
+  if (top.length === 3 && spanOf(top[1]) === 12 && second && isMonthRow(elements(second, "th"), 0)) return 2;
+  return 0;
+}
+
 export function isGanttTable(table: Hast): boolean {
-  const head = rowsOf(table)[0];
-  if (!head) return false;
-  const cells = elements(head, "th");
-  return cells.length === 14 && textOf(cells[1]).trim() === "1월" && textOf(cells[12]).trim() === "12월";
+  return headerRows(table) > 0;
 }
 
 function monthsOfRow(row: Hast): { name: string; months: Set<number>; note: string } | null {
@@ -105,13 +113,20 @@ export function GanttAwareTable({ node, children }: { node?: Hast; children?: Re
   const { editable } = useContext(GanttContext);
   if (!node || !isGanttTable(node)) return <table>{children}</table>;
   const rows = rowsOf(node);
-  const header = elements(rows[0], "th");
+  const heads = headerRows(node);
+  const top = elements(rows[0], "th");
+  const name = textOf(top[0]);
+  const note = textOf(top[top.length - 1]);
+  const period = heads === 2 ? textOf(top[1]) : "계획기간"; // 예전 문서(1행 머리글)도 2행으로 보여 준다
   const seen = new Map<string, number>();
   return (
     <table className={`gantt-table ${editable ? "gantt-editable" : ""}`}>
-      <thead><tr>{header.map((cell, index) => <th key={index}>{textOf(cell)}</th>)}</tr></thead>
+      <thead>
+        <tr><th rowSpan={2}>{name}</th><th colSpan={12}>{period}</th><th rowSpan={2}>{note}</th></tr>
+        <tr>{Array.from({ length: 12 }, (_, i) => <th key={i}>{i + 1}월</th>)}</tr>
+      </thead>
       <tbody>
-        {rows.slice(1).map((row, index) => {
+        {rows.slice(heads).map((row, index) => {
           const parsed = monthsOfRow(row);
           if (!parsed) return <tr key={index}>{elements(row, "td").map((cell, i) => <td key={i}>{textOf(cell)}</td>)}</tr>;
           const nth = seen.get(parsed.name) ?? 0;

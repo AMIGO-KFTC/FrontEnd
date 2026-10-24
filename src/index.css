@@ -2854,18 +2854,21 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .paper-section > blockquote p { margin: 0; }
 .paper-section strong { color: #4d4650; }
 .paper-section table { margin: 10px 0; font-size: 12px; }
-/* 업무 단위 요약 + 일정 명세표: 열이 14개(이름 · 1~12월 · 비고)라서 월 열은 같은 폭으로 고정하고 이름·비고 열에 폭을 준다.
+/* 업무 단위 요약 + 일정 명세표: 머리글 2행(단위업무명 | 계획기간(1~12월 병합) | 진행상황 요약 / 1월 … 12월), 열 14개.
+   월 열은 같은 폭으로 고정하고 이름·진행상황 요약 열에 폭을 준다(table-layout: fixed 는 첫 머리글 행으로 폭을 정한다).
    막대는 이어지는 달을 한 칸으로 합친 색칠된 칸(td.bar)이다. */
-.final-paper table:has(th:nth-child(14)) { table-layout: fixed; }
-.final-paper table:has(th:nth-child(14)) th,
-.final-paper table:has(th:nth-child(14)) td { padding: 11px 1px; text-align: center; overflow-wrap: anywhere; }
-.final-paper table:has(th:nth-child(14)) th:first-child,
-.final-paper table:has(th:nth-child(14)) td:first-child { width: 21%; padding-left: 8px; text-align: left; }
-.final-paper table:has(th:nth-child(14)) th:last-child,
-.final-paper table:has(th:nth-child(14)) td:last-child { width: 19%; padding: 11px 4px 11px 8px; text-align: left; }
-.final-paper td.bar { background: linear-gradient(#fff 0 25%, #7055c8 25% 75%, #fff 75% 100%); }
-/* 칸을 나눈 표(협업관계·비상 대응): 합쳐진 왼쪽 라벨은 가운데에 두고, 나눈 칸의 머리글은 연한 배경으로 */
+.final-paper table.gantt-table { table-layout: fixed; }
+.final-paper table.gantt-table th,
+.final-paper table.gantt-table td { padding: 11px 1px; text-align: center; overflow-wrap: anywhere; }
+.final-paper table.gantt-table thead tr:first-child th:first-child,
+.final-paper table.gantt-table td:first-child { width: 18%; padding-left: 8px; text-align: left; }
+.final-paper table.gantt-table thead tr:first-child th:last-child,
+.final-paper table.gantt-table td:last-child { width: 28%; padding: 11px 4px 11px 8px; text-align: left; }
+/* 막대는 칸 높이와 상관없이 가운데에 얇게(14px) 그린다. 진행상황 요약 글이 길어 행이 높아져도 막대가 커지지 않게 */
+.final-paper td.bar { background: linear-gradient(#7055c8, #7055c8) center / 100% 14px no-repeat; }
+/* 칸을 나눈 표(정기·비정기 업무의 협업관계): 합쳐진 왼쪽 라벨은 가운데에 두고, 나눈 칸의 머리글은 연한 배경으로 */
 .final-paper th[rowspan] { vertical-align: middle; }
+.final-paper th { word-break: keep-all; } /* '연락처' 같은 짧은 머리글이 글자 단위로 끊기지 않게 */
 .final-paper table th[colspan="1"]:not(:first-child) { text-align: left; }
 
 
@@ -3078,3 +3081,58 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .final-paper.is-revising { opacity: .55; pointer-events: none; transition: opacity .2s ease; }
 @media (prefers-reduced-motion: reduce) { .spinner, .typing-dots i { animation-duration: 2.4s; } }
 @media print { .revise-loading { display: none !important; } }
+
+/* 완성 문서 화면: 오른쪽 '시간 될 때 적어 주세요'(문서 본문에서 뺀 확인 필요 사항)와 '출처 N개 연결됨' 창 */
+.final-document-main { grid-template-columns: 220px minmax(0, 1fr) 270px; }
+.document-source-info { width: 100%; align-items: flex-start; background: #fff; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+.document-source-info > div { flex: 1; min-width: 0; }
+.document-source-info > svg:last-child { align-self: center; color: #b3abb6; }
+.document-source-info:hover { border-color: #cdbff0; background: #f7f4fc; }
+.final-pending { padding: 20px 15px; overflow-y: auto; border-left: 1px solid #e2ddda; background: #fffdfa; }
+.final-pending-title { display: flex; gap: 9px; padding: 12px; border-radius: 10px; background: #fff6e6; color: #b5781f; }
+.final-pending-title strong, .final-pending-title small { display: block; }
+.final-pending-title strong { color: #4f4552; font-size: 13px; }
+.final-pending-title small { margin-top: 4px; color: #a08f80; font-size: 12.5px; line-height: 1.5; }
+.final-pending-empty { margin: 16px 6px; color: #a39da4; font-size: 13.5px; }
+.final-pending ul { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.final-pending li button { width: 100%; display: grid; gap: 6px; padding: 11px 12px; border: 1px solid #e7e1e5; border-radius: 9px; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+.final-pending li button:hover:not(:disabled) { border-color: #cdbff0; background: #f7f4fc; }
+.final-pending li button:disabled { cursor: default; }
+.final-pending li strong { color: #3d3640; font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+.final-pending li small { color: #9a939d; font-size: 12.5px; line-height: 1.5; }
+.final-pending-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.final-pending-meta em { min-width: 0; overflow: hidden; color: #7056c1; font-size: 12px; font-style: normal; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.final-pending-meta i { flex-shrink: 0; padding: 2px 7px; border-radius: 99px; background: #f1eef2; color: #7b737e; font-size: 11.5px; font-style: normal; font-weight: 700; }
+.final-pending-meta i.status-open { background: #f1eef2; color: #7b737e; }
+.final-pending-meta i.status-asked { background: #fff1d6; color: #a86c12; }
+.final-pending-meta i.status-answered { background: #e3f3ea; color: #3e8a60; }
+.final-pending-meta i.status-skipped { background: #fde8ec; color: #b4475f; }
+.leave-theme .final-pending { border-left: 2px solid #f1bfd2; background: #fffaf1; }
+@media (max-width: 1250px) { .final-document-main { grid-template-columns: 220px minmax(0, 1fr) 230px; } }
+@media (max-width: 1000px) {
+  .final-document-main { grid-template-columns: 220px minmax(0, 1fr); }
+  .final-pending { display: none; }
+}
+@media (max-width: 850px) { .final-document-main { grid-template-columns: 1fr; } }
+@media print { .final-pending, .sources-modal { display: none !important; } }
+
+.sources-modal { width: min(100%, 560px); }
+.sources-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #8d868f; cursor: pointer; }
+.sources-close:hover { background: #f1eef2; }
+.sources-files { flex: 1; min-height: 90px; max-height: 60vh; margin: 0; padding: 4px; overflow-y: auto; list-style: none; border: 1px solid #ece6f0; border-radius: 10px; background: #fff; }
+.sources-files > li + li { border-top: 1px solid #f1ecf2; }
+.sources-files a { display: flex; align-items: center; gap: 10px; padding: 12px 10px; border-radius: 8px; color: #7056c1; text-decoration: none; }
+.sources-files a:hover, .sources-files a:focus-visible { background: #f6f2fd; outline: none; }
+.sources-files strong { flex: 1; min-width: 0; overflow: hidden; color: #2f2933; font-size: 14.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.sources-files em { flex-shrink: 0; padding: 2px 8px; border-radius: 99px; background: #eee9fc; color: #6045b5; font-size: 12px; font-style: normal; font-weight: 700; }
+.sources-files small { flex-shrink: 0; min-width: 44px; color: #a39da4; font-size: 12px; text-align: right; }
+
+/* 본문 근거 번호([1]): 글 뒤의 작은 번호. 마우스를 올리면 출처·근거 문장을 작은 창으로 띄운다(CitationRef). */
+.final-paper .cite-ref { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; margin-left: 3px; padding: 0 4px; border-radius: 9px; background: #eee9fb; color: #5b45b0; font-size: 10.5px; font-weight: 700; line-height: 1; vertical-align: 2px; cursor: default; }
+.final-paper .cite-ref:hover, .final-paper .cite-ref:focus-visible { background: #7055c8; color: #fff; outline: none; }
+.final-paper .cite-pop { position: absolute; z-index: 30; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; width: max-content; max-width: 320px; padding: 12px 14px; border-radius: 12px; background: #2b2930; color: #f4f2f7; box-shadow: 0 10px 28px rgba(20, 16, 30, 0.28); text-align: left; font-size: 12.5px; font-weight: 400; line-height: 1.5; white-space: normal; pointer-events: none; }
+.final-paper .cite-pop-title { font-size: 13.5px; font-weight: 700; color: #fff; }
+.final-paper .cite-pop-label, .final-paper .cite-pop-where { color: #b9b3c6; font-size: 11.5px; }
+.final-paper .cite-pop-quote { margin: 2px 0 0; color: #e7e3ef; }
+.final-paper .cite-pop-empty { margin: 0; color: #b9b3c6; }
+@media print { .final-paper .cite-ref { display: none; } }

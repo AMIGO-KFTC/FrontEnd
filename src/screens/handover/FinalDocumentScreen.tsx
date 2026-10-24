@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNote } from "@/shared/ErrorNote";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,8 +11,11 @@ import type { StartData } from "@/shared/handover";
 import { documentRehypePlugins } from "@/shared/documentMarkdown";
 import { useProfile } from "@/shared/profile";
 import { TransferDialog } from "./TransferDialog";
+import { SourcesDialog } from "./SourcesDialog";
+import type { AppConfig, DocumentCitation, Gap, Source } from "@/shared/types";
 import { MermaidDiagram } from "@/shared/MermaidDiagram";
 import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
+import { CitationContext, CitationRef } from "@/shared/CitationRef";
 
 type Props = {
   data: StartData;
@@ -21,7 +24,9 @@ type Props = {
   onGanttEdit: (name: string, nth: number, months: number[]) => Promise<void>;
   onSaveDocument: (markdown: string) => Promise<void>; // 직접 고친 문서를 새 버전으로 저장
   loading: boolean;
-  sourceCount: number;
+  gaps: Gap[]; // 오른쪽 '시간 될 때 적어 주세요' 목록
+  sources: Source[]; // '출처 N개 연결됨' 창의 자료 목록
+  config: AppConfig | null; // 장 제목·자료 형식 이름
   failedMessage: string | null;
   revising: boolean; // 수정 요청이 서버에 가 있는 동안
   onRevise: (text: string) => void;
@@ -45,6 +50,12 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
+// 예전에 저장된 문서에 남아 있을 수 있는 장. 지금은 본문에 넣지 않고 오른쪽 목록·출처 창이 대신하므로 화면에서 숨긴다.
+const HIDDEN_SECTION = /^(확인 필요 사항|근거 자료)$/;
+
+// 문서에 넣지 않고 오른쪽 목록으로 보여 줄 질문 상태와 그 이름
+const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", answered: "확인 대기", skipped: "인계자 미확인" };
+
 // 표(일정표 등)가 든 장은 글로 고치지 않고 화면에서 끌어서 고친다.
 const hasTable = (body: string) => /<t[dh][\s>]/i.test(body);
 
@@ -61,7 +72,7 @@ function rebuildMarkdown(markdown: string, edits: Record<string, string>): strin
     .join("");
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, loading, sourceCount, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, loading, gaps, sources, config, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
   const [profile] = useProfile();
   const [transferOpen, setTransferOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
@@ -71,6 +82,40 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [revision, setRevision] = useState("");
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const revisionRef = useRef<HTMLTextAreaElement>(null);
+  const [fillTick, setFillTick] = useState(0); // 목록에서 질문을 채울 때마다 늘려 커서를 다시 옮긴다
+  const slotTitle = (key: string) => config?.slots.find((spec) => spec.key === key)?.title ?? "";
+  const files = sources.filter((source) => source.kind === "file" && source.status !== "failed"); // '출처' 창에서 내려받는 올린 파일
+  // 본문 근거 번호([1])에 마우스를 올리면 띄울 출처. 문서가 바뀌면(새 버전) 번호도 바뀌므로 다시 불러온다.
+  const [citations, setCitations] = useState<DocumentCitation[]>([]);
+  useEffect(() => {
+    if (!markdown) return;
+    let cancelled = false;
+    api.citations(sessionId).then((result) => !cancelled && setCitations(result.citations)).catch(() => !cancelled && setCitations([]));
+    return () => { cancelled = true; };
+  }, [sessionId, markdown]);
+  const citationContext = useMemo(
+    () => ({ byNumber: new Map(citations.map((cite) => [cite.number, cite])), slotTitle }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [citations, config],
+  );
+  const pending = gaps.filter((gap) => gap.status in PENDING_LABEL);
+  // 오른쪽 목록의 항목을 누르면 수정 요청 칸에 장·질문을 채워 연다. 답을 적어 보내면 AMIGO가 반영한 새 버전을 만든다.
+  const answerGap = (gap: Gap) => {
+    if (readOnly || revising) return;
+    const title = slotTitle(gap.slot);
+    setRevision(`${title ? `[${title}] ` : ""}${gap.question || gap.description}\n답변: `);
+    setRevisionOpen(true);
+    setFillTick((n) => n + 1);
+  };
+  // 채워 넣은 글 끝에 커서를 둬 바로 답을 이어 쓰게 한다
+  useEffect(() => {
+    const box = revisionRef.current;
+    if (!revisionOpen || !box) return;
+    box.focus();
+    box.setSelectionRange(box.value.length, box.value.length);
+  }, [revisionOpen, fillTick]);
   // "AMIGO에게 수정 요청": 검토 단계의 chat API 로 보내면 서버가 반영한 새 버전을 만든다(README 의 v2 생성과 같은 경로).
   const sendRevision = () => {
     const text = revision.trim();
@@ -80,6 +125,8 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     onRevise(text);
   };
   const parsed = splitSections(markdown);
+  // 화면에 그릴 장. index 는 원래 문서의 장 번호(직접 고친 글을 저장할 때 rebuildMarkdown 이 쓴다).
+  const visible = parsed.map((section, index) => ({ ...section, index })).filter((section) => !HIDDEN_SECTION.test(section.title));
   const gantt = useMemo(() => ({
     editable: isEditing,
     onChange: (name: string, nth: number, months: number[]) => {
@@ -89,7 +136,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
       return done;
     },
   }), [isEditing, onGanttEdit]);
-  const sections = parsed.map((section) => section.title);
+  const sections = visible.map((section) => section.title);
   // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
   const finishEditing = async () => {
     const changed = Object.fromEntries(Object.entries(drafts).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
@@ -158,7 +205,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </button>
             ))}
           </nav>
-          <div className="document-source-info"><Icon name="link" size={15} /><div><strong>출처 {sourceCount}개 연결됨</strong><small>AI가 어떤 자료를 참고했는지 직접 확인해 보세요.</small></div></div>
+          <button type="button" className="document-source-info" onClick={() => setSourcesOpen(true)}><Icon name="link" size={15} /><div><strong>출처 {files.length}개 연결됨</strong><small>AI가 참고한 자료 파일을 내려받을 수 있어요.</small></div><Icon name="chevron" size={12} /></button>
           {readOnly ? (
             <button className="document-back" onClick={readOnly.onExit}><Icon name="arrow" size={15} /> {readOnly.exitLabel}</button>
           ) : (
@@ -198,6 +245,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                   }
                 }}
                 placeholder="예: 협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요"
+                ref={revisionRef}
                 autoFocus
               />
               <div>
@@ -213,6 +261,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             </div>
           )}
           <GanttContext.Provider value={gantt}>
+          <CitationContext.Provider value={citationContext}>
           <article className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
@@ -234,15 +283,15 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </section>
             )}
             {loading && parsed.length === 0 && failedMessage === null && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
-            {parsed.map((section, index) => (
-              <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${index}`}>
+            {visible.map(({ index: original, ...section }, index) => (
+              <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${original}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
                 {isEditing && !hasTable(section.body) ? (
                   <textarea
                     className="paper-section-editor"
-                    value={drafts[String(index)] ?? section.body}
-                    onChange={(event) => setDrafts({ ...drafts, [String(index)]: event.target.value })}
-                    rows={Math.max(4, (drafts[String(index)] ?? section.body).split("\n").length + 1)}
+                    value={drafts[String(original)] ?? section.body}
+                    onChange={(event) => setDrafts({ ...drafts, [String(original)]: event.target.value })}
+                    rows={Math.max(4, (drafts[String(original)] ?? section.body).split("\n").length + 1)}
                     spellCheck={false}
                     aria-label={`${section.title} 내용 수정`}
                   />
@@ -252,6 +301,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                   rehypePlugins={documentRehypePlugins}
                   components={{
                     table: GanttAwareTable,
+                    sup: ({ node, children, ...rest }) => {
+                      const number = Number(node?.properties?.dataCite);
+                      return number ? <CitationRef number={number} /> : <sup {...rest}>{children}</sup>;
+                    },
                     pre: ({ children }) => <>{children}</>,
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
@@ -262,8 +315,28 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             ))}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
+          </CitationContext.Provider>
           </GanttContext.Provider>
         </section>
+        <aside className="final-pending" aria-label="시간 될 때 적어 주세요">
+          <div className="final-pending-title"><Icon name="clock" size={15} /><div><strong>시간 될 때 적어 주세요</strong><small>{readOnly ? "인계자가 아직 확인하지 못한 내용이에요." : "누르면 수정 요청 칸에 질문이 채워져요. 답을 적어 보내면 문서에 반영돼요."}</small></div></div>
+          {pending.length === 0 ? (
+            <p className="final-pending-empty">확인할 내용이 남아 있지 않아요.</p>
+          ) : (
+            <ul>
+              {pending.map((gap) => (
+                <li key={gap.id}>
+                  <button type="button" disabled={!!readOnly || revising} onClick={() => answerGap(gap)}>
+                    <span className="final-pending-meta"><em>{slotTitle(gap.slot) || "기타"}</em><i className={`status-${gap.status}`}>{PENDING_LABEL[gap.status]}</i></span>
+                    <strong>{gap.question || gap.description}</strong>
+                    {gap.question && gap.description && gap.description !== gap.question && <small>{gap.description}</small>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+        {sourcesOpen && <SourcesDialog sessionId={sessionId} files={files} config={config} onClose={() => setSourcesOpen(false)} />}
         {transferOpen && <TransferDialog sessionId={sessionId} selfLoginId={profile.loginId} onClose={() => setTransferOpen(false)} />}
         {!readOnly && <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>}
       </main>
