@@ -1840,7 +1840,9 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .question-list-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6951c1, #9274dc); transition: width .25s ease; }
 .question-list-items { display: grid; gap: 7px; }
 .question-list-item { width: 100%; min-height: 49px; padding: 7px; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 1px solid #ebe6ec; border-radius: 9px; background: #fff; color: #918a94; text-align: left; cursor: pointer; }
-.question-list-item:hover { border-color: #c9bce5; background: #fcfaff; }
+.question-list-item { cursor: default; }
+.question-list-item.jumpable { cursor: pointer; }
+.question-list-item.jumpable:hover, .question-list-item.jumpable:focus-visible { border-color: #c9bce5; background: #fcfaff; outline: none; }
 .question-list-item > span { width: 23px; height: 23px; display: grid; place-items: center; border-radius: 7px; background: #f1eef2; color: #8d858f; font: 700 13.5px "Manrope", sans-serif; }
 .question-list-item div { min-width: 0; }
 .question-list-item small, .question-list-item strong { display: block; }
