@@ -1,6 +1,6 @@
 // STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받는다. 성명·소속·직책은 로그인한 사용자 프로필 값을 그대로 쓰고,
 // 인수자는 완성 문서 화면의 '인수자에게 전송하기'에서 고른다.
-// 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
+// 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장 + 팀장이 관리자 화면에서 더한 업무) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
 // 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
@@ -73,11 +73,20 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       .then((result) => setOrg(result.divisions.length ? result.divisions : null))
       .catch(() => setOrg(null));
   }, []);
+  // 팀장이 관리자 화면(팀 담당 업무)에서 더한 우리 팀 업무. 시행세칙 업무분장 뒤에 덧붙인다(못 불러오면 시행세칙만 쓴다).
+  const [managerDuties, setManagerDuties] = useState<string[]>([]);
+  useEffect(() => {
+    api
+      .teamDuties()
+      .then((result) => setManagerDuties(result.duties.map((duty) => duty.name.trim()).filter(Boolean)))
+      .catch(() => setManagerDuties([]));
+  }, []);
   const update = (key: "leaveStart" | "leaveEnd", value: string) => setData({ ...data, [key]: value });
 
-  // 우리 팀(프로필의 본부·팀) 업무분장. 본부 이름이 시행세칙과 다르면 팀 이름으로만 찾는다.
+  // 우리 팀(프로필의 본부·팀) 단위 업무: 1차로 직제규정 시행세칙 업무분장(본부 이름이 다르면 팀 이름으로만 찾는다), 그다음 팀장이 관리자 화면에서 더한 업무.
   const division = org?.find((d) => d.name === profile.division);
-  const teamDuties = org ? ((division ? [division] : org).flatMap((d) => d.teams).find((t) => t.name === profile.team)?.duties ?? []) : [];
+  const orgDuties = org ? ((division ? [division] : org).flatMap((d) => d.teams).find((t) => t.name === profile.team)?.duties ?? []) : [];
+  const teamDuties = [...new Set([...orgDuties, ...managerDuties])];
   const unitOptions = [...teamDuties, ...customUnits.filter((name) => !teamDuties.includes(name))];
   const selected = new Set(data.units.map((unit) => unit.name));
 
@@ -149,7 +158,11 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     <div className="wide-field unit-field">
       <span className="unit-field-label">단위 업무 <i>*</i></span>
       <p className="unit-field-help">
-        {org === null ? "직제규정 시행세칙의 업무분장을 불러오고 있어요." : teamDuties.length ? `직제규정 시행세칙의 ${profile.team || "우리 팀"} 업무분장이에요. 인계할 업무를 모두 골라 주세요.` : `${profile.team || "우리 팀"}의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요.`}
+        {org === null && !managerDuties.length
+          ? "직제규정 시행세칙의 업무분장을 불러오고 있어요."
+          : teamDuties.length
+            ? `직제규정 시행세칙의 ${profile.team || "우리 팀"} 업무분장${managerDuties.some((name) => !orgDuties.includes(name)) ? "과 팀장이 추가한 업무" : ""}예요. 인계할 업무를 모두 골라 주세요.`
+            : `${profile.team || "우리 팀"}의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요.`}
       </p>
       {unitOptions.length > 0 && (
         <div className="unit-options">
