@@ -188,7 +188,21 @@ export function usePlanner() {
 
   return {
     events,
+    eventItems: state.events, // id·메모가 필요한 화면용(events 는 날짜별 글자만)
     todos: state.todos,
+    // 짧은 메모(빈 문자열이면 지움). 일정 · 주간 업무 · 할 일 모두 같은 모양으로 고친다
+    setMemo: (kind: "event" | "week" | "todo", id: string, memo: string) => {
+      if (kind === "event") change((s) => ({ ...s, events: s.events.map((e) => (e.id === id ? { ...e, memo } : e)) }), () => api.updatePlannerEvent(id, { memo }));
+      else if (kind === "week") change((s) => ({ ...s, weekTasks: s.weekTasks.map((t) => (t.id === id ? { ...t, memo } : t)) }), () => api.updatePlannerWeekTask(id, { memo }));
+      else change((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, memo } : t)) }), () => api.updatePlannerTodo(id, { memo }));
+    },
+    // 체크리스트: 일정 · 주간 업무 · 할 일을 다 했는지 바꾼다
+    setDone: (kind: "event" | "week" | "todo", id: string, done: boolean) => {
+      if (kind === "event") change((s) => ({ ...s, events: s.events.map((e) => (e.id === id ? { ...e, done } : e)) }), () => api.updatePlannerEvent(id, { done }));
+      else if (kind === "week") change((s) => ({ ...s, weekTasks: s.weekTasks.map((t) => (t.id === id ? { ...t, done } : t)) }), () => api.updatePlannerWeekTask(id, { done }));
+      else change((s) => ({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, done } : t)) }), () => api.updatePlannerTodo(id, { done }));
+    },
+    removeEventById: (id: string) => change((s) => ({ ...s, events: s.events.filter((event) => event.id !== id) }), () => api.deletePlannerEvent(id)),
     addEvent: (key: string, text: string) => {
       const event = { id: newId(), date: key, text };
       change((s) => ({ ...s, events: [...s.events, event] }), () => api.addPlannerEvent(event));

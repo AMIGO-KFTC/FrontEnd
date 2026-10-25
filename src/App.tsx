@@ -519,6 +519,7 @@ function AppScreens() {
         onAddLink={(url) => sessionId && void run(() => api.addLinks(sessionId, [url], "auto"))}
         onDeleteSource={(source: Source) => sessionId && void run(() => api.deleteSource(sessionId, source.id))}
         onImportConfluence={(ids) => (sessionId ? importIntegration(() => api.importConfluence(sessionId, ids)) : Promise.resolve(undefined))}
+        onImportJira={(ids) => (sessionId ? importIntegration(() => api.importJira(sessionId, ids)) : Promise.resolve(undefined))}
         onImportMails={(ids) => (sessionId ? importIntegration(() => api.importMails(sessionId, ids).then((r) => ({ message: r.message, sources: r.files, skipped: r.skipped }))) : Promise.resolve(undefined))}
       />
     );
@@ -563,15 +564,15 @@ function AppScreens() {
   if (step === "document") {
     // 인계자가 아닌 사람(인수자·팀장)이 열면 읽기 전용: 수정·완료 없이 보고 내려받기만. 돌아가기는 왔던 목록으로.
     const isOwner = !session.owner_login_id || session.owner_login_id === profile.loginId;
-    // 인계자가 전송해 준 사람(여러 명). 팀장도 인수인계를 받을 수 있어, 팀 관리 화면에서 연 경우만 '팀 구성원 인수인계서'로 본다
-    const isSuccessor = session.successor_login_id === profile.loginId || !profile.isAdmin || workspace !== "admin";
+    // 서버가 알려 주는 관계(viewer): 전송받은 사람이면 '전달받은 인수인계서', 같은 팀 팀장이면 '팀 구성원 인수인계서'
+    const isSuccessor = session.viewer ? session.viewer === "recipient" : session.successor_login_id === profile.loginId || !profile.isAdmin || workspace !== "admin";
     const readOnly = isOwner
       ? null
       : {
           badge: isSuccessor ? "전달받은 인수인계서" : "팀 구성원 인수인계서",
           note: `${session.owner_name}님이 작성한 인수인계서예요.\n내용을 보고 PDF·Word 로 내려받을 수 있고, 수정은 인계자만 할 수 있어요.`,
-          exitLabel: isSuccessor ? "받은 인수인계로 돌아가기" : "팀 관리로 돌아가기",
-          onExit: () => go(isSuccessor ? { kind: "home", page: "received" } : { kind: "admin", section: adminReturn }),
+          exitLabel: isSuccessor ? "받은 인수인계로 돌아가기" : workspace === "admin" ? "팀 관리로 돌아가기" : "팀원 인수인계서로 돌아가기",
+          onExit: () => go(isSuccessor || workspace !== "admin" ? { kind: "home", page: "received" } : { kind: "admin", section: adminReturn }),
         };
     return (
       <FinalDocumentScreen
@@ -604,6 +605,8 @@ function AppScreens() {
   return (
     <CompletionScreen
       mode={data.mode}
+      sessionId={session.id}
+      selfLoginId={profile.loginId}
       sourceCount={session.sources.length}
       questionCount={session.question_count}
       citationCount={citationTotal ?? citationCount(session)}

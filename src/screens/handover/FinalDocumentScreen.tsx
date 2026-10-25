@@ -283,7 +283,21 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               <div><small className="gantt-hint">{readOnly.note}</small></div>
             ) : (
             <div>
-              <button className={`edit-toggle ${isEditing ? "editing" : ""}`} disabled={saveState === "saving"} onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? (saveState === "saving" ? "저장 중…" : "수정 완료") : "직접 수정하기"}</button>
+              {/* 직접 수정 ON/OFF 스위치: 켜면 문서 표의 글을 바로 고칠 수 있고, 끄면(수정 완료) 새 버전으로 저장한다 */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isEditing}
+                className={`edit-switch ${isEditing ? "on" : ""}`}
+                disabled={saveState === "saving"}
+                onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}
+                title={isEditing ? "끄면 고친 내용을 새 버전으로 저장해요" : "켜면 문서를 직접 고칠 수 있어요"}
+              >
+                <span className="edit-switch-track"><span className="edit-switch-knob" /></span>
+                <span className="edit-switch-label">직접 수정 <b>{isEditing ? (saveState === "saving" ? "저장 중…" : "ON") : "OFF"}</b></span>
+              </button>
+              {isEditing && <span className="edit-mode-badge"><Icon name="file" size={12} /> 수정 모드</span>}
+              {isEditing && <button onClick={() => void finishEditing()} disabled={saveState === "saving"} className="edit-save"><Icon name="check" size={13} /> 수정 완료</button>}
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
               {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{"\n"}월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => { setAnswering(null); setRevisionOpen((current) => !current); }}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>

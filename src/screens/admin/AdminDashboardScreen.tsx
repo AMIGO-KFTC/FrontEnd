@@ -9,7 +9,7 @@ import { broadStage, formatDate, formatRelativeTime, hasDocument } from "@/share
 import type { AdminSection } from "@/shared/router";
 import type { AdminHandover, AdminMember } from "@/shared/types";
 import { AdminAiSettingsPage } from "./AdminAiSettingsPage";
-import { AdminHandoversPage } from "./AdminHandoversPage";
+import { AdminHandoversPage, leavePeriod, MODE_TAG } from "./AdminHandoversPage";
 import { AdminMembersPage } from "./AdminMembersPage";
 import { AdminPersonnelPage } from "./AdminPersonnelPage";
 import { AdminTeamDutiesPage } from "./AdminTeamDutiesPage";
@@ -71,7 +71,7 @@ export function AdminDashboardScreen({ section, onSection: setSection, onExit, o
   const rate = all.length ? Math.round((completed.length / all.length) * 100) : 0;
   const adminStats = [
     { label: "전체 구성원", value: members ? String(members.length) : unavailable, note: organization || "같은 소속의 구성원", icon: "user" as IconName, tone: "violet" },
-    { label: "진행 중인 인수인계", value: handovers ? String(ongoing.length) : unavailable, note: handovers ? `인계 예정일 2주 이내 ${dueSoon}건` : "불러오지 못함", icon: "message" as IconName, tone: "blue" },
+    { label: "진행 중인 인수인계", value: handovers ? String(ongoing.length) : unavailable, note: handovers ? `정기인사 ${ongoing.filter((h) => h.mode !== "leave").length} · 장기휴가 ${ongoing.filter((h) => h.mode === "leave").length} · 2주 이내 ${dueSoon}건` : "불러오지 못함", icon: "message" as IconName, tone: "blue" },
     { label: "완료된 인수인계", value: handovers ? String(completed.length) : unavailable, note: handovers ? `완료율 ${rate}%` : "불러오지 못함", icon: "check" as IconName, tone: "green" },
   ];
   // 팀원 인수인계를 최근에 고친 순으로(자료 등록·답변·문서 생성 모두 updated_at 을 바꾼다)
@@ -121,8 +121,8 @@ export function AdminDashboardScreen({ section, onSection: setSection, onExit, o
               <div className="admin-recent-table">
                 <div className="admin-recent-head"><span>업무명</span><span>인계자</span><span>진행 단계</span><span>최근 수정</span></div>
                 {recent.map((handover) => (
-                  <button key={handover.id} onClick={() => (hasDocument(handover) ? openDocument(handover.id) : setSection("handovers"))} title={hasDocument(handover) ? "문서 열기" : "인수인계 관리에서 보기"}>
-                    <strong>{handover.task_name || handover.title}</strong>
+                  <button key={handover.id} className={`mode-${handover.mode === "leave" ? "leave" : "reassignment"}`} onClick={() => (hasDocument(handover) ? openDocument(handover.id) : setSection("handovers"))} title={hasDocument(handover) ? "문서 열기" : "인수인계 관리에서 보기"}>
+                    <strong><b className={`mode-tag ${handover.mode === "leave" ? "leave" : "reassignment"}`}>{MODE_TAG[handover.mode === "leave" ? "leave" : "reassignment"]}</b>{handover.task_name || handover.title}{handover.mode === "leave" && leavePeriod(handover) ? <small className="mode-period"> 휴가 {leavePeriod(handover)}</small> : null}</strong>
                     <span>{handover.owner_name}{handover.position ? ` ${handover.position}` : ""}</span>
                     <em className={hasDocument(handover) ? "done" : ""}>{broadStage(handover)}</em>
                     <small>{formatDate(handover.updated_at)} <i>({formatRelativeTime(handover.updated_at)})</i></small>

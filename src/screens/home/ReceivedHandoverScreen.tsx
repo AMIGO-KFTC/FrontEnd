@@ -1,9 +1,11 @@
 // 받은 인수인계: 내가 인수자로 지정된 인수인계(GET /api/handovers/received). 인수자는 문서를 읽고 PDF 로 받을 수 있다(수정은 인계자만).
 // 목록은 검색어(제목·업무·인계자)와 업무 칩으로 거른다. 한 인수인계서에 업무가 여러 개 담길 수 있어, 고른 업무 중 하나라도 들어 있으면 보여 준다(OR 조건).
+// 팀장(관리자)은 '팀원 인수인계서' 탭에서 같은 팀 구성원이 쓴 인수인계(GET /api/admin/handovers, 본인 것 제외)도 같은 방식으로 본다.
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
+import { useProfile } from "@/shared/profile";
 import { formatDate, hasDocument, MODE_LABEL, sessionProgress, STAGE_LABEL } from "@/shared/sessions";
 import type { ReceivedHandover } from "@/shared/types";
 import type { HomeNav, SessionList } from "./types";
@@ -15,6 +17,13 @@ export function receivedStatus(handover: ReceivedHandover): { label: string; don
   return hasDocument(handover) ? { label: "확인 필요", done: false } : { label: "작성 중", done: true };
 }
 
+type View = "received" | "team";
+
+// 팀원 인수인계서 상태(팀장이 보는 쪽): 문서가 나왔으면 '문서 완성', 아직이면 '작성 중'
+function teamStatus(handover: ReceivedHandover): { label: string; done: boolean } {
+  return hasDocument(handover) ? { label: "문서 완성", done: true } : { label: "작성 중", done: false };
+}
+
 // 인수인계서에 담긴 업무 이름. 예전 서버 응답처럼 duties 가 없으면 단위 업무명 하나로 본다.
 export function receivedDuties(handover: ReceivedHandover): string[] {
   if (handover.duties && handover.duties.length > 0) return handover.duties;
@@ -22,25 +31,44 @@ export function receivedDuties(handover: ReceivedHandover): string[] {
 }
 
 export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onChat, onCalendar, onMaterials, onLogout }: Props) {
-  const [handovers, setHandovers] = useState<ReceivedHandover[] | null>(null);
+  const [profile] = useProfile();
+  const [view, setView] = useState<View>("received");
+  const [received, setReceived] = useState<ReceivedHandover[] | null>(null);
+  const [team, setTeam] = useState<ReceivedHandover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const handovers = view === "team" ? team : received;
+  const statusOf = view === "team" ? teamStatus : receivedStatus;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [pickedDuties, setPickedDuties] = useState<string[]>([]);
 
   const load = () => {
+    const fail = (e: unknown) => setError(e instanceof ApiError && e.status === 401 ? "로그인이 만료됐어요. 다시 로그인해 주세요." : (e as Error).message);
+    setError(null);
     api
       .receivedHandovers()
-      .then(({ handovers: rows }) => {
-        setHandovers(rows);
-        setError(null);
-      })
+      .then(({ handovers: rows }) => setReceived(rows))
       .catch((e) => {
-        setHandovers(null);
-        setError(e instanceof ApiError && e.status === 401 ? "로그인이 만료됐어요. 다시 로그인해 주세요." : (e as Error).message);
+        setReceived(null);
+        fail(e);
       });
+    if (profile.isAdmin) {
+      api
+        .adminHandovers()
+        .then(({ handovers: rows }) => setTeam(rows.filter((row) => row.owner_login_id !== profile.loginId)))
+        .catch((e) => {
+          setTeam(null);
+          fail(e);
+        });
+    }
   };
-  useEffect(load, []);
+  useEffect(load, [profile.isAdmin, profile.loginId]);
+  const switchView = (next: View) => {
+    setView(next);
+    setSelectedId(null);
+    setQuery("");
+    setPickedDuties([]);
+  };
 
   // 받은 인수인계서 전체에 나오는 업무(많이 나온 순 → 이름순)
   const allDuties = useMemo(() => {
@@ -70,17 +98,29 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
         </header>
         <div className="received-content">
           <section className="received-title">
-            <div><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
+            {view === "team" ? (
+              <div><h1>팀원 인수인계서를 검토하세요</h1><p>{profile.team || "우리 팀"} 구성원이 쓰고 있는 인수인계서를 읽고 내려받을 수 있어요(수정은 인계자만).</p></div>
+            ) : (
+              <div><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
+            )}
             <div className="received-counts">
               <div><strong>{handovers ? handovers.length : "—"}</strong><small>전체</small></div>
               <i />
-              <div><strong>{handovers ? ready : "—"}</strong><small>확인 필요</small></div>
+              <div><strong>{handovers ? ready : "—"}</strong><small>{view === "team" ? "문서 완성" : "확인 필요"}</small></div>
               <i />
               <div><strong>{handovers ? handovers.length - ready : "—"}</strong><small>작성 중</small></div>
             </div>
           </section>
-          {error && <div className="list-notice error" role="alert">받은 인수인계를 불러오지 못했어요: {error}<button onClick={load}>다시 시도</button></div>}
-          {handovers && handovers.length === 0 && !error && <div className="list-notice">아직 받은 인수인계가 없어요.{"\n"}인계자가 기본 정보에서 인수자로 지정하면 여기에 나타납니다.</div>}
+          {error && <div className="list-notice error" role="alert">목록을 불러오지 못했어요: {error}<button onClick={load}>다시 시도</button></div>}
+          {profile.isAdmin && (
+            <div className="received-view-tabs" role="tablist" aria-label="받은 인수인계 · 팀원 인수인계서">
+              <button role="tab" aria-selected={view === "received"} className={view === "received" ? "active" : ""} onClick={() => switchView("received")}>받은 인수인계<small>{received ? received.length : "—"}</small></button>
+              <button role="tab" aria-selected={view === "team"} className={view === "team" ? "active" : ""} onClick={() => switchView("team")}>팀원 인수인계서<small>{team ? team.length : "—"}</small></button>
+            </div>
+          )}
+          {handovers && handovers.length === 0 && !error && (
+            <div className="list-notice">{view === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요.\n인계자가 완성 문서 화면에서 보내면 여기에 나타납니다."}</div>
+          )}
           {handovers && handovers.length > 0 && (
             <section className="received-layout">
               <aside className="received-list">
@@ -107,7 +147,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
                 </div>
                 {filtered.length === 0 && <p className="received-filter-empty">조건에 맞는 인수인계가 없어요.{"\n"}검색어나 업무 선택을 바꿔 보세요.</p>}
                 {filtered.map((handover) => {
-                  const status = receivedStatus(handover);
+                  const status = statusOf(handover);
                   const duties = receivedDuties(handover);
                   return (
                     <button className={selected?.id === handover.id ? "active" : ""} key={handover.id} onClick={() => setSelectedId(handover.id)}>
@@ -126,7 +166,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
               <article className="received-detail">
                 <header>
                   <div>
-                    <span className={`received-status ${receivedStatus(selected).done ? "done" : ""}`}>{receivedStatus(selected).label}</span>
+                    <span className={`received-status ${statusOf(selected).done ? "done" : ""}`}>{statusOf(selected).label}</span>
                     <h2>{selected.task_name || selected.title}</h2>
                     <p>{MODE_LABEL[selected.mode]} · 현재 {STAGE_LABEL[selected.stage]} 단계 · 진행률 {sessionProgress(selected)}%</p>
                     {receivedDuties(selected).length > 1 && (
