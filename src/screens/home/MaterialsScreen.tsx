@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
+import { useProfile } from "@/shared/profile";
 import { formatDate, hasDocument, MODE_LABEL, sessionTitle, sessionTone, STAGE_LABEL } from "@/shared/sessions";
 import type { HandoverMode, ReceivedHandover, Source, Stage } from "@/shared/types";
 import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
-type Tab = "mine" | "received";
+type Tab = "mine" | "received" | "team"; // team: 팀장이 검토하는 팀원 인수인계서(GET /api/admin/handovers, 본인 것 제외)
+const TAB_LABEL: Record<Tab, string> = { mine: "내 인수인계서", received: "받은 인수인계서", team: "팀원 인수인계서" };
 
 // 목록 한 줄: 내 인수인계서와 받은 인수인계서를 같은 모양으로 보여 준다.
 type Task = { id: string; title: string; owner: string; organization: string; mode: HandoverMode; stage: Stage; documentVersion: number; updatedAt: string };
@@ -39,6 +41,23 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
   const [received, setReceived] = useState<ReceivedHandover[] | null>(null);
   const [receivedError, setReceivedError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [profile] = useProfile();
+  const [team, setTeam] = useState<ReceivedHandover[] | null>(null);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const loadTeam = () => {
+    if (!profile.isAdmin) return;
+    api
+      .adminHandovers()
+      .then(({ handovers }) => {
+        setTeam(handovers.filter((row) => row.owner_login_id !== profile.loginId));
+        setTeamError(null);
+      })
+      .catch((e: Error) => {
+        setTeam(null);
+        setTeamError(e.message);
+      });
+  };
+  useEffect(loadTeam, [profile.isAdmin, profile.loginId]);
 
   const loadReceived = () => {
     api
@@ -59,8 +78,9 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
         .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))
         .map((session) => ({ id: session.id, title: sessionTitle(session), owner: session.owner_name, organization: session.organization, mode: session.mode, stage: session.stage, documentVersion: session.document_version, updatedAt: session.updated_at }))
     : null;
-  const tasks = tab === "mine" ? mine : received ? received.map(receivedTask) : null;
-  const tasksError = tab === "mine" ? list.error : receivedError;
+  const others = tab === "team" ? team : received;
+  const tasks = tab === "mine" ? mine : others ? others.map(receivedTask) : null;
+  const tasksError = tab === "mine" ? list.error : tab === "team" ? teamError : receivedError;
   const selected = tasks?.find((task) => task.id === selectedId) ?? tasks?.[0];
 
   // 고른 인수인계서의 자료와 문서 근거 횟수. 고른 문서가 바뀔 때마다 새로 불러온다.
@@ -115,23 +135,24 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
         <div className="materials-content">
           <section className="documents-title">
             <div><h1>인수인계서별 근거 자료</h1><p>인수인계서를 고르면 그 문서를 만드는 데 쓴 파일·메일·링크를 볼 수 있어요.</p></div>
-            <div><strong>{tasks ? tasks.length : "—"}</strong><small>{tab === "mine" ? "내 인수인계서" : "받은 인수인계서"}</small></div>
+            <div><strong>{tasks ? tasks.length : "—"}</strong><small>{TAB_LABEL[tab]}</small></div>
           </section>
           <section className="materials-layout">
             <aside className="materials-list">
               <div className="materials-tabs" role="tablist" aria-label="인수인계서 구분">
                 <button role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "active" : ""} onClick={() => switchTab("mine")}>내 인수인계서{mine ? ` ${mine.length}` : ""}</button>
                 <button role="tab" aria-selected={tab === "received"} className={tab === "received" ? "active" : ""} onClick={() => switchTab("received")}>받은 인수인계서{received ? ` ${received.length}` : ""}</button>
+                {profile.isAdmin && <button role="tab" aria-selected={tab === "team"} className={tab === "team" ? "active" : ""} onClick={() => switchTab("team")}>팀원 인수인계서{team ? ` ${team.length}` : ""}</button>}
               </div>
-              {tasksError && <div className="list-notice error" role="alert">목록을 불러오지 못했어요: {tasksError}<button onClick={tab === "mine" ? list.reload : loadReceived}>다시 시도</button></div>}
-              {tasks && tasks.length === 0 && !tasksError && <p className="materials-empty">{tab === "mine" ? "아직 만든 인수인계가 없어요." : "아직 받은 인수인계가 없어요."}</p>}
+              {tasksError && <div className="list-notice error" role="alert">목록을 불러오지 못했어요: {tasksError}<button onClick={tab === "mine" ? list.reload : tab === "team" ? loadTeam : loadReceived}>다시 시도</button></div>}
+              {tasks && tasks.length === 0 && !tasksError && <p className="materials-empty">{tab === "mine" ? "아직 만든 인수인계가 없어요." : tab === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요."}</p>}
               <div className="materials-task-scroll">
                 {tasks?.map((task) => (
                   <button key={task.id} className={selected?.id === task.id ? "active" : ""} onClick={() => setSelectedId(task.id)}>
                     <span className={`document-list-icon ${sessionTone(task.id)}`}><Icon name="folder" size={17} /></span>
                     <div>
                       <strong>{task.title}</strong>
-                      <small>{tab === "received" ? `${task.owner} · ` : ""}{hasDocument({ stage: task.stage, document_version: task.documentVersion }) ? `문서 v${task.documentVersion}` : STAGE_LABEL[task.stage]} · {formatDate(task.updatedAt)}</small>
+                      <small>{tab !== "mine" ? `${task.owner} · ` : ""}{hasDocument({ stage: task.stage, document_version: task.documentVersion }) ? `문서 v${task.documentVersion}` : STAGE_LABEL[task.stage]} · {formatDate(task.updatedAt)}</small>
                     </div>
                     <Icon name="chevron" size={13} />
                   </button>
@@ -183,8 +204,8 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
                 </div>
                 <footer>
                   {downloadable.length > 0 && <a className="materials-zip" href={api.sourcesArchiveUrl(selected.id)} download title="올린 자료 파일을 ZIP 한 개로 내려받아요"><Icon name="download" size={14} /> 파일 모두 내려받기 (ZIP)</a>}
-                  <button onClick={() => onChat(selected.id)} disabled={tab === "received" && !selectedHasDocument}><Icon name="sparkle" size={14} /> 이 인수인계서에 질문하기</button>
-                  <button onClick={() => (tab === "mine" ? list.open(selected.id) : list.openDocument(selected.id))} disabled={tab === "received" && !selectedHasDocument}><Icon name="file" size={14} /> {tab === "mine" && !selectedHasDocument ? "작업 열기" : "문서 열기"}</button>
+                  <button onClick={() => onChat(selected.id)} disabled={tab !== "mine" && !selectedHasDocument && !(tab === "team" && sources?.some((source) => source.status === "ready"))}><Icon name="sparkle" size={14} /> 이 인수인계서에 질문하기</button>
+                  <button onClick={() => (tab === "mine" ? list.open(selected.id) : list.openDocument(selected.id))} disabled={tab !== "mine" && !selectedHasDocument}><Icon name="file" size={14} /> {tab === "mine" && !selectedHasDocument ? "작업 열기" : "문서 열기"}</button>
                 </footer>
               </article>
             ) : (

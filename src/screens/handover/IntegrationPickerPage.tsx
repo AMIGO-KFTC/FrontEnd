@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
 import { sendCapture, sendPick, usePicked, type PickItem, type PickKind } from "@/shared/pickBridge";
 import { ConfluenceWorkspace } from "./ConfluenceWorkspace";
+import { JiraWorkspace } from "./JiraWorkspace";
 import { MailWorkspace } from "./MailWorkspace";
 import { MattermostWorkspace } from "./MattermostWorkspace";
 
-// 새 탭으로 여는 선택 창(#/pick/mattermost · #/pick/confluence · #/pick/mail).
+// 새 탭으로 여는 선택 창(#/pick/mattermost · #/pick/confluence · #/pick/mail · #/pick/jira).
 // 실제 Mattermost·컨플루언스처럼 보이는 전용 화면을 열고, 거기서 고른 항목을 등록하지 않고 원래 창으로 넘긴다
 // (등록은 세션을 아는 원래 창이 한다).
 export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
@@ -38,5 +39,6 @@ export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
 
   const props = { picked, onSend: send, warning, onClose: () => window.close() };
   if (kind === "mail") return <MailWorkspace {...props} onCapture={capture} />;
+  if (kind === "jira") return <JiraWorkspace {...props} />;
   return kind === "mattermost" ? <MattermostWorkspace {...props} /> : <ConfluenceWorkspace {...props} />;
 }

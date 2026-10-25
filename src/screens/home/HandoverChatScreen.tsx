@@ -18,7 +18,7 @@ const HISTORY_TURNS = 8; // 꼬리 질문을 이해하는 데 서버에 함께 �
 
 // 답변에 쓴 근거 자료를 참조한 업무별로 묶는다(업무가 처음 나온 순서대로).
 function groupByScope(sources: ChatSource[]) {
-  const groups: { scopeId: string; task: string; kind: "mine" | "received"; owner: string; sources: ChatSource[] }[] = [];
+  const groups: { scopeId: string; task: string; kind: ChatSource["scope_kind"]; owner: string; sources: ChatSource[] }[] = [];
   for (const source of sources) {
     let group = groups.find((g) => g.scopeId === source.scope_id);
     if (!group) {
@@ -32,14 +32,19 @@ function groupByScope(sources: ChatSource[]) {
 
 type Props = HomeNav & { list: SessionList; initialDocId?: string; onOpenDocument: (sessionId: string) => void };
 
-type ScopeTab = "all" | "mine" | "received";
-const TAB_LABEL: Record<ScopeTab, string> = { all: "전체", mine: "보낸 인수인계", received: "받은 인수인계" };
+type ScopeTab = "all" | "mine" | "received" | "team";
+const TAB_LABEL: Record<ScopeTab, string> = { all: "전체", mine: "보낸 인수인계", received: "받은 인수인계", team: "팀원 인수인계" };
+const KIND_BADGE: Record<ChatScope["kind"], string> = { mine: "보냄", received: "받음", team: "팀원" };
 const MAX_SCOPE_IDS = 50; // 서버가 한 번에 받는 질문 범위 수
 
 // 고르기 창 한 줄의 보조 설명: 누구에게 보냈는지(또는 누가 보냈는지) · 근거(올린 자료 수, 인수인계서 버전)
 const scopeMeta = (scope: ChatScope) =>
   [
-    scope.kind === "mine" ? (scope.recipients?.length ? `받는 사람 ${scope.recipients.join(", ")}` : "아직 보내지 않음") : `인계자 ${scope.owner_name}`,
+    scope.kind === "mine"
+      ? scope.recipients?.length ? `받는 사람 ${scope.recipients.join(", ")}` : "아직 보내지 않음"
+      : scope.kind === "team"
+        ? `인계자 ${scope.owner_name}${scope.recipients?.length ? ` → ${scope.recipients.join(", ")}` : ""}`
+        : `인계자 ${scope.owner_name}`,
     scope.source_count ? `자료 ${scope.source_count}건` : "",
     scope.has_document ? `인수인계서 v${scope.version}` : "인수인계서 작성 전",
   ].filter(Boolean).join(" · ");
@@ -155,7 +160,7 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
         <div className="handover-chat-body">
           <div className="chat-toolbar">
             <div className="chat-scope-tabs" role="tablist" aria-label="물어볼 인수인계 구분">
-              {(["all", "mine", "received"] as const).map((kind) => (
+              {(["all", "mine", "received", "team"] as const).filter((kind) => kind !== "team" || count("team") > 0).map((kind) => (
                 <button key={kind} role="tab" aria-selected={tab === kind} className={tab === kind ? "active" : ""} onClick={() => switchTab(kind)} disabled={sending}>
                   {TAB_LABEL[kind]}<small>{scopes ? count(kind) : "—"}</small>
                 </button>
@@ -181,7 +186,7 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
               <div className="chat-scope-panel" role="dialog" aria-label="물어볼 인수인계 고르기">
                 <label className="chat-scope-search">
                   <Icon name="search" size={14} />
-                  <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "mine" ? "제목·업무·받는 사람으로 검색" : tab === "received" ? "제목·업무·인계자로 검색" : "제목·업무·인계자·받는 사람으로 검색"} aria-label="인수인계 검색" />
+                  <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tab === "mine" ? "제목·업무·받는 사람으로 검색" : tab === "received" ? "제목·업무·인계자로 검색" : tab === "team" ? "제목·업무·팀원 이름으로 검색" : "제목·업무·인계자·받는 사람으로 검색"} aria-label="인수인계 검색" />
                   {query && <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기"><Icon name="close" size={12} /></button>}
                 </label>
                 <ul>
@@ -193,7 +198,7 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
                         <button type="button" className={on ? "picked" : ""} aria-pressed={on} onClick={() => togglePick(item.id)}>
                           <span className="chat-scope-check">{on && <Icon name="check" size={11} />}</span>
                           <span className="chat-scope-text">
-                            <strong>{item.title}{tab === "all" && <em className={item.kind}>{item.kind === "mine" ? "보냄" : "받음"}</em>}</strong>
+                            <strong>{item.title}{tab === "all" && <em className={item.kind}>{KIND_BADGE[item.kind]}</em>}</strong>
                             <small>{scopeMeta(item)}</small>
                             {scopeDuties(item).length > 1 && <span className="chat-scope-duties">{scopeDuties(item).map((duty) => <i key={duty}>{duty}</i>)}</span>}
                           </span>
@@ -214,7 +219,7 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
           <div className="chat-scroll">
             {scopesError && <div className="list-notice error" role="alert">업무 목록을 불러오지 못했어요: {scopesError}<button onClick={loadScopes}>다시 시도</button></div>}
             {empty && <div className="list-notice">질문할 수 있는 자료가 아직 없어요.{"\n"}자료를 올려 분석하거나 인수인계서를 완성하면, 또는 인계자에게 인수인계서를 전달받으면 여기서 물어볼 수 있어요.</div>}
-            {scopes && scopes.length > 0 && tabScopes.length === 0 && turns.length === 0 && <div className="list-notice">{tab === "mine" ? "아직 내가 쓴 인수인계서가 없어요." : "아직 받은 인수인계서가 없어요."}</div>}
+            {scopes && scopes.length > 0 && tabScopes.length === 0 && turns.length === 0 && <div className="list-notice">{tab === "mine" ? "아직 내가 쓴 인수인계서가 없어요." : tab === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계서가 없어요."}</div>}
             {scopes && scoped.length > 0 && turns.length === 0 && (
               <section className="chat-welcome">
                 <span><Icon name="sparkle" size={22} /></span>
@@ -237,7 +242,7 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
                         <section className="chat-ref" key={group.scopeId}>
                           <header>
                             <strong>{group.task}</strong>
-                            <small>{group.kind === "mine" ? "보낸 인수인계" : `받은 인수인계 · ${group.owner} 인계자`}</small>
+                            <small>{group.kind === "mine" ? "보낸 인수인계" : group.kind === "team" ? `팀원 인수인계 · ${group.owner} 인계자` : `받은 인수인계 · ${group.owner} 인계자`}</small>
                           </header>
                           <div className="chat-sources">
                             {group.sources.map((source) => {

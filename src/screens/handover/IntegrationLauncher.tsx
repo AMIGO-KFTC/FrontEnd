@@ -14,10 +14,11 @@ type Props = {
   showChips?: boolean; // 고른 항목 이름표를 여기서 보여 줄지(자료 등록 화면은 오른쪽 '등록 예정 자료'에 보여 준다)
 };
 
-const TEXT: Record<PickKind, { icon: "message" | "folder" | "mail"; title: string; app: string; noun: string; obj: string; subj: string }> = {
+const TEXT: Record<PickKind, { icon: "message" | "folder" | "mail" | "bolt"; title: string; app: string; noun: string; obj: string; subj: string }> = {
   mattermost: { icon: "message", title: "Mattermost 에서 대화 고르기", app: "Mattermost", noun: "대화", obj: "대화를", subj: "대화가" },
   confluence: { icon: "folder", title: "컨플루언스에서 페이지 고르기", app: "컨플루언스", noun: "페이지", obj: "페이지를", subj: "페이지가" },
   mail: { icon: "mail", title: "메일함에서 메일 고르기", app: "메일함", noun: "메일", obj: "메일을", subj: "메일이" },
+  jira: { icon: "bolt", title: "지라에서 이슈·진행 현황 고르기", app: "지라", noun: "항목", obj: "이슈·에픽·진행 현황을", subj: "항목이" },
 };
 
 // 자료 등록 화면의 Mattermost·컨플루언스 영역. 고르기는 새 탭의 전용 화면에서 하고, 여기서는 넘어온 항목을 확인해 자료로 등록한다.

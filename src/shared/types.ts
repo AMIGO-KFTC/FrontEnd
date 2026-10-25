@@ -113,6 +113,7 @@ export interface SessionDetail extends SessionSummary {
   duties: string;
   units?: HandoverUnit[]; // 인계자 정보에서 고른 단위업무와 세부업무(예전 세션·예전 서버는 없거나 빈 목록)
   owner_login_id: string; // 인계자 계정의 아이디. 로그인한 사용자와 다르면(인수자·팀장) 문서 화면을 읽기 전용으로 그린다
+  viewer?: "owner" | "recipient" | "team" | ""; // 지금 계정과의 관계: 인계자 · 전송받은 사람 · 같은 팀 팀장
   progress: { message: string; current: number; total: number };
   error: string;
   engine: string;
@@ -269,6 +270,52 @@ export interface MattermostConversationDetail extends MattermostConversation {
   posts: MattermostPost[];
 }
 
+// 가상 Jira(BackEnd /api/integrations/jira). 프로젝트 진행 현황과 이슈를 인수인계 자료로 가져온다.
+export type JiraStatusCounts = Record<string, number>;
+export type JiraProgress = { total: number; done: number; counts: JiraStatusCounts; points: number; done_points: number; percent: number };
+export type JiraEpicProgress = JiraProgress & { key: string; summary: string; status: string; assignee: string; due: string };
+export type JiraProject = {
+  key: string;
+  name: string;
+  lead: string;
+  team: string;
+  description: string;
+  url: string;
+  sprint: (JiraProgress & { name: string; start: string; end: string; goal: string; days_left: number }) | null;
+  next_sprint: { name: string; start: string; end: string; goal: string } | null;
+  epics: JiraEpicProgress[];
+  progress: JiraProgress;
+  open_by_assignee: Record<string, number>;
+  blocked: { key: string; summary: string; assignee: string; reason: string }[];
+  issue_count: number;
+};
+export type JiraIssue = {
+  key: string;
+  project: string;
+  type: string;
+  summary: string;
+  status: string;
+  category: "todo" | "progress" | "done";
+  priority: string;
+  assignee: string;
+  reporter: string;
+  epic: string;
+  parent: string;
+  epic_summary: string;
+  sprint: string;
+  points: number;
+  due: string;
+  labels: string[];
+  created: string;
+  updated: string;
+  blocked: string;
+  url: string;
+  comment_count: number;
+  progress?: JiraProgress;
+};
+export type JiraIssueDetail = JiraIssue & { description: string; comments: { author: string; date: string; body: string }[]; children: JiraIssue[]; subtasks: JiraIssue[] };
+export type JiraSearchResult = { total: number; issues: JiraIssue[]; statuses: string[]; types: string[]; assignees: string[] };
+
 export interface ConfluencePage {
   id: string;
   title: string;
@@ -325,6 +372,8 @@ export interface ReceivedHandover {
   task_name: string;
   duties?: string[]; // 이 인수인계서에 담긴 담당 업무 이름(여러 개일 수 있다)
   mode: HandoverMode;
+  leave_start?: string; // 장기휴가 기간(장기휴가일 때만)
+  leave_end?: string;
   owner_name: string;
   owner_login_id: string;
   organization: string;
@@ -408,7 +457,7 @@ export type ChatScope = {
   title: string;
   task_name: string;
   owner_name: string;
-  kind: "mine" | "received"; // received 는 인계자가 전송한 인수인계서만 근거가 된다(원본 자료는 공유되지 않는다)
+  kind: "mine" | "received" | "team"; // received 는 인계자가 전송한 인수인계서만 근거(원본 자료는 공유되지 않는다), team 은 팀장이 검토하는 팀원 인수인계(자료·문서 모두)
   version: number; // 인수인계서 버전(아직 없으면 0)
   has_document: boolean;
   source_count: number; // 근거가 되는 올린 자료 수
@@ -418,7 +467,7 @@ export type ChatScope = {
   recipients?: string[]; // 내 업무(mine)를 보낸 인수자 이름
 };
 export type ChatSourceKind = "document" | "answer" | "mail" | "link" | "file" | "note";
-export type ChatSource = { scope_id: string; scope_title: string; scope_task: string; scope_kind: "mine" | "received"; scope_owner: string; session_id: string | null; kind: ChatSourceKind; label: string; source_id: string | null }; // source_id: 올린 파일·메일의 ID(원본 내려받기에 쓴다)
+export type ChatSource = { scope_id: string; scope_title: string; scope_task: string; scope_kind: "mine" | "received" | "team"; scope_owner: string; session_id: string | null; kind: ChatSourceKind; label: string; source_id: string | null }; // source_id: 올린 파일·메일의 ID(원본 내려받기에 쓴다)
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 export type ChatAnswer = { answer: string; grounded: boolean; sources: ChatSource[]; searched: number; engine: string };
 
@@ -446,8 +495,8 @@ export type MailQueryParams = { subject?: string; person?: string; folder?: "" |
 export type MailImportResult = { success: boolean; message: string; session_id: string; files: Source[]; skipped: string[]; analysis_scheduled: boolean };
 
 // 캘린더 일정·할 일(GET /api/planner 등). 로그인 계정마다 서버에 저장한다. id 는 화면이 만들어 보낼 수 있다(같은 id 는 두 번 쌓이지 않음).
-export type PlannerEvent = { id: string; date: string; text: string }; // date: 'YYYY-MM-DD'
-export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null }; // date 가 null 이면 날짜 없는 할 일
+export type PlannerEvent = { id: string; date: string; text: string; memo?: string; done?: boolean }; // date: 'YYYY-MM-DD', memo: 짧은 메모
+export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null; memo?: string }; // date 가 null 이면 날짜 없는 할 일
 // 정기 업무: 받은 인수인계서에서 가져온 반복 업무(날짜로 풀지 않고 캘린더 화면의 '정기 업무' 칸에 주기별로 보여 준다)
 export type RoutineCadence = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "other";
 export type PlannerRoutine = { id: string; cadence: RoutineCadence; name: string; timing: string; months: number[]; source: string }; // months: 분기·반기·매년 업무의 해당 월(비면 매달 또는 모름)
@@ -458,7 +507,7 @@ export type PersonnelScheduleInput = { name: string; announce_date: string | nul
 export type TeamSchedule = { id: number; title: string; start_date: string; end_date: string | null; memo: string; organization: string; created_by: string };
 export type TeamScheduleInput = { title: string; start_date: string; end_date: string | null; memo: string };
 // 주간 업무: 캘린더에서 주(달력 한 줄)를 골라 직접 적은 그 주에만 할 일. week 는 그 주 일요일 'YYYY-MM-DD'
-export type PlannerWeekTask = { id: string; week: string; text: string };
+export type PlannerWeekTask = { id: string; week: string; text: string; memo?: string; done?: boolean };
 export type PlannerData = { message: string; events: PlannerEvent[]; todos: PlannerTodo[]; routines?: PlannerRoutine[]; week_tasks?: PlannerWeekTask[] };
 // 받은 인수인계서 적용하기(POST /api/handovers/received/{id}/calendar)
 export type HandoverCalendarResult = { message: string; events: number; routines: number; skipped: number };

@@ -1,10 +1,10 @@
 // 캘린더(#/home/calendar). 달력에서 날짜를 골라 일정을 적고, 받은 인수인계서의 일정과 정기 업무를 한 화면에서 본다.
+// 오른쪽(MonthAgenda)은 보고 있는 달에 해야 할 일: 주별 → 날짜별, 그 달 전체, 다 한 일. 달력에서 날짜·주를 누르면 그 자리로 옮기고 거기에 추가한다.
 // 값은 shared/planner(계정별로 서버 /api/planner 에 저장)에 있고 홈 대시보드의 캘린더와 같이 쓴다.
 // "받은 인수인계서 적용하기"를 누르면 날짜가 정해진 일(마감일 등)은 달력 일정으로, 반복하는 일은 정기 업무로 들어온다.
 // - 매주 하는 일: 달력 왼쪽 '주간 업무' 칸에 주(N째주)마다. 칸을 누르면 오른쪽에서 그 주에만 할 일(주간 업무)을 적을 수 있다
-// - 매월 하는 일 + 그 달에 해당하는 분기·반기·매년 업무: 달력 아래 'N월에 해야 할 일'
-// - 매일·수시로 하는 일, 시기를 모르는 매년 업무: 같은 칸 아래쪽
-import { useRef, useState, type KeyboardEvent } from "react";
+// - 매월·매일·수시 업무와 그 달에 해당하는 분기·반기·매년 업무: 오른쪽 'N월에 해야 할 일'의 'N월 전체' 칸
+import { useRef, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
@@ -12,16 +12,12 @@ import { personnelView, usePersonnel } from "@/shared/personnel";
 import { dateKey, formatDday, usePlanner } from "@/shared/planner";
 import { formatRelativeTime, hasDocument } from "@/shared/sessions";
 import type { PlannerRoutine, ReceivedHandover } from "@/shared/types";
+import { MonthAgenda } from "./MonthAgenda";
 import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
-function dateLabel(key: string): string {
-  const [year, month, day] = key.split("-").map(Number);
-  return `${year}년 ${month}월 ${day}일 (${WEEKDAYS[new Date(year, month - 1, day).getDay()]})`;
-}
 
 function shortDate(key: string): string {
   const [, month, day] = key.split("-").map(Number);
@@ -39,11 +35,6 @@ function weekRange(week: string): string {
   return `${shortDate(week)} ~ ${shortDate(dateKey(new Date(year, month - 1, day + 6)))}`;
 }
 
-// 한글 조합 중 Enter 는 글자 확정이라 무시한다
-const onEnter = (action: () => void) => (event: KeyboardEvent<HTMLInputElement>) => {
-  if (event.key === "Enter" && !event.nativeEvent.isComposing) action();
-};
-
 export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceived, onChat, onCalendar, onMaterials, onLogout }: Props) {
   const today = new Date();
   const todayKey = dateKey(today);
@@ -53,10 +44,8 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedKey, setSelectedKey] = useState(todayKey);
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null); // 주간 칸을 누르면 그 주 일요일, 날짜를 누르면 null
-  const [eventDraft, setEventDraft] = useState("");
-  const [weekDraft, setWeekDraft] = useState("");
+  const [agendaMonth, setAgendaMonth] = useState(false); // 오른쪽 입력 대상이 '이 달 전체'인지
   const [applyOpen, setApplyOpen] = useState(false);
-  const monthRef = useRef<HTMLElement>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -67,20 +56,12 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
   const weeks = Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
   const weekKeyOf = (weekIndex: number) => dateKey(new Date(year, month, 1 - firstDay + weekIndex * 7)); // 그 줄의 일요일(앞 달 날짜일 수도 있다)
   const tasksOf = (week: string) => planner.weekTasks.filter((task) => task.week === week);
-  const selectedWeekIndex = selectedWeek ? weeks.findIndex((_, i) => weekKeyOf(i) === selectedWeek) : -1;
 
   const fixedOn = (key: string) => personnel.marks.filter((mark) => mark.key === key);
-  const selectedEvents = planner.events[selectedKey] ?? [];
 
   const routines = planner.routines;
   const byCadence = (cadence: PlannerRoutine["cadence"]) => routines.filter((routine) => routine.cadence === cadence);
   const weekly = byCadence("weekly");
-  const inMonth = (routine: PlannerRoutine) => routine.months.includes(month + 1);
-  const monthly = byCadence("monthly");
-  const seasonal = [...byCadence("quarterly"), ...byCadence("yearly")].filter(inMonth);
-  const daily = byCadence("daily");
-  const occasional = [...byCadence("other"), ...byCadence("yearly").filter((routine) => !routine.months.length)];
-  const monthCount = monthly.length + seasonal.length;
 
   const moveMonth = (offset: number) => {
     setViewDate(new Date(year, month + offset, 1));
@@ -90,18 +71,6 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
     setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
     setSelectedKey(todayKey);
     setSelectedWeek(null);
-  };
-  const addWeekTask = () => {
-    const text = weekDraft.trim();
-    if (!text || !selectedWeek) return;
-    planner.addWeekTask(selectedWeek, text);
-    setWeekDraft("");
-  };
-  const addEvent = () => {
-    const text = eventDraft.trim();
-    if (!text) return;
-    planner.addEvent(selectedKey, text);
-    setEventDraft("");
   };
 
   return (
@@ -116,14 +85,25 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
             <div><h1>캘린더</h1><p>일정을 적고, 받은 인수인계서를 적용하면 마감일과 매주·매월 해야 할 일이 한 화면에 모여요.</p></div>
             <div className="calendar-page-stats">
               <div title={personnel.next?.name}><strong>{personnel.next ? formatDday(personnel.next.appoint.dday) : "—"}</strong><small>{personnel.next ? `${personnel.next.name} 발령` : "다가오는 정기인사 없음"}</small></div>
-              <button type="button" onClick={() => monthRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}><strong>{monthCount}</strong><small>{month + 1}월 정기 업무</small></button>
             </div>
           </section>
 
           <section className="calendar-page-layout">
-            <div className="calendar-board with-weeks">
+            <div className={`calendar-board with-weeks${agendaMonth && !selectedWeek ? " month-selected" : ""}`}>
               <header>
-                <div><h2>{year}년 {month + 1}월</h2></div>
+                <div>
+                  <button
+                    type="button"
+                    className={`calendar-month-title${agendaMonth && !selectedWeek ? " active" : ""}`}
+                    onClick={() => {
+                      setAgendaMonth(true);
+                      setSelectedWeek(null);
+                    }}
+                    title={`${month + 1}월 전체 할 일 보기`}
+                  >
+                    <h2>{year}년 {month + 1}월</h2>
+                  </button>
+                </div>
                 <div>
                   <button className="calendar-apply" onClick={() => setApplyOpen(true)}><Icon name="download" size={14} /> 받은 인수인계서 적용하기</button>
                   <button className="calendar-today" onClick={goToday}>오늘</button>
@@ -145,7 +125,10 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                         type="button"
                         className={`week-cell ${selectedWeek === week ? "selected" : ""}`}
                         key={`week-${weekIndex}`}
-                        onClick={() => setSelectedWeek(week)}
+                        onClick={() => {
+                          setSelectedWeek(week);
+                          setAgendaMonth(false);
+                        }}
                         title={`${weekIndex + 1}째주 (${weekRange(week)}) 주간 업무 적기`}
                       >
                         <b>{weekIndex + 1}째주</b>
@@ -160,16 +143,18 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                     );
                   })(),
                   ...week.map((day, dayIndex) => {
-                    if (!day) return <span className="empty" key={`empty-${weekIndex}-${dayIndex}`} />;
+                    const inWeek = selectedWeek === weekKeyOf(weekIndex);
+                    if (!day) return <span className={`empty${inWeek ? " in-week" : ""}`} key={`empty-${weekIndex}-${dayIndex}`} />;
                     const key = dateKey(new Date(year, month, day));
                     const items = [...fixedOn(key).map((d) => ({ text: d.label, kind: d.kind === "shared" ? "shared-mark" : "personnel-mark" })), ...(planner.events[key] ?? []).map((text) => ({ text, kind: "event" }))];
                     return (
                       <button
                         key={key}
-                        className={`${key === selectedKey && !selectedWeek ? "selected" : ""} ${key === todayKey ? "today" : ""} ${dayIndex === 0 ? "sunday" : ""}`}
+                        className={`${key === selectedKey && !selectedWeek && !agendaMonth ? "selected" : ""} ${key === todayKey ? "today" : ""} ${dayIndex === 0 ? "sunday" : ""} ${inWeek ? "in-week" : ""}`}
                         onClick={() => {
                           setSelectedKey(key);
                           setSelectedWeek(null);
+                          setAgendaMonth(false);
                         }}
                       >
                         <b>{day}</b>
@@ -184,57 +169,20 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
               </div>
             </div>
 
-            <aside className="calendar-side">
-              {selectedWeek ? (
-              <section className="calendar-side-card">
-                <header><div><span>주간 업무</span><strong>{selectedWeekIndex >= 0 ? `${month + 1}월 ${selectedWeekIndex + 1}째주 · ` : ""}{weekRange(selectedWeek)}</strong></div></header>
-                <div className="calendar-side-list">
-                  {tasksOf(selectedWeek).map((task) => (
-                    <div key={task.id} className="week-task"><i /><span title={task.text}>{task.text}</span><button onClick={() => planner.removeWeekTask(task.id)} aria-label={`${task.text} 삭제`}><Icon name="close" size={12} /></button></div>
-                  ))}
-                  {weekly.map((routine) => (
-                    <div key={routine.id} className="week-routine" title={`매주 · ${routine.timing}`}><i /><span>{weekdaysOf(routine.timing) && <em>{weekdaysOf(routine.timing)}</em>}{routine.name}</span></div>
-                  ))}
-                </div>
-                <div className="calendar-side-add">
-                  <input value={weekDraft} onChange={(e) => setWeekDraft(e.target.value)} onKeyDown={onEnter(addWeekTask)} placeholder="이번 주에 할 일 추가" autoFocus />
-                  <button onClick={addWeekTask} aria-label="주간 업무 추가"><Icon name="arrow" size={14} /></button>
-                </div>
-              </section>
-              ) : (
-              <section className="calendar-side-card">
-                <header><div><span>{selectedKey === todayKey ? "오늘" : "선택한 날짜"}</span><strong>{dateLabel(selectedKey)}</strong></div></header>
-                <div className="calendar-side-list">
-                  {fixedOn(selectedKey).map((day, index) => <div key={`${day.label}-${index}`} className={day.kind === "shared" ? "shared-mark" : "personnel-mark"}><i /><span>{day.label}</span></div>)}
-                  {selectedEvents.map((event, index) => (
-                    <div key={`${event}-${index}`}><i /><span>{event}</span><button onClick={() => planner.removeEvent(selectedKey, index)} aria-label={`${event} 삭제`}><Icon name="close" size={12} /></button></div>
-                  ))}
-                </div>
-                <div className="calendar-side-add">
-                  <input value={eventDraft} onChange={(e) => setEventDraft(e.target.value)} onKeyDown={onEnter(addEvent)} placeholder={`${shortDate(selectedKey)} 일정 추가`} />
-                  <button onClick={addEvent} aria-label="일정 추가"><Icon name="arrow" size={14} /></button>
-                </div>
-              </section>
-              )}
-            </aside>
+            <MonthAgenda
+              year={year}
+              month={month}
+              target={selectedWeek ? { kind: "week", week: selectedWeek } : agendaMonth ? { kind: "month" } : { kind: "day", key: selectedKey }}
+              selectedKey={selectedKey}
+              onTarget={(next) => {
+                setAgendaMonth(next.kind === "month");
+                if (next.kind === "week") setSelectedWeek(next.week);
+                else setSelectedWeek(null);
+                if (next.kind === "day") setSelectedKey(next.key);
+              }}
+            />
           </section>
 
-          <section className="routine-section" ref={monthRef} aria-labelledby="month-routine-title">
-            <header>
-              <div><h2 id="month-routine-title">{month + 1}월에 해야 할 일</h2><p>받은 인수인계서의 매월 업무와, {month + 1}월에 해당하는 분기·반기·매년 업무예요.{"\n"}매주 업무는 달력 옆 주간 칸에 있어요.</p></div>
-              <button className="calendar-apply" onClick={() => setApplyOpen(true)}><Icon name="download" size={14} /> 받은 인수인계서 적용하기</button>
-            </header>
-            {routines.length ? (
-              <div className="routine-columns">
-                <RoutineGroup title="매월" tone="monthly" items={monthly} onRemove={planner.removeRoutine} empty="매월 하는 일이 없어요." />
-                <RoutineGroup title={`${month + 1}월에만`} tone="quarterly" items={seasonal} onRemove={planner.removeRoutine} empty={`${month + 1}월에 해당하는 분기·매년 업무가 없어요.`} />
-                {daily.length > 0 && <RoutineGroup title="매일" tone="daily" items={daily} onRemove={planner.removeRoutine} />}
-                {occasional.length > 0 && <RoutineGroup title="수시·시기 확인 필요" tone="other" items={occasional} onRemove={planner.removeRoutine} />}
-              </div>
-            ) : (
-              <div className="routine-empty"><Icon name="clock" size={20} /><span>아직 정기 업무가 없어요.{"\n"}받은 인수인계서를 적용하면 매주·매월 해야 하는 일이 여기와 달력 옆에 모여요.</span></div>
-            )}
-          </section>
         </div>
       </main>
       {applyOpen && <ApplyReceivedDialog onClose={() => setApplyOpen(false)} onApplied={() => void planner.refresh()} />}
@@ -242,22 +190,6 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
   );
 }
 
-function RoutineGroup({ title, tone, items, onRemove, empty }: { title: string; tone: string; items: PlannerRoutine[]; onRemove: (id: string) => void; empty?: string }) {
-  return (
-    <div className={`routine-column ${tone}`}>
-      <h3>{title}<em>{items.length}</em></h3>
-      {items.map((routine) => (
-        <div className="routine-item" key={routine.id}>
-          <div><strong>{routine.name}</strong><span>{routine.timing}</span>{routine.source && <small>{routine.source}</small>}</div>
-          <button onClick={() => onRemove(routine.id)} aria-label={`${routine.name} 정기 업무 지우기`} title="지우기(다시 적용하면 돌아와요)"><Icon name="close" size={12} /></button>
-        </div>
-      ))}
-      {!items.length && empty && <p className="routine-column-empty">{empty}</p>}
-    </div>
-  );
-}
-
-// 받은 인수인계서 목록에서 골라 캘린더에 적용한다. 같은 인수인계서를 다시 적용해도 두 번 쌓이지 않는다(서버가 건너뜀).
 function ApplyReceivedDialog({ onClose, onApplied }: { onClose: () => void; onApplied: () => void }) {
   const [received, setReceived] = useState<ReceivedHandover[] | null>(null);
   const [error, setError] = useState<string | null>(null);

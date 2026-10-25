@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import type { HandoverMode } from "@/shared/types";
+import { TransferDialog } from "./TransferDialog";
 
-type Props = { mode: HandoverMode; sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
+type Props = { mode: HandoverMode; sessionId: string; selfLoginId: string; sourceCount: number; questionCount: number; citationCount: number; onViewDocument: () => void; onNew: () => void; onHome: () => void };
 
-export function CompletionScreen({ mode, sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
+// 완료 화면. 완성 문서 화면과 같은 '인수자에게 전송하기'(TransferDialog)를 여기서도 바로 열 수 있다.
+export function CompletionScreen({ mode, sessionId, selfLoginId, sourceCount, questionCount, citationCount, onViewDocument, onNew, onHome }: Props) {
+  const [transferOpen, setTransferOpen] = useState(false);
   return (
     <div className={`completion-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
@@ -27,6 +31,7 @@ export function CompletionScreen({ mode, sourceCount, questionCount, citationCou
           <i />
           <div><span><Icon name="link" size={18} /></span><strong>{citationCount}</strong><small>연결된 출처</small></div>
         </section>
+        <button className="completion-transfer" onClick={() => setTransferOpen(true)}><Icon name="send" size={17} /> 인수자에게 전송하기</button>
         <div className="completion-actions">
           <button className="secondary-completion" onClick={onViewDocument}><Icon name="file" size={16} /> 완성 문서 다시 보기</button>
           <button className="secondary-completion" onClick={onHome}><Icon name="home" size={16} /> 홈으로 돌아가기</button>
@@ -34,6 +39,7 @@ export function CompletionScreen({ mode, sourceCount, questionCount, citationCou
         </div>
         <div className="completion-note"><Icon name="sparkle" size={14} /> 문서는 언제든 다시 열어 수정하거나 내려받을 수 있어요.</div>
       </main>
+      {transferOpen && <TransferDialog sessionId={sessionId} selfLoginId={selfLoginId} onClose={() => setTransferOpen(false)} />}
     </div>
   );
 }
