@@ -9,7 +9,7 @@ export function AuthVisual() {
       <div className="art-content">
         <Brand />
         <div className="art-copy">
-          <span className="eyebrow light"><Icon name="sparkle" size={15} /> Ask me Interactive, Grounded and Orchestrated</span>
+          <span className="eyebrow light"><Icon name="sparkle" size={15} /> <span className="art-acronym"><b>A</b>sk <b>M</b>e <b>I</b>nteractive, <b>G</b>rounded and <b>O</b>rchestrated</span></span>
           <h1 className="art-lines">
             <span className="art-line"><b>Interactive</b>한 상호작용,</span>
             <span className="art-line"><b>Grounding</b>으로 근거를 찾고,</span>

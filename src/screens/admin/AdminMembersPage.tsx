@@ -36,7 +36,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
   return (
     <div className="admin-members-page">
       <section className="members-page-title">
-        <div><span><Icon name="user" size={13} /> MEMBER MANAGEMENT</span><h1>구성원 관리</h1><p>팀 구성원과 관리자 권한, 인수인계 활동을 관리합니다.</p></div>
+        <div><h1>구성원 관리</h1><p>팀 구성원과 관리자 권한, 인수인계 활동을 관리합니다.</p></div>
       </section>
       {deleteError && <div className="list-notice error" role="alert">삭제하지 못했어요: {deleteError}<button onClick={() => setDeleteError(null)}>닫기</button></div>}
       <div className="members-layout">
@@ -60,7 +60,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
         </section>
         <aside className="member-detail-panel">
           <header>
-            <span>MEMBER PROFILE</span>
+            <span>구성원 정보</span>
             {!isMe && (
               <div className="member-profile-menu">
                 <button aria-label="구성원 메뉴" aria-expanded={profileMenuOpen} onClick={() => setProfileMenuOpen((current) => !current)}><Icon name="more" size={17} /></button>
@@ -85,7 +85,7 @@ export function AdminMembersPage({ members, handovers, meId, onDelete, onOpenDoc
         <div className="member-documents-overlay" role="presentation" onClick={() => setDocumentsOpen(false)}>
           <section className="member-documents-modal" role="dialog" aria-modal="true" aria-labelledby="member-documents-title" onClick={(event) => event.stopPropagation()}>
             <header>
-              <div><span>COMPLETED DOCUMENTS</span><h2 id="member-documents-title">{selected.name}님의 완성 문서</h2><p>완성된 인수인계 문서를 확인할 수 있습니다.</p></div>
+              <div><h2 id="member-documents-title">{selected.name}님의 완성 문서</h2><p>완성된 인수인계 문서를 확인할 수 있습니다.</p></div>
               <button onClick={() => setDocumentsOpen(false)} aria-label="완성 문서 팝업 닫기"><Icon name="close" size={17} /></button>
             </header>
             <div className="member-documents-list">

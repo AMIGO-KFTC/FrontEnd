@@ -102,11 +102,32 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     api.citations(sessionId).then((result) => !cancelled && setCitations(result.citations)).catch(() => !cancelled && setCitations([]));
     return () => { cancelled = true; };
   }, [sessionId, markdown]);
+  // 본문 번호를 누르면 맨 아래 '근거 자료'의 그 번호로 내려가고, 거기서 '본문으로'를 누르면 눌렀던 번호 자리로 돌아온다.
+  const jumpedFrom = useRef<HTMLElement | null>(null);
+  const flash = (el: Element | null) => {
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.remove("cite-flash");
+    void (el as HTMLElement).offsetWidth; // 같은 곳을 다시 눌러도 반짝임이 다시 돌게 한다
+    el.classList.add("cite-flash");
+  };
+  const jumpToNote = (number: number, from: HTMLElement) => {
+    jumpedFrom.current = from;
+    flash(document.getElementById(`cite-note-${number}`));
+  };
+  const backToText = (number: number) => {
+    const from = jumpedFrom.current;
+    flash(from?.isConnected && from.dataset.cite === String(number) ? from : document.querySelector(`.final-paper .cite-ref[data-cite="${number}"]`));
+  };
+  const paperRef = useRef<HTMLElement>(null);
+  const toTop = () => paperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const citationContext = useMemo(
-    () => ({ byNumber: new Map(citations.map((cite) => [cite.number, cite])), slotTitle }),
+    () => ({ byNumber: new Map(citations.map((cite) => [cite.number, cite])), slotTitle, jump: jumpToNote }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [citations, config],
   );
+  const notes = [...citations].sort((a, b) => a.number - b.number);
+  const fileById = new Map(files.map((file) => [file.id, file]));
   const pending = gaps.filter((gap) => gap.status in PENDING_LABEL);
   // 오른쪽 목록의 항목을 누르면 AI 대화창처럼 질문을 카드로 보여 주고, 입력칸에는 답만 쓴다.
   // 보낼 때 질문을 함께 붙여 보내면 AMIGO가 반영한 새 버전을 만든다.
@@ -256,7 +277,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} disabled={saveState === "saving"} onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? (saveState === "saving" ? "저장 중…" : "수정 완료") : "직접 수정하기"}</button>
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
-              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요. 월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
+              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{"\n"}월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => { setAnswering(null); setRevisionOpen((current) => !current); }}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
             )}
@@ -303,7 +324,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
           {revisionOpen && !answering && (
             <section className="revision-compose">
-              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요. 작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
+              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요.{"\n"}작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
               <textarea
                 value={revision}
                 onChange={(event) => setRevision(event.target.value)}
@@ -331,7 +352,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
           <GanttContext.Provider value={gantt}>
           <CitationContext.Provider value={citationContext}>
-          <article className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
+          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
@@ -409,13 +430,44 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </section>
               );
             })}
+            {notes.length > 0 && (
+              <section className="paper-section paper-notes" aria-label="근거 자료">
+                <div className="paper-notes-head">
+                  <h2>근거 자료</h2>
+                  <button type="button" onClick={toTop}>↑ 문서 맨 위로</button>
+                </div>
+                <p className="paper-notes-desc">본문의 번호를 누르면 이곳으로 내려와요. 원본 파일을 내려받아 다시 확인할 수 있어요.</p>
+                <ol>
+                  {notes.map((cite) => {
+                    const file = cite.kind === "document" ? fileById.get(cite.source_id) : undefined;
+                    const name = cite.kind === "answer" ? "인계자 답변" : cite.source_name || cite.label;
+                    const where = [slotTitle(cite.slot), cite.item_title].filter(Boolean).join(" · ");
+                    return (
+                      <li id={`cite-note-${cite.number}`} key={cite.number}>
+                        <span className="paper-note-num">{cite.number}</span>
+                        <div>
+                          <strong>{name}</strong>
+                          {cite.label && cite.label !== name && <small>{cite.label}</small>}
+                          {cite.quote && <p>“{cite.quote}”</p>}
+                          {where && <small>{where}</small>}
+                        </div>
+                        <div className="paper-note-actions">
+                          <button type="button" onClick={() => backToText(cite.number)} title="이 근거를 쓴 본문 자리로 돌아가요">↑ 본문으로</button>
+                          {file && <a href={api.sourceFileUrl(sessionId, file.id)} download={file.name} title={`${file.name} 내려받기`}><Icon name="download" size={13} /> 원본 내려받기</a>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            )}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </CitationContext.Provider>
           </GanttContext.Provider>
         </section>
         <aside className="final-pending" aria-label="시간 될 때 적어 주세요">
-          <div className="final-pending-title"><Icon name="clock" size={15} /><div><strong>시간 될 때 적어 주세요</strong><small>{readOnly ? "인계자가 아직 확인하지 못한 내용이에요." : "누르면 질문이 열려요. 답을 적어 보내면 문서에 반영돼요."}</small></div></div>
+          <div className="final-pending-title"><Icon name="clock" size={15} /><div><strong>시간 될 때 적어 주세요</strong><small>{readOnly ? "인계자가 아직 확인하지 못한 내용이에요." : "누르면 질문이 열려요.\n답을 적어 보내면 문서에 반영돼요."}</small></div></div>
           {pending.length === 0 ? (
             <p className="final-pending-empty">확인할 내용이 남아 있지 않아요.</p>
           ) : (

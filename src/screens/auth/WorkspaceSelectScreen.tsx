@@ -24,29 +24,26 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
       <main className="handover-type-main">
         <div className="handover-type-content">
           <section className="handover-type-title">
-            <span><Icon name="shield" size={13} /> TEAM LEADER</span>
             <h1>{profile.name} {profile.role}님,<br />무엇을 하시겠어요?</h1>
             <p>팀장 계정은 내 인수인계를 작성하는 공간과 {team}을 관리하는 공간을 모두 쓸 수 있어요.</p>
           </section>
           <section className="handover-type-options">
             <button className="handover-type-card personnel" onClick={() => onSelect("user")}>
-              <div className="type-card-top"><span><Icon name="user" size={25} /></span><em>MY HANDOVER</em></div>
+              <div className="type-card-top"><span><Icon name="user" size={25} /></span></div>
               <div>
-                <small>MODE 01</small>
                 <h2>인수인계 작성</h2>
-                <p>내 업무를 다음 담당자에게 전달하거나, 전달받은 인수인계를 확인합니다.</p>
+                <p>내 업무를 다음 담당자에게 전달하거나,<br />전달받은 인수인계를 확인합니다.</p>
               </div>
               <ul><li>새 인수인계 시작 · 이어서 작성</li><li>완성 문서 확인</li><li>받은 인수인계 열람</li></ul>
               <strong>일반 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
             <button className="handover-type-card leave" onClick={() => onSelect("admin")}>
-              <div className="type-card-top"><span><Icon name="shield" size={25} /></span><em>TEAM MANAGEMENT</em></div>
+              <div className="type-card-top"><span><Icon name="shield" size={25} /></span></div>
               <div>
-                <small>MODE 02</small>
                 <h2>팀 관리</h2>
-                <p>{team} 구성원의 인수인계 현황을 보고, 팀 인수인계서 항목과 AI 지침을 정합니다.</p>
+                <p>{team} 구성원의 인수인계 현황을 보고,<br />AI 지침을 정합니다.</p>
               </div>
-              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>팀 인수인계 항목 · AI 맞춤 설정</li></ul>
+              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 맞춤 설정</li></ul>
               <strong>팀 관리 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
           </section>

@@ -208,7 +208,7 @@ export function MailWorkspace({ picked, onSend, onCapture, warning, onClose }: P
     try {
       const file = await captureMail(current, mailbox);
       const message = await onCapture(file);
-      setToast(message ?? "캡처 그림을 원래 창으로 보내지 못했어요. 자료 등록 화면이 열려 있는지 확인해 주세요.");
+      setToast(message ?? "캡처 그림을 원래 창으로 보내지 못했어요.\n자료 등록 화면이 열려 있는지 확인해 주세요.");
     } catch (e) {
       setToast(`캡처하지 못했어요: ${(e as Error).message}`);
     } finally {
@@ -230,7 +230,7 @@ export function MailWorkspace({ picked, onSend, onCapture, warning, onClose }: P
         <button type="button" className="mbx-send" disabled={!picked.items.length || sending} onClick={send}>
           {sending ? "보내는 중…" : `AMIGO 로 보내기${picked.items.length ? ` (${picked.items.length})` : ""}`}
         </button>
-        <p className="mbx-side-help">보낼 메일을 표에서 체크하세요. 'AI 분석 시작' 때 자료로 등록돼요.</p>
+        <p className="mbx-side-help">보낼 메일을 표에서 체크하세요.{"\n"}'AI 분석 시작' 때 자료로 등록돼요.</p>
 
         <Section title="즐겨찾기">{FAVORITES.map(viewButton)}</Section>
         <Section title="메일함">{BOXES.map(viewButton)}</Section>

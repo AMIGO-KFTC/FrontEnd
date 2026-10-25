@@ -12,6 +12,7 @@ import type {
   ConfluencePage,
   ConfluenceSearchResult,
   IntegrationImportResult,
+  TeamDuties,
   TeamGuidelineItem,
   TeamGuidelines,
   LoginResult,
@@ -22,6 +23,15 @@ import type {
   MattermostConversation,
   MattermostConversationDetail,
   OrgDuties,
+  HandoverCalendarResult,
+  PersonnelSchedule,
+  PersonnelScheduleInput,
+  TeamSchedule,
+  TeamScheduleInput,
+  PlannerData,
+  PlannerEvent,
+  PlannerTodo,
+  PlannerWeekTask,
   ProfileInput,
   Member,
   ProfileResult,
@@ -64,7 +74,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(`${BASE}${path}`, { ...init, headers });
   } catch {
-    throw new ApiError(0, "서버에 연결할 수 없습니다. BackEnd 가 실행 중인지 확인해 주세요.");
+    throw new ApiError(0, "서버에 연결할 수 없습니다.\nBackEnd 가 실행 중인지 확인해 주세요.");
   }
   if (!res.ok) {
     let message = `요청에 실패했습니다 (HTTP ${res.status})`;
@@ -177,6 +187,39 @@ export const api = {
   // 보낸 필드만 서버에서 바뀐다(항목 화면은 items·notes, AI 맞춤 설정 화면은 prompt 만 보낸다)
   saveTeamGuidelines: (body: { items?: TeamGuidelineItem[]; notes?: string; prompt?: string }) =>
     request<TeamGuidelines>("/api/team-guidelines/me", { method: "PUT", body: JSON.stringify(body) }),
+  // 팀 담당 업무 목록. 읽기는 같은 소속 누구나, 추가·수정·삭제는 팀 관리자만(응답은 바뀐 뒤의 전체 목록)
+  teamDuties: () => request<TeamDuties>("/api/team-duties/me"),
+  addTeamDuty: (body: { name: string; description?: string }) => request<TeamDuties>("/api/team-duties/me", { method: "POST", body: JSON.stringify(body) }),
+  updateTeamDuty: (id: string, body: { name?: string; description?: string; sort_order?: number }) =>
+    request<TeamDuties>(`/api/team-duties/me/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteTeamDuty: (id: string) => request<TeamDuties>(`/api/team-duties/me/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  // 캘린더 일정·할 일(계정별로 서버에 저장). id 를 화면이 만들어 보내므로 응답을 기다리지 않고 바로 그려도 된다.
+  planner: () => request<PlannerData>("/api/planner"),
+  addPlannerEvent: (event: PlannerEvent) => post<{ event: PlannerEvent }>("/api/planner/events", event),
+  deletePlannerEvent: (id: string) => request<{ message: string }>(`/api/planner/events/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  addPlannerTodo: (todo: PlannerTodo) => post<{ todo: PlannerTodo }>("/api/planner/todos", todo),
+  updatePlannerTodo: (id: string, changes: Partial<Omit<PlannerTodo, "id">>) =>
+    request<{ todo: PlannerTodo }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
+  deletePlannerTodo: (id: string) => request<{ message: string }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  clearDonePlannerTodos: () => post<{ removed: number }>("/api/planner/todos/clear-done"),
+  addPlannerWeekTask: (task: PlannerWeekTask) => post<{ task: PlannerWeekTask }>("/api/planner/week-tasks", task),
+  deletePlannerWeekTask: (id: string) => request<{ message: string }>(`/api/planner/week-tasks/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  deletePlannerRoutine: (id: string) => request<{ message: string }>(`/api/planner/routines/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  // 받은 인수인계서의 날짜는 캘린더 일정으로, 반복 업무는 정기 업무 칸으로(같은 내용은 두 번 넣지 않는다)
+  applyReceivedToCalendar: (sessionId: string) => post<HandoverCalendarResult>(`/api/handovers/received/${encodeURIComponent(sessionId)}/calendar`),
+  // 정기인사 일정: 조회는 누구나(전사 + 내 소속), 추가·수정·삭제는 관리자(팀장)
+  personnelSchedules: () => request<{ schedules: PersonnelSchedule[]; organization: string; editable: boolean }>("/api/personnel-schedules"),
+  addPersonnelSchedule: (body: PersonnelScheduleInput) => post<{ message: string; schedule: PersonnelSchedule }>("/api/admin/personnel-schedules", body),
+  updatePersonnelSchedule: (id: number, body: PersonnelScheduleInput) =>
+    request<{ message: string; schedule: PersonnelSchedule }>(`/api/admin/personnel-schedules/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deletePersonnelSchedule: (id: number) => request<{ message: string }>(`/api/admin/personnel-schedules/${id}`, { method: "DELETE" }),
+  teamSchedules: () => request<{ schedules: TeamSchedule[]; organization: string; editable: boolean }>("/api/team-schedules"),
+  addTeamSchedule: (body: TeamScheduleInput) => post<{ message: string; schedule: TeamSchedule }>("/api/admin/team-schedules", body),
+  updateTeamSchedule: (id: number, body: TeamScheduleInput) =>
+    request<{ message: string; schedule: TeamSchedule }>(`/api/admin/team-schedules/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteTeamSchedule: (id: number) => request<{ message: string }>(`/api/admin/team-schedules/${id}`, { method: "DELETE" }),
+  // 예전에 이 브라우저(localStorage)에만 저장해 둔 일정·할 일을 서버로 옮긴다. 같은 id 는 건너뛰어 다시 보내도 안전하다.
+  importPlanner: (body: { events: PlannerEvent[]; todos: PlannerTodo[] }) => post<PlannerData>("/api/planner/import", body),
   confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
   importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),
 };

@@ -35,7 +35,7 @@ type Props = HomeNav & { list: SessionList; initialDocId?: string; onOpenDocumen
 const scopeLabel = (scope: ChatScope) =>
   [scope.title, scope.kind === "mine" ? "내 업무" : `${scope.owner_name} 전달`, scope.source_count ? `자료 ${scope.source_count}건` : "", scope.has_document ? `인수인계서 v${scope.version}` : "인수인계서 작성 전"].filter(Boolean).join(" · ");
 
-export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome, onHandover, onDocuments, onReceived, onChat, onLogout }: Props) {
+export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome, onHandover, onDocuments, onReceived, onChat, onCalendar, onMaterials, onLogout }: Props) {
   const [scopes, setScopes] = useState<ChatScope[] | null>(null);
   const [scopesError, setScopesError] = useState<string | null>(null);
   const [scope, setScope] = useState<string>(initialDocId ?? "all"); // "all" 이면 볼 수 있는 모든 업무
@@ -98,10 +98,10 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
 
   return (
     <div className="app-shell handover-chat-page">
-      <AppSidebar active="chat" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
+      <AppSidebar active="chat" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} onCalendar={onCalendar} onMaterials={onMaterials} />
       <main className="handover-chat-main">
         <header className="dashboard-header">
-          <div><span>MY WORKSPACE</span><strong>인수인계 챗봇</strong></div>
+          <div><strong>인수인계 챗봇</strong></div>
         </header>
         <div className="handover-chat-body">
           <div className="chat-toolbar">
@@ -117,12 +117,12 @@ export function HandoverChatScreen({ list, initialDocId, onOpenDocument, onHome,
 
           <div className="chat-scroll">
             {scopesError && <div className="list-notice error" role="alert">업무 목록을 불러오지 못했어요: {scopesError}<button onClick={loadScopes}>다시 시도</button></div>}
-            {empty && <div className="list-notice">질문할 수 있는 자료가 아직 없어요. 자료를 올려 분석하거나 인수인계서를 완성하면, 또는 인계자에게 인수인계서를 전달받으면 여기서 물어볼 수 있어요.</div>}
+            {empty && <div className="list-notice">질문할 수 있는 자료가 아직 없어요.{"\n"}자료를 올려 분석하거나 인수인계서를 완성하면, 또는 인계자에게 인수인계서를 전달받으면 여기서 물어볼 수 있어요.</div>}
             {scopes && scopes.length > 0 && turns.length === 0 && (
               <section className="chat-welcome">
                 <span><Icon name="sparkle" size={22} /></span>
                 <h1>인수인계에 궁금한 걸 물어보세요</h1>
-                <p>{scoped?.length === 1 ? `‘${scoped[0].title}’` : `${scoped?.length}개 업무`}의 올린 파일·메일·링크, 인계자 답변, 인수인계서에 적힌 내용만 근거로 답해 드려요. 자료에 없는 내용은 없다고 말씀드릴게요.</p>
+                <p>{scoped?.length === 1 ? `‘${scoped[0].title}’` : `${scoped?.length}개 업무`}의 올린 파일·메일·링크, 인계자 답변, 인수인계서에 적힌 내용만 근거로 답해 드려요.{"\n"}자료에 없는 내용은 없다고 말씀드릴게요.</p>
                 <div className="chat-suggestions">
                   {SUGGESTIONS.map((text) => <button key={text} onClick={() => void send(text)}>{text}</button>)}
                 </div>

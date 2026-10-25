@@ -92,14 +92,12 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
         {completed ? (
           <div className="signup-complete">
             <span><Icon name="check" size={25} /></span>
-            <small>WELCOME TO AMIGO</small>
             <h2 id="signup-title">회원가입이 완료되었습니다</h2>
             <p>{completed}</p>
             <button className="primary-button login-button" type="button" onClick={finish}>로그인 화면으로 이동 <Icon name="arrow" size={17} /></button>
           </div>
         ) : (
           <form className="login-form signup-form" onSubmit={submit}>
-            <span className="eyebrow">CREATE YOUR ACCOUNT</span>
             <h2 id="signup-title">AMIGO 시작하기</h2>
             <label>이름
               <div className="input-wrap"><Icon name="user" size={17} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름을 입력하세요" autoComplete="name" maxLength={50} disabled={busy} /></div>

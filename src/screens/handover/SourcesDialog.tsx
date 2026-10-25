@@ -39,7 +39,7 @@ export function SourcesDialog({ sessionId, files, config, onClose }: Props) {
       <section className="transfer-modal sources-modal" role="dialog" aria-modal="true" aria-labelledby="sources-title" onClick={(event) => event.stopPropagation()}>
         <button className="sources-close" type="button" aria-label="닫기" onClick={onClose}><Icon name="close" size={16} /></button>
         <h2 id="sources-title">연결된 출처</h2>
-        <p className="transfer-desc">AI가 인수인계서를 쓸 때 참고한 자료 {files.length}개예요. 파일을 누르면 원본을 내려받아요.</p>
+        <p className="transfer-desc">AI가 인수인계서를 쓸 때 참고한 자료 {files.length}개예요.{"\n"}파일을 누르면 원본을 내려받아요.</p>
         <ul className="sources-files">
           {files.length === 0 && <li className="transfer-empty">연결된 자료가 없어요.</li>}
           {files.map((file) => (

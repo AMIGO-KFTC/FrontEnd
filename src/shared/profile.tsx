@@ -7,6 +7,9 @@ import type { AuthUser } from "./types";
 // loginId 는 로그인 아이디, employeeId 는 사번(서로 다른 값이다).
 export type Profile = { name: string; loginId: string; employeeId: string; division: string; team: string; role: string; photo: string; isAdmin: boolean };
 
+// 직급(낮은 순). 프로필 수정 창의 직책 선택 목록에 쓴다.
+export const RANKS = ["사원", "계장", "대리", "과장", "차장", "부부장", "팀장", "부장", "본부장", "전무", "원장"];
+
 export const EMPTY_PROFILE: Profile = { name: "", loginId: "", employeeId: "", division: "", team: "", role: "", photo: "", isAdmin: false };
 
 // AuthUser → Profile. 서버의 department 를 본부(division)로, employee_no 를 사번으로 쓴다.

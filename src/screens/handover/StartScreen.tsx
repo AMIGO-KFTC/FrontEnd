@@ -1,5 +1,6 @@
-// STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받고, 성명·소속·직책은 로그인한 사용자 정보로 미리 채운다.
-// 인사발령은 ① 기본 정보 + 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
+// STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받는다. 성명·소속·직책은 로그인한 사용자 프로필 값을 그대로 쓰고,
+// 인수자는 완성 문서 화면의 '인수자에게 전송하기'에서 고른다.
+// 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
 // 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
@@ -10,20 +11,10 @@ import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { useProfile } from "@/shared/profile";
 import { StepUserMenu } from "@/shared/StepUserMenu";
-import type { HandoverMode, HandoverUnit, Member, OrgDuties } from "@/shared/types";
-
-// 직제규정 시행세칙(GET /api/org-duties)을 못 불러올 때 쓰는 보기 목록
-const DIVISIONS = ["프로덕트본부", "기술본부", "사업본부", "고객경험본부", "경영지원본부"];
-const TEAMS = ["플랫폼팀", "서비스기획팀", "프로덕트디자인팀", "개발팀", "데이터팀", "운영팀"];
-const ROLES = ["사원", "선임", "책임", "팀장", "실장", "본부장", "프로덕트 매니저"];
+import type { HandoverMode, HandoverUnit, OrgDuties } from "@/shared/types";
 
 type Kind = "regular" | "irregular";
 const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무(프로젝트성)" };
-
-// 서버 프로필의 값이 보기 목록에 없으면 목록 앞에 끼워 넣어 select 가 빈칸으로 보이지 않게 한다.
-function withValue(options: string[], value: string): string[] {
-  return value && !options.includes(value) ? [value, ...options] : options;
-}
 
 const emptyUnit = (name: string): HandoverUnit => ({ name, regular: [], irregular: [] });
 const draftKey = (unitName: string, kind: Kind) => `${unitName}\u0000${kind}`;
@@ -75,42 +66,20 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   const [missing, setMissing] = useState<string[]>([]);
   const [leaveError, setLeaveError] = useState("");
   // 직제규정 시행세칙(본부·부 → 팀 → 단위업무). 못 불러오면 null 로 두고 예전 보기 목록을 쓴다.
-  const [org, setOrg] = useState<OrgDuties["divisions"] | null>(null);
+  const [org, setOrg] = useState<OrgDuties["divisions"] | null>(null); // null = 불러오는 중이거나 못 불러옴
   useEffect(() => {
     api
       .orgDuties()
       .then((result) => setOrg(result.divisions.length ? result.divisions : null))
       .catch(() => setOrg(null));
   }, []);
-  // 인수자(예정) 선택 목록: 프로필을 입력한 다른 계정. 문서에 적힐 이름일 뿐 바로 전달되지 않는다. 전달은 완성 문서 화면의 '인수자에게 전송하기'에서 한다(못 불러오면 비워 둔다).
-  const [members, setMembers] = useState<Member[]>([]);
-  useEffect(() => {
-    api
-      .members()
-      .then((result) => setMembers(result.members.filter((member) => member.login_id !== profile.loginId)))
-      .catch(() => setMembers([]));
-  }, [profile.loginId]);
-  const update = (key: "name" | "division" | "team" | "role" | "date" | "leaveStart" | "leaveEnd", value: string) => setData({ ...data, [key]: value });
-  const pickSuccessor = (loginId: string) => {
-    const member = members.find((m) => m.login_id === loginId);
-    setData({ ...data, successorLoginId: member ? member.login_id : "", successor: member ? `${member.name} ${member.position}`.trim() : "" });
-  };
+  const update = (key: "leaveStart" | "leaveEnd", value: string) => setData({ ...data, [key]: value });
 
-  // 본부·팀 보기: 시행세칙의 본부, 고른 본부의 팀(본부가 목록에 없으면 모든 팀)
-  const division = org?.find((d) => d.name === data.division);
-  const divisionOptions = org ? org.map((d) => d.name) : DIVISIONS;
-  const teamOptions = org ? [...new Set((division ? [division] : org).flatMap((d) => d.teams.map((t) => t.name)))] : TEAMS;
-  const teamDuties = org ? ((division ? [division] : org).flatMap((d) => d.teams).find((t) => t.name === data.team)?.duties ?? []) : [];
+  // 우리 팀(프로필의 본부·팀) 업무분장. 본부 이름이 시행세칙과 다르면 팀 이름으로만 찾는다.
+  const division = org?.find((d) => d.name === profile.division);
+  const teamDuties = org ? ((division ? [division] : org).flatMap((d) => d.teams).find((t) => t.name === profile.team)?.duties ?? []) : [];
   const unitOptions = [...teamDuties, ...customUnits.filter((name) => !teamDuties.includes(name))];
   const selected = new Set(data.units.map((unit) => unit.name));
-
-  // 본부를 바꾸면 그 본부에 없는 팀은 비우고, 팀이 바뀌면 그 팀 업무분장에서 고른 단위 업무는 비운다(직접 추가한 것은 둔다).
-  const pickDivision = (value: string) => {
-    const teams = org?.find((d) => d.name === value)?.teams.map((t) => t.name);
-    const team = teams && !teams.includes(data.team) ? "" : data.team;
-    setData({ ...data, division: value, team, units: team === data.team || mode === "leave" ? data.units : data.units.filter((unit) => customUnits.includes(unit.name)) });
-  };
-  const pickTeam = (value: string) => setData({ ...data, team: value, units: mode === "leave" ? data.units : data.units.filter((unit) => customUnits.includes(unit.name)) });
 
   const toggleUnit = (name: string) =>
     setData({ ...data, units: selected.has(name) ? data.units.filter((unit) => unit.name !== name) : [...data.units, emptyUnit(name)] });
@@ -150,20 +119,20 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     return empty.length === 0;
   };
 
-  // 인사발령 1단계 → 2단계: 성명·본부·팀과 단위 업무 1개 이상(입력칸에 적어 두고 '추가'를 안 누른 단위 업무도 포함)
+  // 인사발령 1단계 → 2단계: 단위 업무 1개 이상(입력칸에 적어 두고 '추가'를 안 누른 단위 업무도 포함)
   const next = () => {
     const units = customDraft?.trim() ? addCustomUnit() : data.units;
-    if (!check([[!data.name.trim(), "성명"], [!data.division, "본부"], [!data.team, "팀"], [!units.length, "단위 업무"]])) return;
+    if (!check([[!units.length, "단위 업무"]])) return;
     setStep(2);
   };
 
   const submit = () => {
     if (busy) return;
     const units = withDrafts(data.units);
-    const form = { ...data, units, task: dutiesText(units) };
+    const form = { ...data, name: profile.name, division: profile.division, team: profile.team, role: profile.role, units, task: dutiesText(units) };
     if (mode === "leave") {
       const detailCount = units.reduce((sum, unit) => sum + unit.regular.length + unit.irregular.length, 0);
-      if (!check([[!form.name.trim(), "성명"], [!form.division, "본부"], [!form.team, "팀"], [!detailCount, "세부업무"], [!form.leaveStart || !form.leaveEnd, "휴가 기간"]])) return;
+      if (!check([[!detailCount, "세부업무"], [!form.leaveStart || !form.leaveEnd, "휴가 기간"]])) return;
       if (form.leaveEnd < form.leaveStart) {
         setLeaveError("휴가 종료일은 시작일보다 빠를 수 없어요.");
         return;
@@ -175,44 +144,12 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     onStart(form);
   };
 
-  const orgFields = (
-    <>
-      <label>성명 <i>*</i><input value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="이름을 입력하세요" /></label>
-      <div className="org-field-row">
-        <label>본부 <i>*</i>
-          <select value={data.division} onChange={(e) => pickDivision(e.target.value)}>
-            <option value="">본부 선택</option>
-            {withValue(divisionOptions, data.division).map((option) => <option key={option}>{option}</option>)}
-          </select>
-        </label>
-        <label>팀 <i>*</i>
-          <select value={data.team} onChange={(e) => pickTeam(e.target.value)}>
-            <option value="">팀 선택</option>
-            {withValue(teamOptions, data.team).map((option) => <option key={option}>{option}</option>)}
-          </select>
-        </label>
-      </div>
-      <label>직책
-        <select value={data.role} onChange={(e) => update("role", e.target.value)}>
-          <option value="">직책 선택</option>
-          {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
-        </select>
-      </label>
-      <label>인수자 (예정)
-        <select value={data.successorLoginId} onChange={(e) => pickSuccessor(e.target.value)}>
-          <option value="">나중에 정할게요</option>
-          {members.map((member) => <option key={member.login_id} value={member.login_id}>{member.name} {member.position} · {member.team || member.department}</option>)}
-        </select>
-      </label>
-    </>
-  );
-
   // 인사발령 1단계: 직제규정 시행세칙의 우리 팀 단위 업무를 고른다(여러 개). 목록에 없으면 직접 추가한다.
   const unitPicker = (
     <div className="wide-field unit-field">
       <span className="unit-field-label">단위 업무 <i>*</i></span>
       <p className="unit-field-help">
-        {!data.team ? "팀을 고르면 직제규정 시행세칙의 업무분장이 나와요." : teamDuties.length ? "직제규정 시행세칙의 우리 팀 업무분장이에요. 인계할 업무를 모두 골라 주세요." : "이 팀의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요."}
+        {org === null ? "직제규정 시행세칙의 업무분장을 불러오고 있어요." : teamDuties.length ? `직제규정 시행세칙의 ${profile.team || "우리 팀"} 업무분장이에요. 인계할 업무를 모두 골라 주세요.` : `${profile.team || "우리 팀"}의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요.`}
       </p>
       {unitOptions.length > 0 && (
         <div className="unit-options">
@@ -267,8 +204,6 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       </div>
     </>
   );
-  const dateField = <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>;
-
   // 인사발령 2단계: 고른 단위 업무마다 정기·비정기 세부업무(비워 둬도 된다)
   const detailStep = (
     <div className="unit-detail-list">
@@ -305,13 +240,13 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
           <div className="onboarding-card-title">
             {detailMode ? (
               <div>
-                <span>STEP 01 · 세부업무 · 정기인사 발령</span>
+                <span>1단계 · 세부업무 · 정기인사 발령</span>
                 <h2>세부업무를 작성해 주세요</h2>
                 <p>없으면 비워 두셔도 됩니다. Enter를 누르면 하나씩 추가돼요.</p>
               </div>
             ) : (
               <div>
-                <span>STEP 01 · 기본 정보 · {mode === "leave" ? "장기휴가" : "정기인사 발령"}</span>
+                <span>1단계 · 기본 정보 · {mode === "leave" ? "장기휴가" : "정기인사 발령"}</span>
                 <h2>인계 정보를 알려주세요</h2>
                 <p>AMIGO가 업무의 맥락을 이해하는 데 필요한 정보예요.</p>
               </div>
@@ -320,11 +255,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
           </div>
           <div className="field-grid">
             {detailMode ? detailStep : (
-              <>
-                {orgFields}
-                {mode === "leave" ? leaveFields : unitPicker}
-                {dateField}
-              </>
+              mode === "leave" ? leaveFields : unitPicker
             )}
           </div>
           <ErrorNote message={errorMessage} />

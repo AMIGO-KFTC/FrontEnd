@@ -14,7 +14,7 @@ export function receivedStatus(handover: ReceivedHandover): { label: string; don
   return hasDocument(handover) ? { label: "확인 필요", done: false } : { label: "작성 중", done: true };
 }
 
-export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onChat, onLogout }: Props) {
+export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, onReceived, onChat, onCalendar, onMaterials, onLogout }: Props) {
   const [handovers, setHandovers] = useState<ReceivedHandover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -38,15 +38,15 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
 
   return (
     <div className="app-shell received-page">
-      <AppSidebar active="received" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
+      <AppSidebar active="received" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} onCalendar={onCalendar} onMaterials={onMaterials} />
       <main className="received-main">
         <header className="dashboard-header received-header">
-          <div><span>MY WORKSPACE</span><strong>받은 인수인계</strong></div>
+          <div><strong>받은 인수인계</strong></div>
           <button className="received-help" onClick={load}><Icon name="clock" size={14} /> 새로고침</button>
         </header>
         <div className="received-content">
           <section className="received-title">
-            <div><span>RECEIVED HANDOVERS</span><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
+            <div><h1>전달받은 업무를 확인하세요</h1><p>인계자가 정리한 업무 맥락과 근거 자료를 한곳에서 확인할 수 있어요.</p></div>
             <div className="received-counts">
               <div><strong>{handovers ? handovers.length : "—"}</strong><small>전체</small></div>
               <i />
@@ -56,7 +56,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
             </div>
           </section>
           {error && <div className="list-notice error" role="alert">받은 인수인계를 불러오지 못했어요: {error}<button onClick={load}>다시 시도</button></div>}
-          {handovers && handovers.length === 0 && !error && <div className="list-notice">아직 받은 인수인계가 없어요. 인계자가 기본 정보에서 인수자로 지정하면 여기에 나타납니다.</div>}
+          {handovers && handovers.length === 0 && !error && <div className="list-notice">아직 받은 인수인계가 없어요.{"\n"}인계자가 기본 정보에서 인수자로 지정하면 여기에 나타납니다.</div>}
           {handovers && selected && (
             <section className="received-layout">
               <aside className="received-list">
@@ -91,13 +91,13 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
                 <section className="received-files">
                   <div><strong>전달받은 자료</strong><span>자료 {selected.file_count}개 · 문서 {hasDocument(selected) ? `v${selected.document_version}` : "작성 전"}</span></div>
                   <article className="received-document-preview">
-                    <span>AMIGO HANDOVER</span>
+                    <span>AMIGO 인수인계서</span>
                     <h3>{selected.title}</h3>
                     <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
                     <i />
                     <div><strong>01. 인계자</strong><p>{[selected.owner_name, selected.organization, selected.position].filter(Boolean).join(" · ")}</p></div>
                     <div><strong>02. 단위 업무</strong><p>{selected.task_name || "미입력"}</p></div>
-                    <div><strong>03. 문서</strong><p>{hasDocument(selected) ? "표와 근거 번호가 달린 전체 문서는 ‘문서 열기’에서 확인할 수 있어요." : "인계자가 자료를 올리고 AI 질문에 답하면 문서가 만들어져요. 문서가 나오면 여기서 바로 열 수 있어요."}</p></div>
+                    <div><strong>03. 문서</strong><p>{hasDocument(selected) ? "표와 근거 번호가 달린 전체 문서는 ‘문서 열기’에서 확인할 수 있어요." : "인계자가 자료를 올리고 AI 질문에 답하면 문서가 만들어져요.\n문서가 나오면 여기서 바로 열 수 있어요."}</p></div>
                   </article>
                 </section>
                 <footer>

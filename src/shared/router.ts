@@ -2,8 +2,9 @@
 //
 //   #/                     홈 대시보드
 //   #/home/handover        진행 중인 인수인계      #/home/documents  완성 문서      #/home/received  받은 인수인계
+//   #/home/calendar        캘린더 · 할 일          #/home/materials  근거 자료(업무별)
 //   #/home/chat            인수인계서 챗봇(모든 문서)   #/home/chat/<문서ID>  그 문서만 물어보기
-//   #/admin                팀 관리 모드(팀장)          #/admin/<tab>     팀 관리의 탭(tab = dashboard | members | handovers | team | ai)
+//   #/admin                팀 관리 모드(팀장)          #/admin/<tab>     팀 관리의 탭(tab = dashboard | members | handovers | duties | ai | personnel)
 //   #/new                  인수인계 유형 선택      #/new/<mode>      기본 정보(mode = reassignment | leave)
 //   #/s/<세션ID>           작업(서버에 저장된 단계로 복원)
 //   #/s/<세션ID>/<step>    작업의 특정 화면(step = upload | processing | question | generating | document | complete)
@@ -12,8 +13,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { HandoverMode, SessionDetail, Stage } from "./types";
 
-export type HomePage = "dashboard" | "handover" | "documents" | "received" | "chat";
-export type AdminSection = "dashboard" | "members" | "handovers" | "team" | "ai";
+export type HomePage = "dashboard" | "handover" | "documents" | "received" | "chat" | "calendar" | "materials";
+export type AdminSection = "dashboard" | "members" | "handovers" | "duties" | "ai" | "personnel";
 export type StepScreen = "upload" | "processing" | "question" | "generating" | "document" | "complete";
 export type Route =
   | { kind: "home"; page: HomePage; docId?: string } // docId 는 챗봇이 처음 물어볼 문서
@@ -21,8 +22,8 @@ export type Route =
   | { kind: "new"; mode: HandoverMode | null }
   | { kind: "session"; id: string; step: StepScreen | null };
 
-const HOME_PAGES: HomePage[] = ["dashboard", "handover", "documents", "received", "chat"];
-const ADMIN_SECTIONS: AdminSection[] = ["dashboard", "members", "handovers", "team", "ai"];
+const HOME_PAGES: HomePage[] = ["dashboard", "handover", "documents", "received", "chat", "calendar", "materials"];
+const ADMIN_SECTIONS: AdminSection[] = ["dashboard", "members", "handovers", "duties", "ai", "personnel"];
 const STEPS: StepScreen[] = ["upload", "processing", "question", "generating", "document", "complete"];
 const SESSION_ID = /^[0-9a-f]{8,64}$/;
 const DOC_ID = /^(transfer:)?[0-9a-f]{8,64}$/;

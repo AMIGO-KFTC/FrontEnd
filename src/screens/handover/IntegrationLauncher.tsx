@@ -44,7 +44,7 @@ export function IntegrationLauncher({ kind, busy, picked, onImport, onOpen, open
         <span><Icon name={text.icon} size={15} /></span>
         <div>
           <strong>{text.title}</strong>
-          <p>{text.app} 창이 새 탭으로 열려요. 거기서 인수인계에 쓸 {text.obj} 고르면 이 화면으로 넘어와요.</p>
+          <p>{text.app} 창이 새 탭으로 열려요.{"\n"}거기서 인수인계에 쓸 {text.obj} 고르면 이 화면으로 넘어와요.</p>
         </div>
         <button type="button" className="integration-popout" onClick={onOpen}>
           <Icon name="chevron" size={11} /> {text.app} 열기
@@ -52,10 +52,10 @@ export function IntegrationLauncher({ kind, busy, picked, onImport, onOpen, open
       </div>
       {!opened && (
         <p className="integration-error" role="alert">
-          새 탭이 열리지 않았어요. 브라우저가 팝업을 막았을 수 있어요. 위의 '{text.app} 열기' 를 다시 누르거나 팝업을 허용해 주세요.
+          새 탭이 열리지 않았어요.{"\n"}브라우저가 팝업을 막았을 수 있어요.{"\n"}위의 '{text.app} 열기' 를 다시 누르거나 팝업을 허용해 주세요.
         </p>
       )}
-      {!picked.items.length && !notice && <p className="integration-empty">아직 고른 {text.subj} 없어요. 열린 {text.app} 창에서 {text.obj} 골라 보내 주세요.</p>}
+      {!picked.items.length && !notice && <p className="integration-empty">아직 고른 {text.subj} 없어요.{"\n"}열린 {text.app} 창에서 {text.obj} 골라 보내 주세요.</p>}
       {showChips && <PickedChips picked={picked} />}
       <div className="integration-foot">
         <span>{picked.items.length ? `${picked.items.length}개 ${text.subj} 넘어왔어요` : ""}</span>
