@@ -3980,4 +3980,15 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .calendar-board.month-selected .calendar-board-grid > button:not(.week-cell), .calendar-board.month-selected .calendar-board-grid > .empty { background: #f6f2ff; }
 .calendar-board-grid > button.in-week:not(.week-cell), .calendar-board-grid > .empty.in-week { background: #efe9ff; box-shadow: inset 0 2px 0 #b9a7ee, inset 0 -2px 0 #b9a7ee; }
 .calendar-board-grid > .week-cell.selected { box-shadow: inset 0 2px 0 #b9a7ee, inset 0 -2px 0 #b9a7ee, inset 3px 0 0 #7a5fd0; }
+/* 메모: Enter 저장 안내, 홈 캘린더에서 항목을 누르면 메모 보기 */
+.check-memo-hint { display: block; margin-top: 2px; color: #b2aab0; font-size: 10.5px; text-align: right; }
+.schedule-check { border-bottom: 1px solid rgba(229,222,226,.75); }
+.schedule-check-line { min-height: 25px; display: grid; grid-template-columns: 11px minmax(0, 1fr); align-items: center; gap: 6px; }
+.schedule-check .month-todo-check { padding: 0; cursor: pointer; }
+.schedule-check.done .month-todo-check { border-color: #b7aec0; background: #b7aec0; }
+.schedule-check-text { min-width: 0; display: flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: #4d464e; font-size: 11px; text-align: left; cursor: pointer; }
+.schedule-check-text > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.schedule-check.done .schedule-check-text { color: #aaa2a7; }
+.schedule-check.done .schedule-check-text > span { text-decoration: line-through; }
+.schedule-memo { margin: 0 0 6px 17px; padding: 5px 8px; border-radius: 7px; background: #f6f2ff; color: #5a5260; font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
 
