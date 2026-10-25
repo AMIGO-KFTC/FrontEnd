@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { createPortal } from "react-dom";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
@@ -55,6 +55,13 @@ function splitSections(markdown: string): { title: string; body: string }[] {
 
 // 예전에 저장된 문서에 남아 있을 수 있는 장. 지금은 본문에 넣지 않고 오른쪽 목록·출처 창이 대신하므로 화면에서 숨긴다.
 const HIDDEN_SECTION = /^(확인 필요 사항|근거 자료)$/;
+
+// 본문 근거 번호(<sup data-cite>)를 그리는 부분은 바깥에 둬서 화면이 다시 그려져도(세션 상태를 주기적으로 불러올 때)
+// 번호가 새로 만들어지지 않게 한다. 안에 두면 다시 그릴 때마다 번호가 새로 생겨 마우스를 올려 띄운 작은 창이 곧바로 닫힌다.
+const CiteSup: Components["sup"] = ({ node, children, ...rest }) => {
+  const number = Number(node?.properties?.dataCite);
+  return number ? <CitationRef number={number} /> : <sup {...rest}>{children}</sup>;
+};
 
 // 문서에 넣지 않고 오른쪽 목록으로 보여 줄 질문 상태와 그 이름
 const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", answered: "확인 대기", skipped: "인계자 미확인" };
@@ -128,6 +135,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   );
   const notes = [...citations].sort((a, b) => a.number - b.number);
   const fileById = new Map(files.map((file) => [file.id, file]));
+  const linkById = new Map(sources.filter((source) => source.kind === "link" && source.url).map((link) => [link.id, link])); // 링크로 연결한 자료는 원문을 연다
   const pending = gaps.filter((gap) => gap.status in PENDING_LABEL);
   // 오른쪽 목록의 항목을 누르면 AI 대화창처럼 질문을 카드로 보여 주고, 입력칸에는 답만 쓴다.
   // 보낼 때 질문을 함께 붙여 보내면 AMIGO가 반영한 새 버전을 만든다.
@@ -416,10 +424,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                       }
                       return isEditing && id !== undefined ? <EditableCell id={Number(id)} /> : <span {...rest}>{children}</span>;
                     },
-                    sup: ({ node, children, ...rest }) => {
-                      const number = Number(node?.properties?.dataCite);
-                      return number ? <CitationRef number={number} /> : <sup {...rest}>{children}</sup>;
-                    },
+                    sup: CiteSup,
                     pre: ({ children }) => <>{children}</>,
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
@@ -436,17 +441,25 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                   <h2>근거 자료</h2>
                   <button type="button" onClick={toTop}>↑ 문서 맨 위로</button>
                 </div>
-                <p className="paper-notes-desc">본문의 번호를 누르면 이곳으로 내려와요. 원본 파일을 내려받아 다시 확인할 수 있어요.</p>
+                <p className="paper-notes-desc">본문의 번호를 누르면 이곳으로 내려와요. 자료 이름을 누르면 원본 파일을 내려받아 다시 확인할 수 있어요. 인쇄할 때는 빠져요.</p>
                 <ol>
                   {notes.map((cite) => {
                     const file = cite.kind === "document" ? fileById.get(cite.source_id) : undefined;
+                    const link = cite.kind === "document" && !file ? linkById.get(cite.source_id) : undefined;
                     const name = cite.kind === "answer" ? "인계자 답변" : cite.source_name || cite.label;
                     const where = [slotTitle(cite.slot), cite.item_title].filter(Boolean).join(" · ");
                     return (
                       <li id={`cite-note-${cite.number}`} key={cite.number}>
                         <span className="paper-note-num">{cite.number}</span>
                         <div>
-                          <strong>{name}</strong>
+                          {/* 자료 이름을 눌러도 원본을 내려받는다(인계자 답변은 파일이 없어 이름만 보인다) */}
+                          {file ? (
+                            <a className="paper-note-name" href={api.sourceFileUrl(sessionId, file.id)} download={file.name} title={`${file.name} 내려받기`}><strong>{name}</strong><Icon name="download" size={12} /></a>
+                          ) : link ? (
+                            <a className="paper-note-name" href={link.url} target="_blank" rel="noreferrer" title="원문 열기"><strong>{name}</strong><Icon name="link" size={12} /></a>
+                          ) : (
+                            <strong>{name}</strong>
+                          )}
                           {cite.label && cite.label !== name && <small>{cite.label}</small>}
                           {cite.quote && <p>“{cite.quote}”</p>}
                           {where && <small>{where}</small>}
@@ -454,6 +467,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                         <div className="paper-note-actions">
                           <button type="button" onClick={() => backToText(cite.number)} title="이 근거를 쓴 본문 자리로 돌아가요">↑ 본문으로</button>
                           {file && <a href={api.sourceFileUrl(sessionId, file.id)} download={file.name} title={`${file.name} 내려받기`}><Icon name="download" size={13} /> 원본 내려받기</a>}
+                          {link && <a href={link.url} target="_blank" rel="noreferrer" title="원문 열기"><Icon name="link" size={13} /> 원문 열기</a>}
                         </div>
                       </li>
                     );
