@@ -59,7 +59,7 @@ export function AdminTeamItemsPage() {
       .then((data) => !cancelled && apply(data))
       .catch((e: Error) => {
         if (cancelled) return;
-        setLoadError(e instanceof ApiError && e.status === 401 ? "로그인이 필요해요. 일반 모드에서 로그인한 뒤 다시 열어 주세요." : e.message);
+        setLoadError(e instanceof ApiError && e.status === 401 ? "로그인이 필요해요.\n일반 모드에서 로그인한 뒤 다시 열어 주세요." : e.message);
       });
     return () => {
       cancelled = true;
@@ -92,7 +92,7 @@ export function AdminTeamItemsPage() {
   const save = async () => {
     if (!dirty || saving || !editable) return;
     if (blankNames) {
-      setSaveError("이름이 비어 있는 항목이 있어요. 이름을 적거나 항목을 지워 주세요.");
+      setSaveError("이름이 비어 있는 항목이 있어요.\n이름을 적거나 항목을 지워 주세요.");
       return;
     }
     setSaving(true);
@@ -117,9 +117,8 @@ export function AdminTeamItemsPage() {
     <div className="admin-ai-page team-items-page">
       <section className="members-page-title">
         <div>
-          <span><Icon name="check" size={13} /> TEAM HANDOVER GUIDE</span>
           <h1>팀 인수인계서 항목</h1>
-          <p>우리 팀 인수인계서에 담을 항목과 팀의 특징을 적어 두면, AI 가 자료를 분석하고 정리할 때 반영해요. 적지 않은 내용은 AI 가 따로 챙기지 않아요.</p>
+          <p>우리 팀 인수인계서에 담을 항목과 팀의 특징을 적어 두면, AI 가 자료를 분석하고 정리할 때 반영해요.{"\n"}적지 않은 내용은 AI 가 따로 챙기지 않아요.</p>
         </div>
         <div className="ai-settings-status"><i /><span>{loaded ? `${loaded.organization} · ${statusText}` : statusText}</span></div>
       </section>
@@ -130,16 +129,16 @@ export function AdminTeamItemsPage() {
         <div className="ai-settings-layout">
           <div className="ai-settings-form">
             {!editable && (
-              <p className="team-items-alert info" role="status"><Icon name="shield" size={12} /> 이 계정은 팀 지침을 수정할 수 없어요. 관리자에게 요청해 주세요. 내용은 볼 수 있어요.</p>
+              <p className="team-items-alert info" role="status"><Icon name="shield" size={12} /> 이 계정은 팀 지침을 수정할 수 없어요.{"\n"}관리자에게 요청해 주세요. 내용은 볼 수 있어요.</p>
             )}
 
             <section className="ai-settings-card">
               <header>
                 <span><Icon name="check" size={16} /></span>
-                <div><small>TEAM ITEMS</small><h2>우리 팀 인수인계서 항목</h2><p>팀의 인수인계서에 담을 내용을 항목으로 적어 주세요. 올린 자료에 있으면 AI 가 이 이름으로 정리하고, 자료에 없으면 비워 둬요.</p></div>
+                <div><h2>우리 팀 인수인계서 항목</h2><p>팀의 인수인계서에 담을 내용을 항목으로 적어 주세요.{"\n"}올린 자료에 있으면 AI 가 이 이름으로 정리하고, 자료에 없으면 비워 둬요.</p></div>
               </header>
               <div className="team-items-body">
-                {rows.length === 0 && <p className="team-items-empty">아직 적은 항목이 없어요. 아래 예시를 누르거나 '항목 추가'로 시작해 보세요.</p>}
+                {rows.length === 0 && <p className="team-items-empty">아직 적은 항목이 없어요.{"\n"}아래 예시를 누르거나 '항목 추가'로 시작해 보세요.</p>}
                 <ul className="team-items-list">
                   {rows.map((row, index) => (
                     <li key={row.key}>
@@ -187,7 +186,7 @@ export function AdminTeamItemsPage() {
             <section className="ai-settings-card prompt-card">
               <header>
                 <span><Icon name="message" size={16} /></span>
-                <div><small>TEAM CHARACTERISTICS</small><h2>팀 특징·작성 지침</h2><p>우리 팀만의 업무 특성, 용어, 표기 방식, 특히 챙길 점을 자유롭게 적어 주세요.</p></div>
+                <div><h2>팀 특징·작성 지침</h2><p>우리 팀만의 업무 특성, 용어, 표기 방식, 특히 챙길 점을 자유롭게 적어 주세요.</p></div>
               </header>
               <div className="system-prompt-editor">
                 <div><span>팀 특징</span><small>{notes.length} / {MAX_NOTES.toLocaleString("ko-KR")}</small></div>
@@ -201,7 +200,7 @@ export function AdminTeamItemsPage() {
                   }}
                   placeholder={"예)\n- 우리 팀은 매주 월요일에 보도자료를 낸다.\n- 외주 업체 이름은 계약서 상호 그대로 적는다.\n- 장애 대응 연락처는 반드시 담당자 직통 번호까지 적는다."}
                 />
-                <footer><span><Icon name="shield" size={12} /> 비밀번호·계정 같은 민감 정보는 적지 마세요. AI 는 자료에 근거가 있는 내용만 인수인계서에 넣어요.</span></footer>
+                <footer><span><Icon name="shield" size={12} /> 비밀번호·계정 같은 민감 정보는 적지 마세요.{"\n"}AI 는 자료에 근거가 있는 내용만 인수인계서에 넣어요.</span></footer>
               </div>
             </section>
 
@@ -222,7 +221,7 @@ export function AdminTeamItemsPage() {
           </div>
 
           <aside className="ai-preview-panel team-prompt-panel">
-            <header><div><span>AI PROMPT</span><h2>AI 에 전달되는 내용</h2></div><em>{dirty ? "저장 전" : "저장됨"}</em></header>
+            <header><div><h2>AI 에 전달되는 내용</h2></div><em>{dirty ? "저장 전" : "저장됨"}</em></header>
             <div className="team-prompt-body">
               {loaded.prompt_preview ? (
                 <pre>{loaded.prompt_preview}</pre>
@@ -232,7 +231,7 @@ export function AdminTeamItemsPage() {
             </div>
             <p className="ai-preview-note team-prompt-note">
               <Icon name="shield" size={12} />
-              {dirty ? "저장하면 이 내용이 갱신돼요. " : ""}저장한 뒤 새로 시작하는 AI 분석부터 반영돼요. 이미 분석한 작업은 다시 분석할 때 적용돼요.
+              {dirty ? "저장하면 이 내용이 갱신돼요.\n" : ""}저장한 뒤 새로 시작하는 AI 분석부터 반영돼요.{"\n"}이미 분석한 작업은 다시 분석할 때 적용돼요.
             </p>
           </aside>
         </div>

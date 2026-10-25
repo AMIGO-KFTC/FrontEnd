@@ -23,7 +23,7 @@ export function AdminHandoversPage({ handovers, onOpenDocument }: { handovers: A
   return (
     <div className="admin-handovers-page">
       <section className="members-page-title">
-        <div><span><Icon name="message" size={13} /> HANDOVER MANAGEMENT</span><h1>인수인계 관리</h1><p>팀에서 진행 중이거나 완료된 인수인계를 한곳에서 확인합니다.</p></div>
+        <div><h1>인수인계 관리</h1><p>팀에서 진행 중이거나 완료된 인수인계를 한곳에서 확인합니다.</p></div>
       </section>
       <div className="handover-management-layout">
         <section className="handover-management-list">
@@ -55,7 +55,7 @@ export function AdminHandoversPage({ handovers, onOpenDocument }: { handovers: A
           </div>
         </section>
         <aside className="handover-admin-detail">
-          <header><span>HANDOVER DETAIL</span></header>
+          <header><span>인수인계 상세</span></header>
           <div className="handover-detail-title"><span><Icon name="message" size={20} /></span><em>{broadStage(selected)}</em><h2>{selected.title}</h2><p>{selected.organization}</p></div>
           <div className="handover-detail-people">
             <div><span>{selected.owner_name.slice(0, 1)}</span><small>인계자</small><strong>{selected.owner_name}</strong></div>

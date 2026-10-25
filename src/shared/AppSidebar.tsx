@@ -1,11 +1,11 @@
-// 홈 화면(대시보드 · 진행 중 · 완성 문서 · 받은 인수인계)의 왼쪽 사이드바.
+// 홈 화면(대시보드 · 진행 중 · 완성 문서 · 받은 인수인계 · 근거 자료)의 왼쪽 사이드바.
 // 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 서버 API 가 없어 개수를 표시하지 않는다.
 import { useRef, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { RANKS, useProfile } from "@/shared/profile";
 import { ongoingSessions, recentSessions, sessionTitle, sessionTone } from "@/shared/sessions";
 import type { SessionSummary } from "@/shared/types";
 
@@ -19,8 +19,10 @@ export function AppSidebar({
   onDocuments,
   onReceived,
   onChat,
+  onCalendar,
+  onMaterials,
 }: {
-  active?: "home" | "handover" | "received" | "documents" | "chat";
+  active?: "home" | "handover" | "received" | "documents" | "chat" | "calendar" | "materials";
   sessions: SessionSummary[] | null;
   onOpenSession: (id: string) => void;
   onLogout?: () => void;
@@ -29,6 +31,8 @@ export function AppSidebar({
   onDocuments?: () => void;
   onReceived?: () => void;
   onChat?: () => void;
+  onCalendar?: () => void;
+  onMaterials?: () => void;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
@@ -94,6 +98,8 @@ export function AppSidebar({
       <nav className="sidebar-nav sidebar-nav-secondary">
         <button className={active === "documents" ? "active" : ""} onClick={onDocuments}><Icon name="file" size={17} /><span>완성 문서</span></button>
         <button className={active === "received" ? "active" : ""} onClick={onReceived}><Icon name="download" size={17} /><span>받은 인수인계</span></button>
+        {onMaterials && <button className={active === "materials" ? "active" : ""} onClick={onMaterials}><Icon name="folder" size={17} /><span>근거 자료</span></button>}
+        {onCalendar && <button className={active === "calendar" ? "active" : ""} onClick={onCalendar}><Icon name="calendar" size={17} /><span>캘린더</span></button>}
         {onChat && <button className={active === "chat" ? "active" : ""} onClick={onChat}><Icon name="sparkle" size={17} /><span>인수인계 챗봇</span></button>}
       </nav>
       <div className="sidebar-bottom">
@@ -121,7 +127,7 @@ export function AppSidebar({
       <div className="profile-edit-overlay" role="presentation" onClick={() => setProfileEditOpen(false)}>
         <section className="profile-edit-modal" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title" onClick={(event) => event.stopPropagation()}>
           <header>
-            <div><span>MY PROFILE</span><h2 id="profile-edit-title">내 프로필 수정</h2></div>
+            <div><h2 id="profile-edit-title">내 프로필 수정</h2></div>
             <button onClick={() => setProfileEditOpen(false)} aria-label="프로필 수정 닫기"><Icon name="close" size={17} /></button>
           </header>
           <form onSubmit={saveProfile}>
@@ -135,7 +141,12 @@ export function AppSidebar({
             <label>사번<input value={profileDraft.employeeId} readOnly placeholder="미등록" title="사번은 바꿀 수 없어요." /></label>
             <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
             <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
-            <label className="profile-role-field">직책<input value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })} /></label>
+            <label className="profile-role-field">직책
+              <select value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })}>
+                <option value="">직책 선택</option>
+                {(profileDraft.role && !RANKS.includes(profileDraft.role) ? [profileDraft.role, ...RANKS] : RANKS).map((rank) => <option key={rank}>{rank}</option>)}
+              </select>
+            </label>
             {profileError && <p className="profile-edit-error" role="alert">{profileError}</p>}
             <div className="profile-edit-actions">
               <button type="button" onClick={() => setProfileEditOpen(false)} disabled={profileSaving}>취소</button>

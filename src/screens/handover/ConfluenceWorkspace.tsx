@@ -116,7 +116,7 @@ function SearchModal({ picked, sending, onSubmit, onClose }: { picked: Picked; s
         <div className="cfw-modal-head">
           <div>
             <h2 id="cfw-modal-title">인수인계에 쓸 페이지 검색</h2>
-            <p>자료로 등록할 페이지를 검색해서 골라 주세요. 제목·본문·라벨에 검색어가 들어간 페이지를 찾아요.</p>
+            <p>자료로 등록할 페이지를 검색해서 골라 주세요.{"\n"}제목·본문·라벨에 검색어가 들어간 페이지를 찾아요.</p>
           </div>
           <button type="button" className="cfw-x" onClick={onClose} aria-label="닫기">×</button>
         </div>
@@ -141,7 +141,7 @@ function SearchModal({ picked, sending, onSubmit, onClose }: { picked: Picked; s
         <ul className="cfw-modal-list">
           {error && <li className="cfw-note error" role="alert">{error}</li>}
           {!result && !error && <li className="cfw-note">페이지를 불러오는 중…</li>}
-          {result && !pages.length && <li className="cfw-note">'{result.query}' 이(가) 들어간 페이지가 없어요. 다른 단어로 찾아보세요.</li>}
+          {result && !pages.length && <li className="cfw-note">'{result.query}' 이(가) 들어간 페이지가 없어요.{"\n"}다른 단어로 찾아보세요.</li>}
           {pages.map((page) => (
             <li key={page.id}>
               <label className={`cfw-row${picked.has(page.id) ? " checked" : ""}`}>

@@ -41,7 +41,7 @@ export function AdminAiSettingsPage() {
       })
       .catch((e: Error) => {
         if (cancelled) return;
-        setLoadError(e instanceof ApiError && e.status === 401 ? "로그인이 필요해요. 일반 모드에서 로그인한 뒤 다시 열어 주세요." : e.message);
+        setLoadError(e instanceof ApiError && e.status === 401 ? "로그인이 필요해요.\n일반 모드에서 로그인한 뒤 다시 열어 주세요." : e.message);
       });
     return () => {
       cancelled = true;
@@ -75,7 +75,6 @@ export function AdminAiSettingsPage() {
     <div className="admin-ai-page">
       <section className="members-page-title">
         <div>
-          <span><Icon name="sparkle" size={13} /> TEAM AI CONFIGURATION</span>
           <h1>AI 맞춤 설정</h1>
           <p>팀 전용 프롬프트를 적어 두면, 우리 팀원들이 만드는 인수인계서에 반영돼요.</p>
         </div>
@@ -88,13 +87,13 @@ export function AdminAiSettingsPage() {
         <div className="ai-settings-layout single">
           <div className="ai-settings-form">
             {!editable && (
-              <p className="team-items-alert info" role="status"><Icon name="shield" size={12} /> 이 계정은 팀 전용 프롬프트를 수정할 수 없어요. 관리자에게 요청해 주세요. 내용은 볼 수 있어요.</p>
+              <p className="team-items-alert info" role="status"><Icon name="shield" size={12} /> 이 계정은 팀 전용 프롬프트를 수정할 수 없어요.{"\n"}관리자에게 요청해 주세요. 내용은 볼 수 있어요.</p>
             )}
 
             <section className="ai-settings-card prompt-card">
               <header>
                 <span><Icon name="message" size={16} /></span>
-                <div><small>SYSTEM PROMPT</small><h2>팀 전용 프롬프트</h2><p>AI가 우리 팀의 인수인계서를 만들 때 항상 따라야 하는 역할과 판단 기준을 적어 주세요.</p></div>
+                <div><h2>팀 전용 프롬프트</h2><p>AI가 우리 팀의 인수인계서를 만들 때 항상 따라야 하는 역할과 판단 기준을 적어 주세요.</p></div>
               </header>
               <div className="system-prompt-editor">
                 <div><span>시스템 지침</span><small>{prompt.length} / {MAX_PROMPT.toLocaleString("ko-KR")}</small></div>
@@ -109,10 +108,10 @@ export function AdminAiSettingsPage() {
                   }}
                   placeholder={PLACEHOLDER}
                 />
-                <footer><span><Icon name="shield" size={12} /> 인수인계서에는 근거 자료에 있는 내용만 들어가요. 비밀번호·계정 같은 민감 정보는 적지 마세요.</span></footer>
+                <footer><span><Icon name="shield" size={12} /> 인수인계서에는 근거 자료에 있는 내용만 들어가요.{"\n"}비밀번호·계정 같은 민감 정보는 적지 마세요.</span></footer>
               </div>
               <p className="team-prompt-scope">
-                같은 소속({loaded.organization})의 모든 팀원이 만드는 인수인계서의 AI 분석과 질의응답에 반영돼요. 저장한 뒤 새로 시작하는 분석부터 적용되고, 이미 분석한 작업은 다시 분석할 때 적용돼요.
+                같은 소속({loaded.organization})의 모든 팀원이 만드는 인수인계서의 AI 분석과 질의응답에 반영돼요.{"\n"}저장한 뒤 새로 시작하는 분석부터 적용되고, 이미 분석한 작업은 다시 분석할 때 적용돼요.
               </p>
             </section>
 

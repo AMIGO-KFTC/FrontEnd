@@ -17,7 +17,7 @@ export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
       setWarning(null);
       const ack = await sendPick(kind, items);
       if (!ack) {
-        setWarning("원래 AMIGO 창을 찾지 못했어요. 자료 등록 화면이 열려 있는 창이 있는지 확인한 뒤 다시 보내 주세요. 고른 항목은 그대로 남아 있어요.");
+        setWarning("원래 AMIGO 창을 찾지 못했어요.\n자료 등록 화면이 열려 있는 창이 있는지 확인한 뒤 다시 보내 주세요.\n고른 항목은 그대로 남아 있어요.");
         return undefined;
       }
       const skipped = ack.skipped ? ` (이미 등록된 ${ack.skipped}개는 제외)` : "";
@@ -30,10 +30,10 @@ export function IntegrationPickerPage({ kind }: { kind: PickKind }) {
   const capture = useCallback(async (file: File): Promise<string | undefined> => {
     setWarning(null);
     if (!(await sendCapture(file))) {
-      setWarning("원래 AMIGO 창을 찾지 못했어요. 자료 등록 화면이 열려 있는 창이 있는지 확인한 뒤 다시 캡처해 주세요.");
+      setWarning("원래 AMIGO 창을 찾지 못했어요.\n자료 등록 화면이 열려 있는 창이 있는지 확인한 뒤 다시 캡처해 주세요.");
       return undefined;
     }
-    return "캡처 그림을 원래 창에 자료로 올렸어요. 원래 창의 '등록된 자료'에서 확인할 수 있어요.";
+    return "캡처 그림을 원래 창에 자료로 올렸어요.\n원래 창의 '등록된 자료'에서 확인할 수 있어요.";
   }, []);
 
   const props = { picked, onSend: send, warning, onClose: () => window.close() };

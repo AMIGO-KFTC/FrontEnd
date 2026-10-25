@@ -54,13 +54,13 @@ export function TransferDialog({ sessionId, selfLoginId, onClose }: Props) {
         <h2 id="transfer-title">인수자에게 전송하기</h2>
         {done ? (
           <>
-            <p className="transfer-done"><Icon name="check" size={15} /> {done.join(", ")}님에게 전송했어요. 받는 사람의 '받은 인수인계'에 나타나요.</p>
+            <p className="transfer-done"><Icon name="check" size={15} /> {done.join(", ")}님에게 전송했어요.{"\n"}받는 사람의 '받은 인수인계'에 나타나요.</p>
             {error && <p className="signup-error" role="alert">{error}</p>}
             <div className="transfer-actions"><button type="button" onClick={() => setDone(null)}>더 보내기</button><button type="button" className="primary" onClick={onClose}>닫기</button></div>
           </>
         ) : (
           <>
-            <p className="transfer-desc">받는 사람을 고르고 [전송하기]를 누르면 그때 전달돼요. 여러 명을 고를 수 있어요.</p>
+            <p className="transfer-desc">받는 사람을 고르고 [전송하기]를 누르면 그때 전달돼요.{"\n"}여러 명을 고를 수 있어요.</p>
             <input className="transfer-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="이름·직위·팀으로 찾기" />
             <ul className="transfer-list">
               {members === null && <li className="transfer-empty">구성원을 불러오는 중…</li>}

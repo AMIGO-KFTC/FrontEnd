@@ -18,7 +18,6 @@ export function CompletionScreen({ mode, sourceCount, questionCount, citationCou
           <i className="complete-spark spark-three" />
           <i className="complete-spark spark-four" />
         </div>
-        <span className="completion-kicker">HANDOVER COMPLETE</span>
         <h1>인수인계가 완료됐어요.<br />그동안 정말 수고하셨습니다.</h1>
         <p>AMIGO가 정리한 업무의 맥락과 경험이<br />다음 담당자에게 안전하게 이어질 거예요.</p>
         <section className="completion-summary">

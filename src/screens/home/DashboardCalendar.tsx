@@ -1,36 +1,27 @@
-// 홈 캘린더. 일정은 아직 서버와 연결되지 않아 앱이 떠 있는 동안만 유지된다.
+// 홈 캘린더. 일정은 왼쪽 탭의 '캘린더' 화면과 같은 저장소(shared/planner, 계정별 서버 저장)를 쓴다.
+// 정기인사 D-day 와 발표일·발령일, 팀 공유 일정 표시는 팀장이 등록한 일정(shared/personnel)에서. 정기인사가 없으면 매년 10/26 · 10/28 기본값.
 import { useState } from "react";
 import { Icon } from "@/shared/Icon";
+import { longDate, personnelView, usePersonnel } from "@/shared/personnel";
+import { dateKey, formatDday, usePlanner } from "@/shared/planner";
 
-export function DashboardCalendar() {
+export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => void }) {
   const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const thisYearAppointmentDate = new Date(today.getFullYear(), 9, 28);
-  const personnelYear = todayStart.getTime() > thisYearAppointmentDate.getTime() ? today.getFullYear() + 1 : today.getFullYear();
-  const announcementDate = new Date(personnelYear, 9, 26);
-  const appointmentDate = new Date(personnelYear, 9, 28);
-  const announcementKey = `${personnelYear}-10-26`;
-  const appointmentKey = `${personnelYear}-10-28`;
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const announcementDday = Math.ceil((announcementDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
-  const appointmentDday = Math.ceil((appointmentDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
-  const formatDday = (days: number) => days === 0 ? "D-DAY" : days > 0 ? `D-${days}` : `D+${Math.abs(days)}`;
+  const { schedules, teamSchedules } = usePersonnel();
+  const personnel = personnelView(today, schedules, teamSchedules);
+  const markOn = (key: string) => personnel.marks.filter((mark) => mark.key === key);
+  const todayKey = dateKey(today);
+  const { events, addEvent: saveEvent, removeEvent: deleteEvent } = usePlanner();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [draft, setDraft] = useState("");
-  const [events, setEvents] = useState<Record<string, string[]>>({
-    "2025-03-14": ["Q1 프로젝트 인수인계"],
-    "2025-03-18": ["플랫폼 운영 자료 검토", "박서연님 인수인계 확인"],
-    "2025-03-25": ["인수인계 완료 예정"],
-    [announcementKey]: ["정기인사 발표일"],
-    [appointmentKey]: ["정기인사 발령일"],
-  });
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const monthLabel = `${year}년 ${month + 1}월`;
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const selectedKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+  const selectedKey = dateKey(new Date(year, month, selectedDay));
+  const fixedEvents = markOn(selectedKey);
   const selectedEvents = events[selectedKey] ?? [];
   const cells: Array<number | null> = [
     ...Array.from({ length: firstDay }, () => null),
@@ -44,19 +35,17 @@ export function DashboardCalendar() {
   const addEvent = () => {
     const nextEvent = draft.trim();
     if (!nextEvent) return;
-    setEvents((current) => ({ ...current, [selectedKey]: [...(current[selectedKey] ?? []), nextEvent] }));
+    saveEvent(selectedKey, nextEvent);
     setDraft("");
-  };
-  const removeEvent = (eventIndex: number) => {
-    setEvents((current) => ({ ...current, [selectedKey]: (current[selectedKey] ?? []).filter((_, index) => index !== eventIndex) }));
   };
 
   return (
     <section className="dashboard-calendar">
       <div className="calendar-main">
           <header>
-            <div><span>MY SCHEDULE</span><h2>{monthLabel}</h2></div>
+            <div><h2>{monthLabel}</h2></div>
             <div>
+              {onOpenCalendar && <button className="calendar-open" onClick={onOpenCalendar} aria-label="캘린더 크게 보기" title="캘린더 · 할 일"><Icon name="calendar" size={13} /></button>}
               <button onClick={() => moveMonth(-1)} aria-label="이전 달"><Icon name="chevron" size={14} /></button>
               <button onClick={() => moveMonth(1)} aria-label="다음 달"><Icon name="chevron" size={14} /></button>
             </div>
@@ -65,36 +54,43 @@ export function DashboardCalendar() {
           <div className="calendar-days">
             {cells.map((day, index) => {
               if (!day) return <span className="empty-day" key={`empty-${index}`} />;
-              const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const isAnnouncementDay = dateKey === announcementKey;
-              const isAppointmentDay = dateKey === appointmentKey;
+              const key = dateKey(new Date(year, month, day));
+              const marks = markOn(key);
+              const isAnnouncementDay = marks.some((mark) => mark.kind === "announcement");
+              const isAppointmentDay = marks.some((mark) => mark.kind === "appointment");
               const isSpecialDay = isAnnouncementDay || isAppointmentDay;
-              const isToday = dateKey === todayKey;
+              const isToday = key === todayKey;
+              const hasItems = Boolean(events[key]?.length) || marks.some((mark) => mark.kind === "shared");
               return (
                 <button
                   className={`${day === selectedDay ? "selected" : ""} ${isSpecialDay ? "special-day" : ""} ${isAnnouncementDay ? "announcement-day" : ""} ${isAppointmentDay ? "appointment-day" : ""} ${isToday ? "today" : ""}`}
-                  key={dateKey}
+                  key={key}
                   onClick={() => setSelectedDay(day)}
-                  title={isAnnouncementDay ? "정기인사 발표일" : isAppointmentDay ? "정기인사 발령일" : isToday ? "오늘" : undefined}
+                  title={marks.length ? marks.map((mark) => mark.label).join(", ") : isToday ? "오늘" : undefined}
                 >
                   {day}
-                  {events[dateKey]?.length ? <i /> : null}
+                  {hasItems ? <i /> : null}
                 </button>
               );
             })}
           </div>
       </div>
       <aside className="calendar-agenda">
-        <div><span>{selectedKey === todayKey ? "TODAY" : "SELECTED DATE"}</span><strong>{year}년 {month + 1}월 {selectedDay}일</strong></div>
+        <div><span>{selectedKey === todayKey ? "오늘" : "선택한 날짜"}</span><strong>{year}년 {month + 1}월 {selectedDay}일</strong></div>
         <div className="personnel-countdowns">
-          <div className="personnel-countdown announcement"><small>정기인사 발표</small><strong>{formatDday(announcementDday)}</strong><span>{personnelYear}년 10월 26일</span></div>
-          <div className="personnel-countdown appointment"><small>정기인사 발령</small><strong>{formatDday(appointmentDday)}</strong><span>{personnelYear}년 10월 28일</span></div>
+          {personnel.next ? (
+            <>
+              {personnel.next.announce && <div className="personnel-countdown announcement" title={personnel.next.name}><small>{personnel.next.name} 발표</small><strong>{formatDday(personnel.next.announce.dday)}</strong><span>{longDate(personnel.next.announce.key)}</span></div>}
+              <div className="personnel-countdown appointment" title={personnel.next.name}><small>{personnel.next.name} 발령</small><strong>{formatDday(personnel.next.appoint.dday)}</strong><span>{longDate(personnel.next.appoint.key)}</span></div>
+            </>
+          ) : null}
         </div>
         <div className="schedule-manager">
           <div className="schedule-items">
-            {selectedEvents.length ? selectedEvents.map((event, index) => (
-              <div key={`${event}-${index}`}><i /><span>{event}</span><button onClick={() => removeEvent(index)} aria-label={`${event} 삭제`}><Icon name="close" size={11} /></button></div>
-            )) : <small>등록된 일정이 없습니다.</small>}
+            {fixedEvents.map((mark, index) => <div key={`${mark.label}-${index}`} className={mark.kind === "shared" ? "shared-mark" : "personnel-mark"}><i /><span>{mark.label}</span></div>)}
+            {selectedEvents.map((event, index) => (
+              <div key={`${event}-${index}`}><i /><span>{event}</span><button onClick={() => deleteEvent(selectedKey, index)} aria-label={`${event} 삭제`}><Icon name="close" size={11} /></button></div>
+            ))}
           </div>
           <div className="schedule-add">
             <input

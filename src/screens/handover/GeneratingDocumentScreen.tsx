@@ -55,7 +55,6 @@ export function GeneratingDocumentScreen({ mode, session, targetVersion, onRetry
           </span>
           <span className="generation-spark"><Icon name="sparkle" size={17} /></span>
         </div>
-        <span className="generation-kicker">{failed ? "GENERATION PAUSED" : done ? "DOCUMENT READY" : "GENERATING HANDOVER"}</span>
         <h1>{headline}</h1>
         <p>{failed ? "다시 시도하거나 질의응답으로 돌아가 내용을 보완한 뒤 다시 생성할 수 있어요." : done ? "완성된 문서 화면으로 이동합니다." : "등록한 자료와 답변을 바탕으로 바로 활용할 수 있는 문서를 구성하고 있어요."}</p>
         {!failed && !done && <WorkQuips />}

@@ -346,6 +346,23 @@ export interface TeamGuidelines {
   prompt_preview: string;
 }
 
+// 팀 담당 업무 목록(GET·POST /api/team-duties/me, PATCH·DELETE /api/team-duties/me/<id>). 팀장이 관리하고, 구성원은 1단계에서 고른다.
+export interface TeamDuty {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  updated_by: string;
+  updated_at: string | null;
+}
+
+export interface TeamDuties {
+  message: string;
+  organization: string;
+  duties: TeamDuty[];
+  editable: boolean;
+}
+
 // 인수인계 챗봇(GET /api/handover-chat/scopes, POST /api/handover-chat): 올린 자료·인계자 답변·인수인계서를 근거로 답한다.
 export type ChatScope = {
   id: string; // 질문 범위 = 업무(세션) ID. 지워진 인계 세션의 보낸 시점 문서는 'transfer:<ID>'
@@ -386,3 +403,21 @@ export type MailDetail = MailSummary & { cc: MailAddress[]; body: string; attach
 export type MailList = { message: string; provider: string; mailbox: MailAddress; messages: MailSummary[]; total: number; page: number; size: number; has_next: boolean; keywords: string[] };
 export type MailQueryParams = { subject?: string; person?: string; folder?: "" | "inbox" | "sent"; hasAttachments?: boolean; important?: boolean; dateFrom?: string; page?: number; size?: number };
 export type MailImportResult = { success: boolean; message: string; session_id: string; files: Source[]; skipped: string[]; analysis_scheduled: boolean };
+
+// 캘린더 일정·할 일(GET /api/planner 등). 로그인 계정마다 서버에 저장한다. id 는 화면이 만들어 보낼 수 있다(같은 id 는 두 번 쌓이지 않음).
+export type PlannerEvent = { id: string; date: string; text: string }; // date: 'YYYY-MM-DD'
+export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null }; // date 가 null 이면 날짜 없는 할 일
+// 정기 업무: 받은 인수인계서에서 가져온 반복 업무(날짜로 풀지 않고 캘린더 화면의 '정기 업무' 칸에 주기별로 보여 준다)
+export type RoutineCadence = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "other";
+export type PlannerRoutine = { id: string; cadence: RoutineCadence; name: string; timing: string; months: number[]; source: string }; // months: 분기·반기·매년 업무의 해당 월(비면 매달 또는 모름)
+// 정기인사 일정(팀장이 등록, GET /api/personnel-schedules). 언제나 등록한 팀장의 소속(부서 팀) 단위
+export type PersonnelSchedule = { id: number; name: string; announce_date: string | null; appoint_date: string; organization: string; created_by: string };
+export type PersonnelScheduleInput = { name: string; announce_date: string | null; appoint_date: string };
+// 팀 공유 일정(팀장이 등록, GET /api/team-schedules). 워크숍·회의·마감 등, 우리 팀 단위. end_date 는 여러 날짜리일 때만 있다
+export type TeamSchedule = { id: number; title: string; start_date: string; end_date: string | null; memo: string; organization: string; created_by: string };
+export type TeamScheduleInput = { title: string; start_date: string; end_date: string | null; memo: string };
+// 주간 업무: 캘린더에서 주(달력 한 줄)를 골라 직접 적은 그 주에만 할 일. week 는 그 주 일요일 'YYYY-MM-DD'
+export type PlannerWeekTask = { id: string; week: string; text: string };
+export type PlannerData = { message: string; events: PlannerEvent[]; todos: PlannerTodo[]; routines?: PlannerRoutine[]; week_tasks?: PlannerWeekTask[] };
+// 받은 인수인계서 적용하기(POST /api/handovers/received/{id}/calendar)
+export type HandoverCalendarResult = { message: string; events: number; routines: number; skipped: number };

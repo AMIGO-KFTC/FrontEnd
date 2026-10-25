@@ -5,6 +5,7 @@ export type IconName =
   | "arrow"
   | "bell"
   | "bolt"
+  | "calendar"
   | "check"
   | "chevron"
   | "clock"
@@ -32,6 +33,7 @@ const paths: Record<IconName, ReactNode> = {
   arrow: <><path d="M5 12h14M14 7l5 5-5 5" /></>,
   bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
   bolt: <path d="m13 2-7 11h6l-1 9 7-12h-6l1-8Z" />,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>,
   check: <path d="m5 12 4 4L19 6" />,
   chevron: <path d="m9 18 6-6-6-6" />,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,

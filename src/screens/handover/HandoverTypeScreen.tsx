@@ -31,27 +31,24 @@ export function HandoverTypeScreen({ onSelect, onLogout, onHome }: { onSelect: (
       <main className="handover-type-main">
         <div className="handover-type-content">
           <section className="handover-type-title">
-            <span><Icon name="sparkle" size={13} /> START NEW HANDOVER</span>
             <h1>어떤 인수인계를<br />준비하고 있나요?</h1>
             <p>상황에 맞는 유형을 선택하면 AMIGO가 필요한 항목과 자료를 안내해 드려요.</p>
           </section>
           <section className="handover-type-options">
             <button className="handover-type-card personnel" onClick={() => onSelect("reassignment")}>
-              <div className="type-card-top"><span><Icon name="user" size={25} /></span><em>REGULAR PERSONNEL</em></div>
+              <div className="type-card-top"><span><Icon name="user" size={25} /></span></div>
               <div>
-                <small>TYPE 01</small>
                 <h2>정기인사 발령</h2>
-                <p>부서 이동이나 직무 변경에 맞춰 담당 업무와 진행 상황을 다음 담당자에게 전달합니다.</p>
+                <p>부서 이동이나 직무 변경에 맞춰 담당 업무와 진행 상황을<br />다음 담당자에게 전달합니다.</p>
               </div>
               <ul><li>담당 업무와 주요 책임</li><li>진행 중인 프로젝트</li><li>협업 관계 및 시스템 권한</li></ul>
               <strong>정기인사 인수인계 시작 <Icon name="arrow" size={16} /></strong>
             </button>
             <button className="handover-type-card leave" onClick={() => onSelect("leave")}>
-              <div className="type-card-top"><span><Icon name="clock" size={25} /></span><em>LONG-TERM LEAVE</em></div>
+              <div className="type-card-top"><span><Icon name="clock" size={25} /></span></div>
               <div>
-                <small>TYPE 02</small>
                 <h2>장기휴가</h2>
-                <p>장기간 자리를 비우는 동안 업무가 중단되지 않도록 대행자에게 필요한 내용을 전달합니다.</p>
+                <p>장기간 자리를 비우는 동안 업무가 중단되지 않도록<br />대행자에게 필요한 내용을 전달합니다.</p>
               </div>
               <ul><li>휴가 기간과 업무 대행자</li><li>기간 중 주요 일정</li><li>긴급 상황 대응 방법</li></ul>
               <strong>장기휴가 인수인계 시작 <Icon name="arrow" size={16} /></strong>
