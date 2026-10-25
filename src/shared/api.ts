@@ -21,6 +21,7 @@ import type {
   MailQueryParams,
   MattermostConversation,
   MattermostConversationDetail,
+  OrgDuties,
   ProfileInput,
   Member,
   ProfileResult,
@@ -95,6 +96,7 @@ export const api = {
 
   // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용
   members: () => request<{ members: Member[] }>("/api/members"),
+  orgDuties: () => request<OrgDuties>("/api/org-duties"),
   sessionTransfers: (id: string) => request<{ transfers: SentTransfer[] }>(`/api/sessions/${id}/transfers`),
   sendTransfer: (id: string, recipientId: number, message: string) => post<{ message: string }>(`/api/sessions/${id}/transfers`, { recipient_id: recipientId, message }),
   // 인수인계 챗봇: 질문할 수 있는 업무(올린 자료 · 인수인계서)와 질문. 대화는 서버에 저장하지 않고 history 로 보낸다.

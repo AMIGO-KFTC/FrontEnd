@@ -68,6 +68,9 @@ export interface Gap {
   question: string;
   priority: number;
   status: "open" | "asked" | "answered" | "resolved" | "skipped";
+  aux?: boolean; // 보조질문(꼭 답하지 않아도 되는 질문)
+  gate?: string; // 예/아니요로 먼저 묻는 질문(ask | confirm). 예/아니요에 답하면 비워지고 이어지는 주관식 질문이 된다
+  picker?: string; // 답을 고르는 방식: period(주기 선택 또는 달력 기간 선택)
 }
 
 export interface SessionSummary {
@@ -108,6 +111,7 @@ export interface UsageTotal extends Usage {
 
 export interface SessionDetail extends SessionSummary {
   duties: string;
+  units?: HandoverUnit[]; // 인계자 정보에서 고른 단위업무와 세부업무(예전 세션·예전 서버는 없거나 빈 목록)
   owner_login_id: string; // 인계자 계정의 아이디. 로그인한 사용자와 다르면(인수자·팀장) 문서 화면을 읽기 전용으로 그린다
   progress: { message: string; current: number; total: number };
   error: string;
@@ -128,6 +132,11 @@ export interface MessageMeta {
   remaining?: number;
   quick_replies?: string[];
   allow_files?: boolean;
+  choice?: "yesno"; // 예/아니요 두 선택지로 답하는 질문
+  picker?: "period"; // 주기(choices)를 고르거나, 정기적이지 않으면 달력에서 기간을 고르는 질문
+  choices?: string[];
+  aux?: boolean; // 보조질문: 질문 왼편에 '보조질문' 태그와 aux_note 안내를 붙인다
+  aux_note?: string;
   retry?: boolean;
   coverage?: Record<string, Coverage>;
   version?: number;
@@ -175,6 +184,21 @@ export interface SessionCreate {
   leave_end?: string; // 장기휴가일 때 휴가 종료일
   mode: HandoverMode;
   task_name: string;
+  units?: HandoverUnit[];
+}
+
+// 단위업무 1건과 그 세부업무(정기·비정기). 장기휴가는 단위업무 없이 이름을 비운 1건에 세부업무만 담는다.
+export interface HandoverUnit {
+  name: string;
+  regular: string[];
+  irregular: string[];
+}
+
+// 직제규정 시행세칙(GET /api/org-duties): 본부·부 → 팀 → 단위업무 목록. 지금은 가상 예시 자료다.
+export interface OrgDuties {
+  title: string;
+  note: string;
+  divisions: { name: string; teams: { name: string; duties: string[] }[] }[];
 }
 
 // 로그인(BackEnd /api/auth). 세션 쿠키(amigo_session)는 서버가 내려 주고 브라우저가 알아서 보낸다.

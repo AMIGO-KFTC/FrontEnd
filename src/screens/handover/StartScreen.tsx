@@ -1,32 +1,87 @@
 // STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받고, 성명·소속·직책은 로그인한 사용자 정보로 미리 채운다.
+// 인사발령은 ① 기본 정보 + 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
+// 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
-import type { StartData } from "@/shared/handover";
+import { dutiesText, type StartData } from "@/shared/handover";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { useProfile } from "@/shared/profile";
 import { StepUserMenu } from "@/shared/StepUserMenu";
-import type { HandoverMode, Member } from "@/shared/types";
+import type { HandoverMode, HandoverUnit, Member, OrgDuties } from "@/shared/types";
 
+// 직제규정 시행세칙(GET /api/org-duties)을 못 불러올 때 쓰는 보기 목록
 const DIVISIONS = ["프로덕트본부", "기술본부", "사업본부", "고객경험본부", "경영지원본부"];
 const TEAMS = ["플랫폼팀", "서비스기획팀", "프로덕트디자인팀", "개발팀", "데이터팀", "운영팀"];
 const ROLES = ["사원", "선임", "책임", "팀장", "실장", "본부장", "프로덕트 매니저"];
+
+type Kind = "regular" | "irregular";
+const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무(프로젝트성)" };
 
 // 서버 프로필의 값이 보기 목록에 없으면 목록 앞에 끼워 넣어 select 가 빈칸으로 보이지 않게 한다.
 function withValue(options: string[], value: string): string[] {
   return value && !options.includes(value) ? [value, ...options] : options;
 }
 
+const emptyUnit = (name: string): HandoverUnit => ({ name, regular: [], irregular: [] });
+const draftKey = (unitName: string, kind: Kind) => `${unitName}\u0000${kind}`;
+
+// 세부업무 칩 입력칸. Enter(한글 조합 중 Enter 는 글자 확정이라 무시) 또는 '추가'로 칩을 붙이고 × 로 지운다.
+function ChipField({ label, items, draft, placeholder, onDraft, onChange }: { label: string; items: string[]; draft: string; placeholder: string; onDraft: (value: string) => void; onChange: (items: string[]) => void }) {
+  const add = () => {
+    const next = draft.trim();
+    if (!next) return;
+    onChange([...items, next]);
+    onDraft("");
+  };
+  return (
+    <label className="task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>{label}
+      <div className="task-editor">
+        <div className="task-list">
+          {items.map((item, index) => (
+            <span className="task-chip" key={`${item}-${index}`}>{item}<button onClick={() => onChange(items.filter((_, i) => i !== index))} aria-label={`${item} 삭제`}><Icon name="close" size={12} /></button></span>
+          ))}
+        </div>
+        <div className="task-input-row">
+          <input
+            value={draft}
+            onChange={(event) => onDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                add();
+              }
+            }}
+            placeholder={placeholder}
+          />
+          <button onClick={add}>추가</button>
+        </div>
+      </div>
+    </label>
+  );
+}
+
 type Props = { mode: HandoverMode; onStart: (data: StartData) => void; onLogout: () => void; onHome: () => void; busy?: boolean; error?: string | null };
 
 export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, error = null }: Props) {
   const [profile] = useProfile();
-  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "" });
-  const [taskDraft, setTaskDraft] = useState("");
+  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: mode === "leave" ? [emptyUnit("")] : [] });
+  const [step, setStep] = useState<1 | 2>(1);
+  const [drafts, setDrafts] = useState<Record<string, string>>({}); // 세부업무 입력칸에 적어 두고 아직 추가하지 않은 글
+  const [customUnits, setCustomUnits] = useState<string[]>([]); // '+ 추가하기'로 직접 넣은 단위 업무
+  const [customDraft, setCustomDraft] = useState<string | null>(null); // null 이면 직접 추가 입력칸을 닫아 둔다
   const [missing, setMissing] = useState<string[]>([]);
   const [leaveError, setLeaveError] = useState("");
+  // 직제규정 시행세칙(본부·부 → 팀 → 단위업무). 못 불러오면 null 로 두고 예전 보기 목록을 쓴다.
+  const [org, setOrg] = useState<OrgDuties["divisions"] | null>(null);
+  useEffect(() => {
+    api
+      .orgDuties()
+      .then((result) => setOrg(result.divisions.length ? result.divisions : null))
+      .catch(() => setOrg(null));
+  }, []);
   // 인수자(예정) 선택 목록: 프로필을 입력한 다른 계정. 문서에 적힐 이름일 뿐 바로 전달되지 않는다. 전달은 완성 문서 화면의 '인수자에게 전송하기'에서 한다(못 불러오면 비워 둔다).
   const [members, setMembers] = useState<Member[]>([]);
   useEffect(() => {
@@ -35,47 +90,202 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       .then((result) => setMembers(result.members.filter((member) => member.login_id !== profile.loginId)))
       .catch(() => setMembers([]));
   }, [profile.loginId]);
-  const update = (key: Exclude<keyof StartData, "mode">, value: string) => setData({ ...data, [key]: value });
+  const update = (key: "name" | "division" | "team" | "role" | "date" | "leaveStart" | "leaveEnd", value: string) => setData({ ...data, [key]: value });
   const pickSuccessor = (loginId: string) => {
     const member = members.find((m) => m.login_id === loginId);
     setData({ ...data, successorLoginId: member ? member.login_id : "", successor: member ? `${member.name} ${member.position}`.trim() : "" });
   };
-  const tasks = data.task.split("\n").filter(Boolean);
-  const addTask = () => {
-    const nextTask = taskDraft.trim();
-    if (!nextTask) return;
-    update("task", [...tasks, nextTask].join("\n"));
-    setTaskDraft("");
-  };
-  const removeTask = (index: number) => update("task", tasks.filter((_, taskIndex) => taskIndex !== index).join("\n"));
 
-  // 필수 항목(성명·본부·팀·담당 업무)이 비어 있으면 넘어가지 않는다. 입력칸에 적어 두고 Enter 를 안 누른 업무도 포함한다.
+  // 본부·팀 보기: 시행세칙의 본부, 고른 본부의 팀(본부가 목록에 없으면 모든 팀)
+  const division = org?.find((d) => d.name === data.division);
+  const divisionOptions = org ? org.map((d) => d.name) : DIVISIONS;
+  const teamOptions = org ? [...new Set((division ? [division] : org).flatMap((d) => d.teams.map((t) => t.name)))] : TEAMS;
+  const teamDuties = org ? ((division ? [division] : org).flatMap((d) => d.teams).find((t) => t.name === data.team)?.duties ?? []) : [];
+  const unitOptions = [...teamDuties, ...customUnits.filter((name) => !teamDuties.includes(name))];
+  const selected = new Set(data.units.map((unit) => unit.name));
+
+  // 본부를 바꾸면 그 본부에 없는 팀은 비우고, 팀이 바뀌면 그 팀 업무분장에서 고른 단위 업무는 비운다(직접 추가한 것은 둔다).
+  const pickDivision = (value: string) => {
+    const teams = org?.find((d) => d.name === value)?.teams.map((t) => t.name);
+    const team = teams && !teams.includes(data.team) ? "" : data.team;
+    setData({ ...data, division: value, team, units: team === data.team || mode === "leave" ? data.units : data.units.filter((unit) => customUnits.includes(unit.name)) });
+  };
+  const pickTeam = (value: string) => setData({ ...data, team: value, units: mode === "leave" ? data.units : data.units.filter((unit) => customUnits.includes(unit.name)) });
+
+  const toggleUnit = (name: string) =>
+    setData({ ...data, units: selected.has(name) ? data.units.filter((unit) => unit.name !== name) : [...data.units, emptyUnit(name)] });
+  const addCustomUnit = (): HandoverUnit[] => {
+    const name = (customDraft ?? "").trim();
+    if (!name) return data.units;
+    if (!unitOptions.includes(name)) setCustomUnits([...customUnits, name]);
+    const units = selected.has(name) ? data.units : [...data.units, emptyUnit(name)];
+    setData({ ...data, units });
+    setCustomDraft(null);
+    return units;
+  };
+
+  const setItems = (unitName: string, kind: Kind, items: string[]) =>
+    setData({ ...data, units: data.units.map((unit) => (unit.name === unitName ? { ...unit, [kind]: items } : unit)) });
+  const chipField = (unit: HandoverUnit, kind: Kind, placeholder: string) => (
+    <ChipField
+      key={kind}
+      label={KIND_LABEL[kind]}
+      items={unit[kind]}
+      draft={drafts[draftKey(unit.name, kind)] ?? ""}
+      placeholder={placeholder}
+      onDraft={(value) => setDrafts({ ...drafts, [draftKey(unit.name, kind)]: value })}
+      onChange={(items) => setItems(unit.name, kind, items)}
+    />
+  );
+  // 입력칸에 적어 두고 Enter 를 안 누른 세부업무도 포함한다.
+  const withDrafts = (units: HandoverUnit[]): HandoverUnit[] =>
+    units.map((unit) => {
+      const pending = (kind: Kind) => (drafts[draftKey(unit.name, kind)] ?? "").trim();
+      return { ...unit, regular: pending("regular") ? [...unit.regular, pending("regular")] : unit.regular, irregular: pending("irregular") ? [...unit.irregular, pending("irregular")] : unit.irregular };
+    });
+
+  const check = (fields: [boolean, string][]) => {
+    const empty = fields.filter(([isEmpty]) => isEmpty).map(([, label]) => label);
+    setMissing(empty);
+    return empty.length === 0;
+  };
+
+  // 인사발령 1단계 → 2단계: 성명·본부·팀과 단위 업무 1개 이상(입력칸에 적어 두고 '추가'를 안 누른 단위 업무도 포함)
+  const next = () => {
+    const units = customDraft?.trim() ? addCustomUnit() : data.units;
+    if (!check([[!data.name.trim(), "성명"], [!data.division, "본부"], [!data.team, "팀"], [!units.length, "단위 업무"]])) return;
+    setStep(2);
+  };
+
   const submit = () => {
     if (busy) return;
-    const pendingTask = taskDraft.trim();
-    const allTasks = pendingTask ? [...tasks, pendingTask] : tasks;
-    const next = { ...data, task: allTasks.join("\n") };
-    const empty = [
-      [!next.name.trim(), "성명"],
-      [!next.division, "본부"],
-      [!next.team, "팀"],
-      [!allTasks.length, "담당 업무"],
-      [mode === "leave" && (!next.leaveStart || !next.leaveEnd), "휴가 기간"],
-    ].filter(([isEmpty]) => isEmpty).map(([, label]) => label as string);
-    setMissing(empty);
-    if (empty.length) return;
-    if (mode === "leave" && next.leaveEnd < next.leaveStart) {
-      setLeaveError("휴가 종료일은 시작일보다 빠를 수 없어요.");
-      return;
+    const units = withDrafts(data.units);
+    const form = { ...data, units, task: dutiesText(units) };
+    if (mode === "leave") {
+      const detailCount = units.reduce((sum, unit) => sum + unit.regular.length + unit.irregular.length, 0);
+      if (!check([[!form.name.trim(), "성명"], [!form.division, "본부"], [!form.team, "팀"], [!detailCount, "세부업무"], [!form.leaveStart || !form.leaveEnd, "휴가 기간"]])) return;
+      if (form.leaveEnd < form.leaveStart) {
+        setLeaveError("휴가 종료일은 시작일보다 빠를 수 없어요.");
+        return;
+      }
+      setLeaveError("");
     }
-    setLeaveError("");
-    if (pendingTask) {
-      setData(next);
-      setTaskDraft("");
-    }
-    onStart(next);
+    setData(form);
+    setDrafts({});
+    onStart(form);
   };
 
+  const orgFields = (
+    <>
+      <label>성명 <i>*</i><input value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="이름을 입력하세요" /></label>
+      <div className="org-field-row">
+        <label>본부 <i>*</i>
+          <select value={data.division} onChange={(e) => pickDivision(e.target.value)}>
+            <option value="">본부 선택</option>
+            {withValue(divisionOptions, data.division).map((option) => <option key={option}>{option}</option>)}
+          </select>
+        </label>
+        <label>팀 <i>*</i>
+          <select value={data.team} onChange={(e) => pickTeam(e.target.value)}>
+            <option value="">팀 선택</option>
+            {withValue(teamOptions, data.team).map((option) => <option key={option}>{option}</option>)}
+          </select>
+        </label>
+      </div>
+      <label>직책
+        <select value={data.role} onChange={(e) => update("role", e.target.value)}>
+          <option value="">직책 선택</option>
+          {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </label>
+      <label>인수자 (예정)
+        <select value={data.successorLoginId} onChange={(e) => pickSuccessor(e.target.value)}>
+          <option value="">나중에 정할게요</option>
+          {members.map((member) => <option key={member.login_id} value={member.login_id}>{member.name} {member.position} · {member.team || member.department}</option>)}
+        </select>
+      </label>
+    </>
+  );
+
+  // 인사발령 1단계: 직제규정 시행세칙의 우리 팀 단위 업무를 고른다(여러 개). 목록에 없으면 직접 추가한다.
+  const unitPicker = (
+    <div className="wide-field unit-field">
+      <span className="unit-field-label">단위 업무 <i>*</i></span>
+      <p className="unit-field-help">
+        {!data.team ? "팀을 고르면 직제규정 시행세칙의 업무분장이 나와요." : teamDuties.length ? "직제규정 시행세칙의 우리 팀 업무분장이에요. 인계할 업무를 모두 골라 주세요." : "이 팀의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요."}
+      </p>
+      {unitOptions.length > 0 && (
+        <div className="unit-options">
+          {unitOptions.map((name) => (
+            <label className={`unit-option ${selected.has(name) ? "checked" : ""}`} key={name}>
+              <input type="checkbox" checked={selected.has(name)} onChange={() => toggleUnit(name)} />
+              <span>{name}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      {customDraft === null ? (
+        <button type="button" className="unit-add-button" onClick={() => setCustomDraft("")}>+ 추가하기</button>
+      ) : (
+        <div className="task-editor unit-add-editor">
+          <div className="task-input-row">
+            <input
+              autoFocus
+              value={customDraft}
+              onChange={(event) => setCustomDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  addCustomUnit();
+                } else if (event.key === "Escape") setCustomDraft(null);
+              }}
+              placeholder="단위 업무명을 입력하고 Enter를 눌러 추가하세요"
+              aria-label="직접 추가할 단위 업무명"
+            />
+            <button type="button" onClick={addCustomUnit}>추가</button>
+            <button type="button" className="unit-add-cancel" onClick={() => setCustomDraft(null)}>취소</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const leaveUnit = data.units[0] ?? emptyUnit("");
+  const leaveFields = (
+    <>
+      <div className="wide-field unit-field">
+        <span className="unit-field-label">담당 업무 <i>*</i></span>
+        <p className="unit-field-help">부재 중 처리해야 할 세부업무를 입력하고 Enter를 눌러 추가해 주세요.</p>
+        <div className="unit-detail-grid">
+          {chipField(leaveUnit, "regular", "예: 월말 정산 보고")}
+          {chipField(leaveUnit, "irregular", "예: 시스템 개선 프로젝트")}
+        </div>
+      </div>
+      <div className="wide-field leave-period-field">
+        <label>휴가 시작일 <i>*</i><input type="date" value={data.leaveStart} max={data.leaveEnd || undefined} onChange={(e) => update("leaveStart", e.target.value)} /></label>
+        <label>휴가 종료일 <i>*</i><input type="date" value={data.leaveEnd} min={data.leaveStart || undefined} onChange={(e) => update("leaveEnd", e.target.value)} /></label>
+      </div>
+    </>
+  );
+  const dateField = <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>;
+
+  // 인사발령 2단계: 고른 단위 업무마다 정기·비정기 세부업무(비워 둬도 된다)
+  const detailStep = (
+    <div className="unit-detail-list">
+      {data.units.map((unit, index) => (
+        <section className="unit-detail-card" key={unit.name}>
+          <h3><b>{index + 1}.</b> {unit.name}</h3>
+          <div className="unit-detail-grid">
+            {chipField(unit, "regular", "예: 월간 실적 보고")}
+            {chipField(unit, "irregular", "예: 홈페이지 리뉴얼")}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+
+  const detailMode = mode === "reassignment" && step === 2;
+  const errorMessage = error ?? (leaveError || null) ?? (missing.length ? `필수 항목을 입력해 주세요: ${missing.join(", ")}` : null);
   return (
     <div className={`onboarding-page ${mode === "leave" ? "leave-theme" : ""}`}>
       {mode === "leave" && <LeaveSeasideBackground />}
@@ -90,78 +300,43 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
         </div>
         <StepUserMenu onLogout={onLogout} onHome={onHome} />
       </header>
-      <main className="onboarding-main">
+      <main className="onboarding-main start-form-main">
         <section className="onboarding-card">
           <div className="onboarding-card-title">
-            <div>
-              <span>STEP 01 · 기본 정보 · {mode === "leave" ? "장기휴가" : "정기인사 발령"}</span>
-              <h2>인계 정보를 알려주세요</h2>
-              <p>AMIGO가 업무의 맥락을 이해하는 데 필요한 정보예요.</p>
-            </div>
-            <span className="required-note"><i /> 필수 입력</span>
-          </div>
-            <div className="field-grid">
-              <label>성명 <i>*</i><input value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="이름을 입력하세요" /></label>
-              <div className="org-field-row">
-                <label>본부 <i>*</i>
-                  <select value={data.division} onChange={(e) => update("division", e.target.value)}>
-                    <option value="">본부 선택</option>
-                    {withValue(DIVISIONS, data.division).map((option) => <option key={option}>{option}</option>)}
-                  </select>
-                </label>
-                <label>팀 <i>*</i>
-                  <select value={data.team} onChange={(e) => update("team", e.target.value)}>
-                    <option value="">팀 선택</option>
-                    {withValue(TEAMS, data.team).map((option) => <option key={option}>{option}</option>)}
-                  </select>
-                </label>
+            {detailMode ? (
+              <div>
+                <span>STEP 01 · 세부업무 · 정기인사 발령</span>
+                <h2>세부업무를 작성해 주세요</h2>
+                <p>없으면 비워 두셔도 됩니다. Enter를 누르면 하나씩 추가돼요.</p>
               </div>
-              <label>직책
-                <select value={data.role} onChange={(e) => update("role", e.target.value)}>
-                  <option value="">직책 선택</option>
-                  {withValue(ROLES, data.role).map((option) => <option key={option}>{option}</option>)}
-                </select>
-              </label>
-              <label>인수자 (예정)
-                <select value={data.successorLoginId} onChange={(e) => pickSuccessor(e.target.value)}>
-                  <option value="">나중에 정할게요</option>
-                  {members.map((member) => <option key={member.login_id} value={member.login_id}>{member.name} {member.position} · {member.team || member.department}</option>)}
-                </select>
-              </label>
-              <label className="wide-field task-field" onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.preventDefault(); }}>담당 업무 <i>*</i>
-                <div className="task-editor">
-                  <div className="task-list">
-                    {tasks.map((task, index) => (
-                      <span className="task-chip" key={`${task}-${index}`}>{task}<button onClick={() => removeTask(index)} aria-label={`${task} 삭제`}><Icon name="close" size={12} /></button></span>
-                    ))}
-                  </div>
-                  <div className="task-input-row">
-                    <input
-                      value={taskDraft}
-                      onChange={(event) => setTaskDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 무시한다
-                          event.preventDefault();
-                          addTask();
-                        }
-                      }}
-                      placeholder="업무를 입력하고 Enter를 눌러 추가하세요"
-                    />
-                    <button onClick={addTask}>추가</button>
-                  </div>
-                </div>
-              </label>
-              {mode === "leave" && (
-                <div className="wide-field leave-period-field">
-                  <label>휴가 시작일 <i>*</i><input type="date" value={data.leaveStart} max={data.leaveEnd || undefined} onChange={(e) => update("leaveStart", e.target.value)} /></label>
-                  <label>휴가 종료일 <i>*</i><input type="date" value={data.leaveEnd} min={data.leaveStart || undefined} onChange={(e) => update("leaveEnd", e.target.value)} /></label>
-                </div>
-              )}
-              <label className="wide-field date-field">인계 예정일<input type="date" value={data.date} onChange={(e) => update("date", e.target.value)} /></label>
-            </div>
-          <ErrorNote message={error ?? (leaveError || null) ?? (missing.length ? `필수 항목을 입력해 주세요: ${missing.join(", ")}` : null)} />
-          <div className="onboarding-actions">
-            <button className="primary-button onboarding-next" disabled={busy} onClick={submit}>{busy ? "작업을 만들고 있어요…" : "다음 단계로 이동"} <Icon name="arrow" size={18} /></button>
+            ) : (
+              <div>
+                <span>STEP 01 · 기본 정보 · {mode === "leave" ? "장기휴가" : "정기인사 발령"}</span>
+                <h2>인계 정보를 알려주세요</h2>
+                <p>AMIGO가 업무의 맥락을 이해하는 데 필요한 정보예요.</p>
+              </div>
+            )}
+            {!detailMode && <span className="required-note"><i /> 필수 입력</span>}
+          </div>
+          <div className="field-grid">
+            {detailMode ? detailStep : (
+              <>
+                {orgFields}
+                {mode === "leave" ? leaveFields : unitPicker}
+                {dateField}
+              </>
+            )}
+          </div>
+          <ErrorNote message={errorMessage} />
+          <div className="onboarding-actions start-form-actions">
+            {mode === "reassignment" && step === 1 ? (
+              <button className="primary-button onboarding-next" onClick={next}>다음 단계 <Icon name="arrow" size={18} /></button>
+            ) : (
+              <>
+                {detailMode && <button type="button" className="start-form-back" disabled={busy} onClick={() => { setMissing([]); setStep(1); }}>이전</button>}
+                <button className="primary-button onboarding-next" disabled={busy} onClick={submit}>{busy ? "작업을 만들고 있어요…" : "다음 단계로 이동"} <Icon name="arrow" size={18} /></button>
+              </>
+            )}
           </div>
         </section>
       </main>

@@ -2,6 +2,7 @@
 // 왼쪽 목록은 서버가 정한 순서와 상태를 보여 줄 뿐, 다른 질문으로 건너가는 기능은 서버에 없어 넣지 않았다.
 import { useEffect, useRef, useState } from "react";
 import { Brand } from "@/shared/Brand";
+import { PeriodPicker } from "@/screens/handover/PeriodPicker";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
@@ -72,6 +73,11 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   // 새 질문이 오면 보기를 닫고 지금 질문으로 돌아온다
   useEffect(() => setViewing(null), [asking?.id]);
   const suggestions = (lastAssistant?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정"));
+  // 지금 질문이 아직 답을 기다리는 상태(그 뒤에 확인 요청 등이 없을 때)에만 예/아니요·주기 선택을 보여 준다
+  const awaiting = !viewGap && asking && lastAssistant?.id === asking.id ? asking.meta : null;
+  const yesNo = awaiting?.choice === "yesno";
+  const aux = viewGap ? Boolean(viewGap.aux) : Boolean(asking?.meta.aux);
+  const auxNote = asking?.meta.aux_note || "꼭 답하지 않아도 돼요. 알고 계시면 적어 주세요.";
   const askedCount = Math.max(session.question_count, session.gaps.filter((g) => g.status !== "open").length);
   const total = askedCount + session.open_gap_count;
   const isLast = session.open_gap_count === 0;
@@ -143,7 +149,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
               const view = () => setViewing(state === "active" || viewing === item.id ? null : item.id);
               return (
                 <div
-                  className={`question-list-item ${state}${item.status === "skipped" ? " unmet" : ""} jumpable${viewing === item.id ? " viewing" : ""}`}
+                  className={`question-list-item ${state}${item.status === "skipped" && !item.aux ? " unmet" : ""} jumpable${viewing === item.id ? " viewing" : ""}`}
                   role="listitem"
                   key={item.id}
                   title="눌러서 이 질문과 지난 답변을 봅니다"
@@ -153,7 +159,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 >
                   <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : index + 1}</span>
                   {/* 장 이름은 쓰지 않는다. 건너뛴(답이 없어 아직 채워지지 않은) 질문만 표시하고 주황색으로 구분한다 */}
-                  <div>{item.status === "skipped" && <small>건너뜀</small>}<strong>{plain(item.question)}</strong></div>
+                  <div>{(item.status === "skipped" || item.aux) && <small>{[item.aux ? "보조질문" : "", item.status === "skipped" ? "건너뜀" : ""].filter(Boolean).join(" · ")}</small>}<strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
                     <button type="button" className="question-reopen" disabled={!canJump} onClick={(event) => { event.stopPropagation(); jump(); }} title="이 질문으로 돌아가 답을 고칩니다">
@@ -183,8 +189,11 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 <div><strong>AMIGO</strong><small>{viewGap ? (viewThread.length ? "지난 질문과 답변이에요" : "아직 답하지 않은 질문이에요") : "자료 분석을 바탕으로 질문드려요"}</small></div>
                 {category && <em>{category}</em>}
               </div>
-              <h2 style={{ whiteSpace: "pre-line" }}>{headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}</h2>
-              <p>{gap?.description ?? ""}</p>
+              <h2 style={{ whiteSpace: "pre-line" }}>
+                {aux && headline && <span className="question-aux-tag">보조질문</span>}
+                {headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}
+              </h2>
+              {aux && headline ? <p className="question-aux-note">{auxNote}</p> : <p>{gap?.description ?? ""}</p>}
             </section>
             {thread.length > 0 && (
               <div className="question-chat-thread" aria-live="polite">
@@ -203,9 +212,13 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
             {uploading && (
               <div className="question-chat-thread" role="status"><div className="question-chat-message ai"><span><Icon name="paperclip" size={12} /></span><p><span className="spinner" aria-hidden="true" />자료를 AMIGO에게 보내는 중이에요…</p></div></div>
             )}
-            <div className="answer-suggestions">
-              {!viewGap && suggestions.map((suggestion) => <button key={suggestion} disabled={waiting} onClick={() => submitAnswer(suggestion)}>{suggestion}</button>)}
-            </div>
+            {awaiting?.picker === "period" ? (
+              <PeriodPicker choices={awaiting.choices ?? []} disabled={waiting} onPick={(value) => submitAnswer(value)} />
+            ) : (
+              <div className={`answer-suggestions${yesNo ? " yes-no" : ""}`}>
+                {!viewGap && suggestions.map((suggestion) => <button key={suggestion} disabled={waiting} onClick={() => submitAnswer(suggestion)}>{suggestion}</button>)}
+              </div>
+            )}
           </div>
           <ErrorNote message={error ?? (failed ? session.error || "AI 처리 중 문제가 생겼어요. 다시 시도해 주세요." : null)} />
           {viewGap ? (
@@ -233,7 +246,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                   submitAnswer();
                 }
               }}
-              placeholder={failed ? "오류를 해결한 뒤 다시 시도해 주세요" : inQna ? "답변을 입력해 주세요" : "문서에 반영할 보충·수정 내용을 입력해 주세요"}
+              placeholder={failed ? "오류를 해결한 뒤 다시 시도해 주세요" : yesNo ? "예/아니요를 고르거나, 있으면 내용까지 바로 적어 주세요" : inQna ? "답변을 입력해 주세요" : "문서에 반영할 보충·수정 내용을 입력해 주세요"}
             />
             <div>
               <input ref={fileRef} type="file" multiple hidden onChange={(event) => { const files = Array.from(event.target.files ?? []); if (files.length) void uploadFiles(files); event.target.value = ""; }} />

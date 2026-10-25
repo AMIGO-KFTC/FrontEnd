@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./shared/api";
-import type { StartData } from "./shared/handover";
+import { dutiesText, unitTaskName, type StartData } from "./shared/handover";
 import type { AppConfig, IntegrationImportResult, SessionDetail, SessionSummary, Source } from "./shared/types";
 import { dataFromSession } from "./shared/restore";
 import { HOME, resolveStep, useHashRoute, type AdminSection, type Route, type StepScreen } from "./shared/router";
@@ -29,7 +29,7 @@ import type { HomeNav, SessionList } from "./screens/home/types";
 
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
-const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "" };
+const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: [] };
 const EXPIRED = "로그인이 만료됐어요. 다시 로그인해 주세요.";
 const WORKSPACE_KEY = "amigo-workspace"; // 팀장이 고른 작업 공간(일반 / 팀 관리). 탭을 닫거나 로그아웃하면 다시 고른다.
 
@@ -270,9 +270,11 @@ function AppScreens() {
         owner_name: form.name.trim(),
         organization: [form.division, form.team].filter(Boolean).join(" · "),
         position: form.role,
-        duties: form.task,
+        // 단위업무·세부업무는 units 로 보내고, 예전 필드(duties·task_name)에도 읽기 쉬운 글로 풀어 넣는다(서버 길이 제한에 맞춰 자른다)
+        duties: (form.units.length ? dutiesText(form.units) : form.task).slice(0, 8000),
         mode: form.mode,
-        task_name: form.task.split(/\r?\n/).filter(Boolean)[0] ?? "",
+        task_name: (form.units.length ? unitTaskName(form.mode, form.units) : form.task.split(/\r?\n/).filter(Boolean)[0] ?? "").slice(0, 200),
+        units: form.units,
         successor: form.successor,
         successor_login_id: form.successorLoginId,
         handover_date: form.date,
