@@ -1,4 +1,4 @@
-// 완성 문서 목록. 서버 세션 중 문서가 만들어진 작업을 보여 주고, 문서 열기는 문서 화면으로, PDF 는 다운로드 API 로 연결한다.
+// 내가 작성한 문서 목록(사이드바 '내가 작성한 문서'). 서버 세션 중 문서가 만들어진 작업을 보여 주고, 문서 열기는 문서 화면으로, PDF 는 다운로드 API 로 연결한다.
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
@@ -42,12 +42,12 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
       <AppSidebar active="documents" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} onCalendar={onCalendar} onMaterials={onMaterials} />
       <main className="completed-documents-main">
         <header className="dashboard-header">
-          <div><strong>완성 문서</strong></div>
+          <div><strong>내가 작성한 문서</strong></div>
         </header>
         <div className="completed-documents-content">
           <section className="documents-title">
-            <div><h1>완성된 인수인계 문서</h1><p>AMIGO가 근거 자료와 답변을 바탕으로 완성한 문서를 확인하세요.</p></div>
-            <div><strong>{documents ? documents.length : "—"}</strong><small>완성 문서</small></div>
+            <div><h1>내가 작성한 문서</h1><p>내가 인계자로 작성해 완성한 인수인계서를 확인하세요.</p></div>
+            <div><strong>{documents ? documents.length : "—"}</strong><small>작성한 문서</small></div>
           </section>
           {list.error && <div className="list-notice error" role="alert">문서 목록을 불러오지 못했어요: {list.error}<button onClick={list.reload}>다시 시도</button></div>}
           {documents && documents.length === 0 && !list.error && <div className="list-notice">완성된 문서가 아직 없어요.{"\n"}질의응답을 마치고 문서를 생성하면 여기에 모입니다.</div>}
