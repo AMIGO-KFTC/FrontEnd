@@ -3336,6 +3336,69 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .question-view-actions .answer-cancel { padding: 0 14px; border: 1px solid #ddd6e2; background: #fff; color: #6b6370; }
 .question-view-actions .answer-send:disabled { opacity: .5; cursor: default; }
 
+/* ===== 인계자 정보(StartScreen): 단위 업무 고르기 · 세부업무(정기·비정기) 입력 — 시작 ===== */
+/* 단위 업무 목록·세부업무 카드가 길어지면 카드 안에서 세로로 스크롤한다(가운데 정렬은 넘치지 않을 때만) */
+.onboarding-main.start-form-main { align-items: safe center; overflow-y: auto; scrollbar-width: thin; }
+.onboarding-card .unit-field { margin-bottom: 10px; }
+.unit-field-label { display: block; color: #5b555e; font-size: 12.5px; font-weight: 700; }
+.unit-field-label i { color: #7958d5; font-style: normal; }
+.unit-field-help { margin: 4px 0 0; color: #98919b; font-size: 12px; line-height: 1.5; }
+.unit-options { margin-top: 7px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.onboarding-card .field-grid .unit-option { margin: 0; min-height: 34px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #e3dee4; border-radius: 8px; background: #fff; color: #4a4450; font-size: 12.5px; font-weight: 600; line-height: 1.35; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.onboarding-card .field-grid .unit-option:hover { border-color: #c9bdee; }
+.onboarding-card .field-grid .unit-option.checked { border-color: #9179dc; background: #f6f3ff; color: #4f3aa6; }
+.onboarding-card .field-grid .unit-option input { flex: none; width: 15px; height: 15px; margin: 0; padding: 0; border: 0; box-shadow: none; accent-color: #6d4dca; cursor: pointer; }
+.onboarding-card .field-grid .unit-option span { min-width: 0; overflow-wrap: anywhere; }
+.unit-add-button { margin-top: 7px; height: 30px; padding: 0 11px; border: 1px dashed #c9bdee; border-radius: 7px; background: transparent; color: #664bc3; font-size: 12px; font-weight: 700; cursor: pointer; }
+.unit-add-button:hover { background: #f6f3ff; }
+.unit-add-editor { margin-top: 7px; }
+.unit-add-editor .task-input-row { margin-top: 0; }
+.task-input-row > button.unit-add-cancel { background: transparent; color: #8e878f; }
+.unit-detail-grid { margin-top: 6px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.unit-detail-grid .task-field { margin-bottom: 8px; }
+.unit-detail-list { display: grid; gap: 10px; margin-bottom: 10px; }
+.unit-detail-card { padding: 12px 13px 4px; border: 1px solid #e8e3ea; border-radius: 10px; background: #fdfcff; }
+.unit-detail-card h3 { margin: 0; color: #2f2a33; font-size: 13.5px; font-weight: 800; overflow-wrap: anywhere; }
+.unit-detail-card h3 b { color: #7958d5; }
+.start-form-actions { gap: 8px; }
+.start-form-back { height: 38px; padding: 0 15px; border: 1px solid #ddd6e2; border-radius: 8px; background: #fff; color: #6b6370; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.start-form-back:hover { background: #f7f5f9; }
+.leave-theme .unit-field-label i { color: var(--leave-deep-pink); }
+/* 장기휴가 테마의 입력칸 테두리가 칩 입력칸 안쪽에도 겹쳐 그려지지 않게 한다(테두리는 바깥 .task-editor 에만) */
+.leave-theme .onboarding-card .field-grid .task-input-row input,
+.leave-theme .onboarding-card .field-grid .task-input-row input:focus { border: 0; background: transparent; box-shadow: none; }
+.unit-options { max-height: 228px; overflow-y: auto; scrollbar-width: thin; } /* 단위 업무가 많아도 카드가 넘치지 않게 목록 안에서 스크롤 */
+.onboarding-card .field-grid .unit-search { margin-top: 7px; border: 1px solid #e3dee4; border-radius: 8px; background: #fff; }
+@media (max-width: 540px) { .unit-options { grid-template-columns: minmax(0, 1fr); } }
+/* ===== 인계자 정보(StartScreen): 단위 업무 고르기 · 세부업무 입력 — 끝 ===== */
+/* ===== 질의응답(QuestionScreen): 보조질문 태그 · 예/아니요 · 수행 시기 선택(주기 / 달력 기간) ===== */
+.question-aux-tag { display: inline-block; margin-right: 8px; padding: 3px 8px; border-radius: 10px; background: #e3f4ea; color: #2f7a4c; font-size: 12px; font-weight: 700; vertical-align: 3px; }
+.question-aux-note { color: #5f8a6f; }
+.answer-suggestions.yes-no { gap: 8px; }
+.answer-suggestions.yes-no button { height: 36px; min-width: 88px; padding: 0 18px; border-radius: 18px; font-size: 15px; font-weight: 700; }
+.period-picker { margin: 11px 0; display: grid; gap: 10px; }
+.period-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.period-choices button { height: 36px; padding: 0 16px; border: 1px solid #ddd6e5; border-radius: 18px; background: #fff; color: #675e6d; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.period-choices button:hover, .period-choices button.active { border-color: #a995dc; color: #674abf; background: #faf8ff; }
+.period-range { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 12px; border: 1px solid #e6e0ee; border-radius: 12px; background: #fcfbfe; }
+.period-range label { display: grid; gap: 4px; font-size: 13px; color: #7d7484; }
+.period-range input { height: 36px; padding: 0 10px; border: 1px solid #ddd6e5; border-radius: 8px; font-size: 15px; color: #3b3440; background: #fff; }
+.period-range-sep { padding-bottom: 8px; color: #9f97a2; }
+.period-range .answer-send { height: 36px; }
+.period-range-error { flex-basis: 100%; color: #c0392b; font-size: 13px; }
+.leave-theme .period-choices button { border-color: #efb4ca; color: #b94375; }
+.leave-theme .question-aux-tag { background: #fde7ef; color: #b94375; }
+@media (max-width: 540px) { .period-range { align-items: stretch; flex-direction: column; } .period-range-sep { display: none; } }
+/* ===== 질의응답: 보조질문 · 예/아니요 · 수행 시기 선택 — 끝 ===== */
+/* ===== 인수인계서 직접 수정하기: 표 행 추가·삭제 단추 ===== */
+.final-paper.is-editing td { position: relative; }
+.final-paper.is-editing td:has(> .row-tools), .final-paper.is-editing td:has(> * > .row-tools) { padding-right: 50px; }
+.row-tools { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); display: inline-flex; gap: 3px; user-select: none; } /* 행 마지막 칸의 오른쪽 끝 */
+.row-tools button { width: 18px; height: 18px; padding: 0; border: 1px solid #d9d1e6; border-radius: 50%; background: #fff; color: #7c6aa8; font-size: 12px; line-height: 16px; cursor: pointer; }
+.row-tools button:hover { border-color: #8f74d6; background: #f3effc; color: #5b3fb8; }
+.row-tools button[aria-label="행 삭제"]:hover { border-color: #e2a0a0; background: #fdf1f1; color: #c0392b; }
+@media print { .row-tools { display: none; } }
+/* ===== 표 행 추가·삭제 단추 — 끝 ===== */
 /* 캘린더 · 할 일(#/home/calendar) */
 .calendar-page { height: 100vh; min-height: 0; overflow: hidden; background: #f7f5f3; }
 .calendar-page-main { min-width: 0; height: 100vh; overflow: hidden; background: radial-gradient(circle at 92% 7%, rgba(111,82,205,.08), transparent 28%), #f7f5f3; }

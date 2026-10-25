@@ -18,7 +18,7 @@ import { MermaidDiagram } from "@/shared/MermaidDiagram";
 import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
 import { CitationContext, CitationRef } from "@/shared/CitationRef";
 import { EditableCell, EditCellsContext } from "@/shared/EditableCell";
-import { applyCellEdits, cellText, findCells, markCells } from "@/shared/editableCells";
+import { addRowAfter, applyCellEdits, cellText, deleteRow, findCells, findRows, markCells } from "@/shared/editableCells";
 
 type Props = {
   data: StartData;
@@ -79,6 +79,9 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({}); // 직접 고치는 중인 장 본문(장 번호 → 글). 표가 없는 장
+  // 표의 행을 더하거나 뺀 장의 본문(장 번호 → 글). 칸 번호가 바뀌므로 행을 바꿀 때마다 그때까지 고친 칸을 본문에 먼저 넣고 칸 입력을 새로 그린다(rowVersion)
+  const [rowBodies, setRowBodies] = useState<Record<string, string>>({});
+  const [rowVersion, setRowVersion] = useState(0);
   // 표가 있는 장은 칸마다 그 자리에서 고친다(장 번호 → 칸 번호 → 고친 글). 입력할 때마다 다시 그리지 않도록 ref 에 모은다.
   const cellDrafts = useRef<Record<string, Record<number, string>>>({});
   const [saveError, setSaveError] = useState("");
@@ -170,15 +173,16 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const sections = visible.map((section) => section.title);
   // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
   const finishEditing = async () => {
-    const edited: Record<string, string> = { ...drafts };
+    const edited: Record<string, string> = { ...drafts, ...rowBodies };
     for (const [index, edits] of Object.entries(cellDrafts.current)) {
-      const body = parsed[Number(index)]?.body;
+      const body = rowBodies[index] ?? parsed[Number(index)]?.body;
       if (body !== undefined) edited[index] = applyCellEdits(body, edits);
     }
     const changed = Object.fromEntries(Object.entries(edited).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
     if (Object.keys(changed).length === 0) {
       setIsEditing(false);
       setDrafts({});
+      setRowBodies({});
       cellDrafts.current = {};
       return;
     }
@@ -189,6 +193,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
       setSaveState("saved");
       setIsEditing(false);
       setDrafts({});
+      setRowBodies({});
       cellDrafts.current = {};
     } catch (e) {
       setSaveState("failed");
@@ -198,9 +203,18 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const cancelEditing = () => {
     setIsEditing(false);
     setDrafts({});
+    setRowBodies({});
     cellDrafts.current = {};
     setSaveError("");
     setSaveState("");
+  };
+  // 표의 행 더하기·빼기: 고친 칸을 먼저 본문에 넣은 뒤 행을 바꾼다
+  const editRow = (original: number, op: "add" | "delete", row: number) => {
+    const key = String(original);
+    const base = applyCellEdits(rowBodies[key] ?? parsed[original]?.body ?? "", cellDrafts.current[key] ?? {});
+    delete cellDrafts.current[key];
+    setRowBodies({ ...rowBodies, [key]: op === "add" ? addRowAfter(base, row) : deleteRow(base, row) });
+    setRowVersion((version) => version + 1);
   };
   const goTo = (index: number) => {
     setActiveSection(index);
@@ -361,15 +375,17 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             {loading && parsed.length === 0 && failedMessage === null && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
             {visible.map(({ index: original, ...section }, index) => {
               // 수정 중이면 표 칸·항목 이름을 입력칸으로 그린다. 고칠 칸이 없는(표가 없는) 장은 글 상자로 고친다.
-              const cells = isEditing ? findCells(section.body) : [];
+              const body = (isEditing && rowBodies[String(original)]) || section.body;
+              const cells = isEditing ? findCells(body) : [];
+              const rows = isEditing ? findRows(body) : [];
               const editCells = {
-                text: (id: number) => (cells[id] ? cellText(cells[id]) : ""),
+                text: (id: number) => cellDrafts.current[String(original)]?.[id] ?? (cells[id] ? cellText(cells[id]) : ""),
                 onChange: (id: number, text: string) => {
                   cellDrafts.current[String(original)] = { ...(cellDrafts.current[String(original)] ?? {}), [id]: text };
                 },
               };
               return (
-              <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${original}`}>
+              <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${original}-${isEditing ? rowVersion : 0}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
                 {isEditing && cells.length === 0 ? (
                   <textarea
@@ -389,6 +405,15 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                     table: GanttAwareTable,
                     span: ({ node, children, ...rest }) => {
                       const id = node?.properties?.dataCell;
+                      const row = node?.properties?.dataRow;
+                      if (isEditing && row !== undefined) {
+                        return (
+                          <span className="row-tools" contentEditable={false}>
+                            <button type="button" title="이 행 아래에 빈 행 추가" aria-label="행 추가" onClick={() => editRow(original, "add", Number(row))}>+</button>
+                            <button type="button" title="이 행 삭제" aria-label="행 삭제" onClick={() => editRow(original, "delete", Number(row))}>×</button>
+                          </span>
+                        );
+                      }
                       return isEditing && id !== undefined ? <EditableCell id={Number(id)} /> : <span {...rest}>{children}</span>;
                     },
                     sup: ({ node, children, ...rest }) => {
@@ -399,7 +424,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                     code: ({ className, children }) =>
                       /language-mermaid/.test(className ?? "") ? <MermaidDiagram code={String(children).trimEnd()} /> : <pre><code className={className}>{children}</code></pre>,
                   }}
-                >{isEditing ? markCells(section.body, cells) : section.body}</ReactMarkdown>
+                >{isEditing ? markCells(body, cells, rows) : section.body}</ReactMarkdown>
                 </EditCellsContext.Provider>
                 )}
               </section>
