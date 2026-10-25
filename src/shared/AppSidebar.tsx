@@ -5,9 +5,12 @@ import { Brand } from "@/shared/Brand";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { RANKS, useProfile } from "@/shared/profile";
+import { useProfile } from "@/shared/profile";
 import { ongoingSessions, recentSessions, sessionTitle, sessionTone } from "@/shared/sessions";
 import type { SessionSummary } from "@/shared/types";
+import { useCapsLock } from "@/shared/useCapsLock";
+
+const EMPTY_PASSWORDS = { current: "", next: "", confirm: "" };
 
 export function AppSidebar({
   active = "home",
@@ -41,29 +44,56 @@ export function AppSidebar({
   const [profileDraft, setProfileDraft] = useState(profile);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileNotice, setProfileNotice] = useState<string | null>(null);
+  const [passwords, setPasswords] = useState(EMPTY_PASSWORDS);
+  const caps = useCapsLock();
   const profilePhotoRef = useRef<HTMLInputElement>(null);
   const ongoingCount = sessions ? ongoingSessions(sessions).length : null;
   const recent = sessions ? recentSessions(sessions, 2) : [];
   const openProfileEdit = () => {
     setProfileDraft(profile);
     setProfileError(null);
+    setProfileNotice(null);
+    setPasswords(EMPTY_PASSWORDS);
     setProfileOpen(false);
     setProfileEditOpen(true);
   };
-  // 이름·사번·소속·팀·직책은 서버(PUT /api/profile)에 저장한다. 사진은 서버에 자리가 없어 이 브라우저에서만 쓴다.
+  // 이름·사번·소속·팀·직책은 인사 정보라 여기서 바꾸지 않는다(읽기 전용). 사진은 서버에 자리가 없어 이 브라우저에서만 쓰고,
+  // 비밀번호 칸을 채웠으면 PUT /api/me/password 로 바꾼다(지금 쓰는 기기를 뺀 다른 기기의 로그인은 끊긴다).
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
-    const draft = { ...profileDraft, name: profileDraft.name.trim(), division: profileDraft.division.trim(), team: profileDraft.team.trim(), role: profileDraft.role.trim() };
-    if (!draft.name || !draft.division || !draft.role) {
-      setProfileError("이름, 소속, 직책은 비워 둘 수 없어요.");
+    const changingPassword = Boolean(passwords.current || passwords.next || passwords.confirm);
+    if (changingPassword) {
+      if (!passwords.current || !passwords.next || !passwords.confirm) {
+        setProfileError("비밀번호를 바꾸려면 지금 비밀번호, 새 비밀번호, 새 비밀번호 확인을 모두 입력해 주세요.");
+        return;
+      }
+      if (passwords.next.length < 8) {
+        setProfileError("새 비밀번호는 8자 이상이어야 해요.");
+        return;
+      }
+      if (passwords.next !== passwords.confirm) {
+        setProfileError("새 비밀번호와 확인이 서로 달라요.");
+        return;
+      }
+      if (passwords.next === passwords.current) {
+        setProfileError("지금과 다른 비밀번호를 입력해 주세요.");
+        return;
+      }
+    }
+    setProfileError(null);
+    setProfileNotice(null);
+    if (!changingPassword) {
+      setProfile({ ...profile, photo: profileDraft.photo });
+      setProfileEditOpen(false);
       return;
     }
     setProfileSaving(true);
-    setProfileError(null);
     try {
-      const result = await api.saveProfile({ name: draft.name, department: draft.division, team: draft.team, position: draft.role }); // 사번은 바꿀 수 없어서 보내지 않는다
-      setProfile({ ...draft, employeeId: result.profile.employee_no ?? draft.employeeId, name: result.profile.name, division: result.profile.department, team: result.profile.team, role: result.profile.position });
-      setProfileEditOpen(false);
+      const result = await api.changePassword(passwords.current, passwords.next);
+      setProfile({ ...profile, photo: profileDraft.photo });
+      setPasswords(EMPTY_PASSWORDS);
+      setProfileNotice(result.message || "비밀번호를 바꿨어요.");
     } catch (e) {
       setProfileError((e as Error).message);
     } finally {
@@ -137,19 +167,29 @@ export function AppSidebar({
               <button type="button" onClick={() => profilePhotoRef.current?.click()}>사진 변경</button>
               <input ref={profilePhotoRef} type="file" accept="image/png,image/jpeg" onChange={(event) => changeProfilePhoto(event.target.files?.[0])} />
             </div>
-            <label>이름<input value={profileDraft.name} onChange={(event) => setProfileDraft({ ...profileDraft, name: event.target.value })} /></label>
-            <label>사번<input value={profileDraft.employeeId} readOnly placeholder="미등록" title="사번은 바꿀 수 없어요." /></label>
-            <label>소속<input value={profileDraft.division} onChange={(event) => setProfileDraft({ ...profileDraft, division: event.target.value })} /></label>
-            <label>팀<input value={profileDraft.team} onChange={(event) => setProfileDraft({ ...profileDraft, team: event.target.value })} /></label>
-            <label className="profile-role-field">직책
-              <select value={profileDraft.role} onChange={(event) => setProfileDraft({ ...profileDraft, role: event.target.value })}>
-                <option value="">직책 선택</option>
-                {(profileDraft.role && !RANKS.includes(profileDraft.role) ? [profileDraft.role, ...RANKS] : RANKS).map((rank) => <option key={rank}>{rank}</option>)}
-              </select>
-            </label>
+            <label>이름<input value={profile.name} readOnly /></label>
+            <label>사번<input value={profile.employeeId} readOnly placeholder="미등록" /></label>
+            <label>소속<input value={profile.division} readOnly placeholder="미등록" /></label>
+            <label>팀<input value={profile.team} readOnly placeholder="미등록" /></label>
+            <label className="profile-role-field">직책<input value={profile.role} readOnly placeholder="미등록" /></label>
+            <p className="profile-edit-readonly-note">이름·사번·소속·팀·직책은 인사 정보라 바꿀 수 없어요.</p>
+            <div className="profile-password-section">
+              <strong>비밀번호 변경<small>바꾸지 않으려면 비워 두세요.</small></strong>
+              <label className="profile-password-current">지금 비밀번호
+                <input type="password" autoComplete="current-password" value={passwords.current} onChange={(event) => setPasswords({ ...passwords, current: event.target.value })} {...caps.handlers} />
+              </label>
+              <label>새 비밀번호
+                <input type="password" autoComplete="new-password" placeholder="8자 이상" value={passwords.next} onChange={(event) => setPasswords({ ...passwords, next: event.target.value })} {...caps.handlers} />
+              </label>
+              <label>새 비밀번호 확인
+                <input type="password" autoComplete="new-password" value={passwords.confirm} onChange={(event) => setPasswords({ ...passwords, confirm: event.target.value })} {...caps.handlers} />
+              </label>
+              {caps.capsLock && <p className="profile-password-caps">Caps Lock 이 켜져 있어요.</p>}
+            </div>
             {profileError && <p className="profile-edit-error" role="alert">{profileError}</p>}
+            {profileNotice && <p className="profile-edit-success" role="status">{profileNotice}</p>}
             <div className="profile-edit-actions">
-              <button type="button" onClick={() => setProfileEditOpen(false)} disabled={profileSaving}>취소</button>
+              <button type="button" onClick={() => setProfileEditOpen(false)} disabled={profileSaving}>{profileNotice ? "닫기" : "취소"}</button>
               <button type="submit" disabled={profileSaving}>{profileSaving ? "저장 중…" : "변경사항 저장"}</button>
             </div>
           </form>

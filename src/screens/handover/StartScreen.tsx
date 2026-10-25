@@ -63,6 +63,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   const [drafts, setDrafts] = useState<Record<string, string>>({}); // 세부업무 입력칸에 적어 두고 아직 추가하지 않은 글
   const [customUnits, setCustomUnits] = useState<string[]>([]); // '+ 추가하기'로 직접 넣은 단위 업무
   const [customDraft, setCustomDraft] = useState<string | null>(null); // null 이면 직접 추가 입력칸을 닫아 둔다
+  const [unitQuery, setUnitQuery] = useState(""); // 단위 업무가 많을 때 목록 검색어
   const [missing, setMissing] = useState<string[]>([]);
   const [leaveError, setLeaveError] = useState("");
   // 직제규정 시행세칙(본부·부 → 팀 → 단위업무). 못 불러오면 null 로 두고 예전 보기 목록을 쓴다.
@@ -89,6 +90,8 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   const teamDuties = [...new Set([...orgDuties, ...managerDuties])];
   const unitOptions = [...teamDuties, ...customUnits.filter((name) => !teamDuties.includes(name))];
   const selected = new Set(data.units.map((unit) => unit.name));
+  const unitKeyword = unitQuery.trim().toLowerCase();
+  const shownUnits = unitOptions.filter((name) => !unitKeyword || name.toLowerCase().includes(unitKeyword) || selected.has(name)); // 고른 업무는 검색어와 상관없이 보인다
 
   const toggleUnit = (name: string) =>
     setData({ ...data, units: selected.has(name) ? data.units.filter((unit) => unit.name !== name) : [...data.units, emptyUnit(name)] });
@@ -164,9 +167,17 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
             ? `직제규정 시행세칙의 ${profile.team || "우리 팀"} 업무분장${managerDuties.some((name) => !orgDuties.includes(name)) ? "과 팀장이 추가한 업무" : ""}예요. 인계할 업무를 모두 골라 주세요.`
             : `${profile.team || "우리 팀"}의 업무분장을 찾지 못했어요. 아래 '+ 추가하기'로 단위 업무를 직접 넣어 주세요.`}
       </p>
-      {unitOptions.length > 0 && (
+      {unitOptions.length > 6 && (
+        <label className="team-duty-search unit-search">
+          <Icon name="search" size={13} />
+          <input value={unitQuery} onChange={(event) => setUnitQuery(event.target.value)} placeholder={`단위 업무 ${unitOptions.length}개에서 검색`} aria-label="단위 업무 검색" />
+          {unitQuery && <button type="button" onClick={() => setUnitQuery("")} aria-label="검색어 지우기"><Icon name="close" size={11} /></button>}
+        </label>
+      )}
+      {unitOptions.length > 0 && shownUnits.length === 0 && <p className="team-duty-picker-none">‘{unitQuery.trim()}’에 맞는 단위 업무가 없어요. 아래 '+ 추가하기'로 직접 넣어 주세요.</p>}
+      {shownUnits.length > 0 && (
         <div className="unit-options">
-          {unitOptions.map((name) => (
+          {shownUnits.map((name) => (
             <label className={`unit-option ${selected.has(name) ? "checked" : ""}`} key={name}>
               <input type="checkbox" checked={selected.has(name)} onChange={() => toggleUnit(name)} />
               <span>{name}</span>
