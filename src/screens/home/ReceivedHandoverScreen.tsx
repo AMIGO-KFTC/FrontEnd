@@ -119,7 +119,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
             </div>
           )}
           {handovers && handovers.length === 0 && !error && (
-            <div className="list-notice">{view === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요.\n인계자가 완성 문서 화면에서 보내면 여기에 나타납니다."}</div>
+            <div className="list-notice">{view === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요.\n인계자가 작성한 문서를 보내면 여기에 나타납니다."}</div>
           )}
           {handovers && handovers.length > 0 && (
             <section className="received-layout">

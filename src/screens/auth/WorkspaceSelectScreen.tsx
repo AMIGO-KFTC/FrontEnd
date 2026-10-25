@@ -34,7 +34,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
                 <h2>인수인계 작성</h2>
                 <p>내 업무를 다음 담당자에게 전달하거나,<br />전달받은 인수인계를 확인합니다.</p>
               </div>
-              <ul><li>새 인수인계 시작 · 이어서 작성</li><li>완성 문서 확인</li><li>받은 인수인계 열람</li></ul>
+              <ul><li>새 인수인계 시작 · 이어서 작성</li><li>내가 작성한 문서 확인</li><li>받은 인수인계 열람</li></ul>
               <strong>일반 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
             <button className="handover-type-card leave" onClick={() => onSelect("admin")}>
