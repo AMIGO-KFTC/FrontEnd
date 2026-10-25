@@ -408,12 +408,28 @@ export interface TeamGuidelineItem {
   instruction: string;
 }
 
+export interface TeamGlossaryTerm {
+  term: string;
+  meaning: string;
+}
+
+export interface TeamDocument {
+  id: string;
+  name: string;
+  size: number;
+  uploaded_by: string;
+  uploaded_at: string | null;
+}
+
 export interface TeamGuidelines {
   message: string;
   organization: string;
   items: TeamGuidelineItem[];
-  notes: string;
+  notes: string; // STEP4 기타 중요 포인트
   prompt: string;
+  intro: string; // STEP1 팀 소개
+  glossary: TeamGlossaryTerm[]; // STEP2 업무 용어집
+  documents: TeamDocument[]; // STEP3 팀 업무 문서
   updated_at: string | null;
   updated_by: string;
   editable: boolean;

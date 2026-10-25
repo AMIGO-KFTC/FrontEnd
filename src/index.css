@@ -2931,6 +2931,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .question-list-item.done:hover { border-color: #dceae3; background: #f9fcfa; }
 .question-list-item.unmet:hover { border-color: #f0dcb0; background: #fffaf0; }
 .question-list-item.done > span svg { width: 12px; height: 12px; }
+.question-list-item.aux > span { font-size: 10.5px; letter-spacing: -.02em; } /* 보조질문 번호(4-1)는 두 자리 번호라 글자를 줄인다 */
 .question-list-empty { padding: 12px 8px; border: 1px dashed #e3dde7; border-radius: 9px; color: #9a929d; font-size: 14.5px; line-height: 1.5; text-align: center; }
 .question-chat-message p { white-space: pre-line; }
 .answer-suggestions button:disabled { opacity: .55; cursor: default; }
@@ -3375,6 +3376,18 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .unit-options { max-height: 228px; overflow-y: auto; scrollbar-width: thin; } /* 단위 업무가 많아도 카드가 넘치지 않게 목록 안에서 스크롤 */
 .onboarding-card .field-grid .unit-search { margin-top: 7px; border: 1px solid #e3dee4; border-radius: 8px; background: #fff; }
 @media (max-width: 540px) { .unit-options { grid-template-columns: minmax(0, 1fr); } }
+/* (?) 도움말: hover·focus 때 말풍선이 라벨 아래로 펼쳐진다 */
+.help-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 4px; outline: none; }
+.help-tip-mark { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9bdee; border-radius: 50%; background: #f6f3ff; color: #664bc3; font-size: 11px; font-weight: 800; line-height: 1; cursor: help; }
+.help-tip:hover .help-tip-mark, .help-tip:focus .help-tip-mark { background: #7958d5; border-color: #7958d5; color: #fff; }
+.help-tip-pop { position: absolute; z-index: 30; top: calc(100% + 8px); left: -8px; width: 300px; max-width: calc(100vw - 48px); padding: 11px 13px; border: 1px solid #e3dee4; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(60, 40, 110, .16); color: #4a4450; font-size: 12px; font-weight: 500; line-height: 1.55; text-align: left; white-space: normal; opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .12s ease, transform .12s ease, visibility .12s; pointer-events: none; }
+.help-tip:hover .help-tip-pop, .help-tip:focus .help-tip-pop, .help-tip:focus-within .help-tip-pop { opacity: 1; visibility: visible; transform: translateY(0); }
+.help-tip-pop strong { display: block; margin-bottom: 3px; color: #2f2a33; font-size: 12.5px; font-weight: 800; }
+.help-tip-pop p { margin: 0 0 6px; }
+.help-tip-pop p:last-child { margin-bottom: 0; }
+.help-tip-pop em { display: block; margin-top: 2px; color: #7a7380; font-style: normal; }
+.help-tip-pop .help-tip-guide { padding-top: 6px; border-top: 1px dashed #e3dee4; color: #664bc3; font-weight: 700; }
+.unit-detail-card h3 .help-tip { margin-left: 6px; }
 /* ===== 인계자 정보(StartScreen): 단위 업무 고르기 · 세부업무 입력 — 끝 ===== */
 /* ===== 질의응답(QuestionScreen): 보조질문 태그 · 예/아니요 · 수행 시기 선택(주기 / 달력 기간) ===== */
 .question-aux-tag { display: inline-block; margin-right: 8px; padding: 3px 8px; border-radius: 10px; background: #e3f4ea; color: #2f7a4c; font-size: 12px; font-weight: 700; vertical-align: 3px; }
@@ -3992,3 +4005,41 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .schedule-check.done .schedule-check-text > span { text-decoration: line-through; }
 .schedule-memo { margin: 0 0 6px 17px; padding: 5px 8px; border-radius: 7px; background: #f6f2ff; color: #5a5260; font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
 
+
+/* ===== 내가 작성한 문서(CompletedDocumentsScreen): 고정 높이(430px·105px 행) 대신 flex 로 남은 높이를 쓴다 =====
+   문서가 많거나 화면이 낮으면 예전에는 목록·미리보기가 잘려 안 보였다. 이제 목록·미리보기 본문이 각자 안에서 스크롤한다. */
+.completed-documents-content { display: flex; flex-direction: column; gap: 13px; }
+.completed-documents-content > .documents-title,
+.completed-documents-content > .list-notice { flex: none; }
+.completed-documents-content > .documents-layout { flex: 1 1 0; min-height: 0; height: auto; display: flex; align-items: stretch; align-self: flex-start; gap: 12px; }
+.documents-layout > .documents-list { flex: 0 0 clamp(240px, 32%, 300px); min-width: 0; height: auto; align-self: flex-start; max-height: 100%; overflow-y: auto; scrollbar-width: thin; }
+.documents-layout > .document-preview-card { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.document-preview-card > header, .document-preview-card > .document-preview-meta, .document-preview-card > footer { flex: none; }
+.document-preview-card > .document-preview-paper { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.document-preview-card > footer { flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .completed-documents-content > .documents-layout { flex-direction: column; overflow-y: auto; align-self: stretch; width: 100%; }
+  .documents-layout > .documents-list { flex: none; max-height: 240px; width: 100%; }
+  .documents-layout > .document-preview-card { flex: none; }
+}
+
+/* ===== AI 팀 맞춤 설정(AdminAiSettingsPage): STEP 1~4 ===== */
+.ai-step-badge { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: #7958d5; color: #fff; font: 800 13px "Manrope", sans-serif; }
+.ai-settings-card > header > .ai-step-badge { background: #7958d5; color: #fff; }
+.ai-glossary-list { margin: 0 0 10px; padding: 0; display: grid; gap: 7px; list-style: none; }
+.ai-glossary-list > li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 28px; gap: 7px; align-items: center; }
+.ai-glossary-list input { height: 34px; min-width: 0; padding: 0 10px; border: 1px solid #e3e5e8; border-radius: 8px; background: #fff; color: #444a53; font-size: 12px; outline: 0; }
+.ai-glossary-list input:focus { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); }
+.ai-glossary-list input:disabled { background: #f4f5f7; color: #9a9ea6; }
+.ai-glossary-list button, .ai-doc-list button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #9a9ea6; cursor: pointer; }
+.ai-glossary-list button:hover, .ai-doc-list button:hover { background: #f1eef7; color: #5b4aa0; }
+.ai-doc-list { margin: 0 0 10px; padding: 0; display: grid; gap: 7px; list-style: none; }
+.ai-doc-list > li { display: grid; grid-template-columns: 34px minmax(0, 1fr) 28px; gap: 9px; align-items: center; padding: 8px 10px; border: 1px solid #e3e5e8; border-radius: 10px; background: #fcfcfd; }
+.ai-doc-list > li > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #eee9fb; color: #684fb7; }
+.ai-doc-list strong, .ai-doc-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-doc-list strong { font-size: 12.5px; }
+.ai-doc-list small { margin-top: 2px; color: #9a9ea6; font-size: 11.5px; }
+.ai-advanced-toggle { width: 100%; height: 44px; display: flex; align-items: center; gap: 7px; padding: 0 16px; border: 0; background: transparent; color: #55596a; font-size: 12.5px; font-weight: 700; text-align: left; cursor: pointer; }
+.ai-advanced-toggle > span { margin-left: auto; color: #8c8fa0; font-size: 11.5px; font-weight: 600; }
+@media (max-width: 640px) { .ai-glossary-list > li { grid-template-columns: minmax(0, 1fr) 28px; } .ai-glossary-list > li input:nth-child(2) { grid-column: 1 / 2; } }
+.system-prompt-editor textarea[rows="3"] { height: 84px; } /* AI 팀 맞춤 설정 STEP1 팀 소개(3줄 이내) */

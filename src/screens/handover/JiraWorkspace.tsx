@@ -115,7 +115,7 @@ export function JiraWorkspace({ picked, onSend, warning, onClose }: Props) {
   };
 
   const send = async () => {
-    if (!picked.items.length) return;
+    if (!picked.items.length || sending) return;
     setSending(true);
     setNotice(null);
     const message = await onSend(picked.items);
@@ -123,6 +123,7 @@ export function JiraWorkspace({ picked, onSend, warning, onClose }: Props) {
     if (message) {
       picked.clear();
       setNotice(message);
+      window.setTimeout(onClose, 1800); // 보냈으면 이 탭은 닫는다(스크립트로 연 탭만 닫히고, 아니면 이 화면이 그대로 남는다)
     }
   };
 

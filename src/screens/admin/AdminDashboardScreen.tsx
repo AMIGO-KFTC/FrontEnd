@@ -15,7 +15,7 @@ import { AdminPersonnelPage } from "./AdminPersonnelPage";
 import { AdminTeamDutiesPage } from "./AdminTeamDutiesPage";
 
 type Section = AdminSection;
-const TITLES: Record<Section, string> = { dashboard: "관리자 대시보드", members: "구성원 관리", handovers: "인수인계 관리", duties: "팀 담당 업무", ai: "AI 맞춤 설정", personnel: "일정 관리" };
+const TITLES: Record<Section, string> = { dashboard: "관리자 대시보드", members: "구성원 관리", handovers: "인수인계 관리", duties: "팀 담당 업무", ai: "AI 팀 맞춤 설정", personnel: "일정 관리" };
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 const RECENT_LIMIT = 6; // 대시보드에 보여 줄 최근 인수인계 수(전체는 '인수인계 관리' 탭)
@@ -88,7 +88,7 @@ export function AdminDashboardScreen({ section, onSection: setSection, onExit, o
           <button className={section === "members" ? "active" : ""} onClick={() => setSection("members")}><Icon name="user" size={16} /> 구성원 관리 {members && <em>{members.length}</em>}</button>
           <button className={section === "handovers" ? "active" : ""} onClick={() => setSection("handovers")}><Icon name="message" size={16} /> 인수인계 관리 {handovers && <em>{handovers.length}</em>}</button>
           <button className={section === "duties" ? "active" : ""} onClick={() => setSection("duties")}><Icon name="folder" size={16} /> 팀 담당 업무</button>
-          <button className={section === "ai" ? "active" : ""} onClick={() => setSection("ai")}><Icon name="sparkle" size={16} /> AI 맞춤 설정</button>
+          <button className={section === "ai" ? "active" : ""} onClick={() => setSection("ai")}><Icon name="sparkle" size={16} /> AI 팀 맞춤 설정</button>
           <button className={section === "personnel" ? "active" : ""} onClick={() => setSection("personnel")}><Icon name="calendar" size={16} /> 일정 관리</button>
         </nav>
         <div className="admin-sidebar-bottom">
