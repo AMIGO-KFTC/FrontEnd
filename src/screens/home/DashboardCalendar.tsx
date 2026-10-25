@@ -1,6 +1,7 @@
 // 홈 캘린더. 일정은 왼쪽 탭의 '캘린더' 화면과 같은 저장소(shared/planner, 계정별 서버 저장)를 쓴다.
 // 정기인사 D-day 와 발표일·발령일, 팀 공유 일정 표시는 팀장이 등록한 일정(shared/personnel)에서. 정기인사가 없으면 매년 10/26 · 10/28 기본값.
 // 오른쪽에는 고른 날짜(처음엔 오늘)의 일정과 할 일만 보여 준다. 홈에서는 입력하지 않는다(추가는 '캘린더' 화면).
+// 항목을 누르면 캘린더 화면에서 남긴 메모가 아래에 펼쳐지고, 네모를 누르면 완료/되돌리기.
 import { useState } from "react";
 import { Icon } from "@/shared/Icon";
 import { longDate, personnelView, usePersonnel } from "@/shared/personnel";
@@ -12,7 +13,8 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const personnel = personnelView(today, schedules, teamSchedules);
   const markOn = (key: string) => personnel.marks.filter((mark) => mark.key === key);
   const todayKey = dateKey(today);
-  const { events, todos, toggleTodo } = usePlanner();
+  const { events, eventItems, todos, setDone } = usePlanner();
+  const [openMemo, setOpenMemo] = useState<string | null>(null);
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const year = viewDate.getFullYear();
@@ -22,7 +24,7 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const selectedKey = dateKey(new Date(year, month, selectedDay));
   const fixedEvents = markOn(selectedKey);
-  const selectedEvents = events[selectedKey] ?? [];
+  const selectedEvents = eventItems.filter((event) => event.date === selectedKey);
   const selectedTodos = todos.filter((todo) => todo.date === selectedKey);
   const cells: Array<number | null> = [
     ...Array.from({ length: firstDay }, () => null),
@@ -83,11 +85,19 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
         <div className="schedule-manager">
           <div className="schedule-items">
             {fixedEvents.map((mark, index) => <div key={`${mark.label}-${index}`} className={mark.kind === "shared" ? "shared-mark" : "personnel-mark"}><i /><span>{mark.label}</span></div>)}
-            {selectedEvents.map((event, index) => <div key={`${event}-${index}`} className="read-only"><i /><span>{event}</span></div>)}
-            {selectedTodos.map((todo) => (
-              <button key={todo.id} className={`schedule-todo${todo.done ? " done" : ""}`} onClick={() => toggleTodo(todo.id)} title={todo.done ? "눌러서 되돌리기" : "눌러서 완료"}>
-                <span className="month-todo-check">{todo.done && <Icon name="check" size={9} />}</span><span>{todo.text}</span>
-              </button>
+            {[
+              ...selectedEvents.map((event) => ({ key: `event:${event.id}`, kind: "event" as const, id: event.id, text: event.text, memo: event.memo ?? "", done: Boolean(event.done) })),
+              ...selectedTodos.map((todo) => ({ key: `todo:${todo.id}`, kind: "todo" as const, id: todo.id, text: todo.text, memo: todo.memo ?? "", done: todo.done })),
+            ].map((item) => (
+              <div key={item.key} className={`schedule-check${item.done ? " done" : ""}${openMemo === item.key ? " open" : ""}`}>
+                <div className="schedule-check-line">
+                  <button className="month-todo-check" onClick={() => setDone(item.kind, item.id, !item.done)} aria-label={item.done ? `${item.text} 되돌리기` : `${item.text} 완료`} title={item.done ? "되돌리기" : "완료"}>{item.done && <Icon name="check" size={9} />}</button>
+                  <button className="schedule-check-text" onClick={() => setOpenMemo(openMemo === item.key ? null : item.key)} title={item.memo ? "눌러서 메모 보기" : "메모 없음"}>
+                    <span>{item.text}</span>{item.memo && openMemo !== item.key && <i className="check-memo-mark" aria-label="메모 있음" />}
+                  </button>
+                </div>
+                {openMemo === item.key && <p className="schedule-memo">{item.memo || "메모가 없어요. 캘린더 화면에서 남길 수 있어요."}</p>}
+              </div>
             ))}
             {!fixedEvents.length && !selectedEvents.length && !selectedTodos.length && <small>{selectedKey === todayKey ? "오늘" : "이 날"}은 일정이 없어요.</small>}
           </div>

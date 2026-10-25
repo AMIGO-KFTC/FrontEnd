@@ -204,11 +204,18 @@ export function MonthAgenda({ year, month, target, selectedKey, onTarget }: { ye
   );
 }
 
-// 항목 아래에 펼쳐지는 작은 메모 칸. 칸을 벗어나거나 Ctrl+Enter 면 저장, Esc 면 그대로 닫는다.
+// 항목 아래에 펼쳐지는 작은 메모 칸. Enter(또는 칸을 벗어나면) 저장, Shift+Enter 는 줄바꿈, Esc 는 저장하지 않고 닫는다.
 function MemoEditor({ memo, onSave, onClose }: { memo: string; onSave: (memo: string) => void; onClose: () => void }) {
   const [value, setValue] = useState(memo);
+  const done = useRef(false); // Enter 로 저장한 뒤 닫히면서 blur 가 또 저장하지 않게
   const save = () => {
+    if (done.current) return;
+    done.current = true;
     if (value.trim() !== memo) onSave(value.trim());
+    onClose();
+  };
+  const cancel = () => {
+    done.current = true;
     onClose();
   };
   return (
@@ -218,14 +225,18 @@ function MemoEditor({ memo, onSave, onClose }: { memo: string; onSave: (memo: st
         rows={2}
         maxLength={500}
         value={value}
-        placeholder="메모(선택)"
+        placeholder="메모 입력 후 Enter (줄바꿈 Shift+Enter)"
         onChange={(event) => setValue(event.target.value)}
         onBlur={save}
         onKeyDown={(event) => {
-          if (event.key === "Escape") onClose();
-          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) save();
+          if (event.key === "Escape") cancel();
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 무시한다
+            event.preventDefault();
+            save();
+          }
         }}
       />
+      <small className="check-memo-hint">Enter 저장 · Esc 취소</small>
     </div>
   );
 }
