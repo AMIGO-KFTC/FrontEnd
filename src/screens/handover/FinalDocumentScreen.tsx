@@ -99,11 +99,32 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     api.citations(sessionId).then((result) => !cancelled && setCitations(result.citations)).catch(() => !cancelled && setCitations([]));
     return () => { cancelled = true; };
   }, [sessionId, markdown]);
+  // 본문 번호를 누르면 맨 아래 '근거 자료'의 그 번호로 내려가고, 거기서 '본문으로'를 누르면 눌렀던 번호 자리로 돌아온다.
+  const jumpedFrom = useRef<HTMLElement | null>(null);
+  const flash = (el: Element | null) => {
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.remove("cite-flash");
+    void (el as HTMLElement).offsetWidth; // 같은 곳을 다시 눌러도 반짝임이 다시 돌게 한다
+    el.classList.add("cite-flash");
+  };
+  const jumpToNote = (number: number, from: HTMLElement) => {
+    jumpedFrom.current = from;
+    flash(document.getElementById(`cite-note-${number}`));
+  };
+  const backToText = (number: number) => {
+    const from = jumpedFrom.current;
+    flash(from?.isConnected && from.dataset.cite === String(number) ? from : document.querySelector(`.final-paper .cite-ref[data-cite="${number}"]`));
+  };
+  const paperRef = useRef<HTMLElement>(null);
+  const toTop = () => paperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   const citationContext = useMemo(
-    () => ({ byNumber: new Map(citations.map((cite) => [cite.number, cite])), slotTitle }),
+    () => ({ byNumber: new Map(citations.map((cite) => [cite.number, cite])), slotTitle, jump: jumpToNote }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [citations, config],
   );
+  const notes = [...citations].sort((a, b) => a.number - b.number);
+  const fileById = new Map(files.map((file) => [file.id, file]));
   const pending = gaps.filter((gap) => gap.status in PENDING_LABEL);
   // 오른쪽 목록의 항목을 누르면 AI 대화창처럼 질문을 카드로 보여 주고, 입력칸에는 답만 쓴다.
   // 보낼 때 질문을 함께 붙여 보내면 AMIGO가 반영한 새 버전을 만든다.
@@ -317,7 +338,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
           <GanttContext.Provider value={gantt}>
           <CitationContext.Provider value={citationContext}>
-          <article className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
+          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
@@ -384,6 +405,37 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </section>
               );
             })}
+            {notes.length > 0 && (
+              <section className="paper-section paper-notes" aria-label="근거 자료">
+                <div className="paper-notes-head">
+                  <h2>근거 자료</h2>
+                  <button type="button" onClick={toTop}>↑ 문서 맨 위로</button>
+                </div>
+                <p className="paper-notes-desc">본문의 번호를 누르면 이곳으로 내려와요. 원본 파일을 내려받아 다시 확인할 수 있어요.</p>
+                <ol>
+                  {notes.map((cite) => {
+                    const file = cite.kind === "document" ? fileById.get(cite.source_id) : undefined;
+                    const name = cite.kind === "answer" ? "인계자 답변" : cite.source_name || cite.label;
+                    const where = [slotTitle(cite.slot), cite.item_title].filter(Boolean).join(" · ");
+                    return (
+                      <li id={`cite-note-${cite.number}`} key={cite.number}>
+                        <span className="paper-note-num">{cite.number}</span>
+                        <div>
+                          <strong>{name}</strong>
+                          {cite.label && cite.label !== name && <small>{cite.label}</small>}
+                          {cite.quote && <p>“{cite.quote}”</p>}
+                          {where && <small>{where}</small>}
+                        </div>
+                        <div className="paper-note-actions">
+                          <button type="button" onClick={() => backToText(cite.number)} title="이 근거를 쓴 본문 자리로 돌아가요">↑ 본문으로</button>
+                          {file && <a href={api.sourceFileUrl(sessionId, file.id)} download={file.name} title={`${file.name} 내려받기`}><Icon name="download" size={13} /> 원본 내려받기</a>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            )}
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </CitationContext.Provider>
