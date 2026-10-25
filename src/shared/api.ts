@@ -6,6 +6,10 @@ import type {
   AuthUser,
   ChatAnswer,
   ChatScope,
+  JiraIssue,
+  JiraIssueDetail,
+  JiraProject,
+  JiraSearchResult,
   NotificationsResult,
   ChatMessage,
   ChatTurn,
@@ -203,6 +207,10 @@ export const api = {
   // 캘린더 일정·할 일(계정별로 서버에 저장). id 를 화면이 만들어 보내므로 응답을 기다리지 않고 바로 그려도 된다.
   planner: () => request<PlannerData>("/api/planner"),
   addPlannerEvent: (event: PlannerEvent) => post<{ event: PlannerEvent }>("/api/planner/events", event),
+  updatePlannerEvent: (id: string, changes: { text?: string; memo?: string; done?: boolean }) =>
+    request<{ event: PlannerEvent }>(`/api/planner/events/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
+  updatePlannerWeekTask: (id: string, changes: { text?: string; memo?: string; done?: boolean }) =>
+    request<{ task: PlannerWeekTask }>(`/api/planner/week-tasks/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
   deletePlannerEvent: (id: string) => request<{ message: string }>(`/api/planner/events/${encodeURIComponent(id)}`, { method: "DELETE" }),
   addPlannerTodo: (todo: PlannerTodo) => post<{ todo: PlannerTodo }>("/api/planner/todos", todo),
   updatePlannerTodo: (id: string, changes: Partial<Omit<PlannerTodo, "id">>) =>
@@ -228,5 +236,11 @@ export const api = {
   // 예전에 이 브라우저(localStorage)에만 저장해 둔 일정·할 일을 서버로 옮긴다. 같은 id 는 건너뛰어 다시 보내도 안전하다.
   importPlanner: (body: { events: PlannerEvent[]; todos: PlannerTodo[] }) => post<PlannerData>("/api/planner/import", body),
   confluencePage: (pageId: string) => request<ConfluencePage & { body: string }>(`/api/integrations/confluence/pages/${pageId}`),
+  jiraProjects: () => request<{ today: string; projects: JiraProject[] }>("/api/integrations/jira/projects"),
+  jiraSearch: (params: { q?: string; project?: string; status?: string; assignee?: string; type?: string }) =>
+    request<JiraSearchResult>(`/api/integrations/jira/search?${new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][])}`),
+  jiraMoveIssue: (key: string, status: string) => request<JiraIssue>(`/api/integrations/jira/issues/${encodeURIComponent(key)}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  jiraIssue: (key: string) => request<JiraIssueDetail>(`/api/integrations/jira/issues/${encodeURIComponent(key)}`),
+  importJira: (id: string, itemIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/jira`, { item_ids: itemIds }),
   importConfluence: (id: string, pageIds: string[]) => post<IntegrationImportResult>(`/api/sessions/${id}/integrations/confluence`, { page_ids: pageIds }),
 };

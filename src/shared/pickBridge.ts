@@ -6,7 +6,7 @@
 // 같은 사이트(origin)의 창끼리만 통하는 BroadcastChannel 을 쓰므로 서버를 거치지 않는다. 등록(자료 저장)은 세션을 아는 원래 창이 한다.
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export type PickKind = "mattermost" | "confluence" | "mail";
+export type PickKind = "mattermost" | "confluence" | "mail" | "jira";
 export type PickItem = { id: string; title: string; url: string };
 export type PickAck = { added: number; skipped: number };
 
@@ -19,7 +19,7 @@ type PickMessage =
 const CHANNEL = "amigo-integration-pick";
 const ACK_TIMEOUT_MS = 1500;
 
-export const PICK_KIND_LABEL: Record<PickKind, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지", mail: "메일" };
+export const PICK_KIND_LABEL: Record<PickKind, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지", mail: "메일", jira: "지라 항목" };
 
 function openChannel(): BroadcastChannel | null {
   return typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(CHANNEL);
@@ -27,7 +27,7 @@ function openChannel(): BroadcastChannel | null {
 
 // "#/pick/mattermost" → "mattermost". 선택 창 주소가 아니면 null.
 export function parsePickHash(hash: string): PickKind | null {
-  const match = /^#\/pick\/(mattermost|confluence|mail)\/?$/.exec(hash);
+  const match = /^#\/pick\/(mattermost|confluence|mail|jira)\/?$/.exec(hash);
   return match ? (match[1] as PickKind) : null;
 }
 

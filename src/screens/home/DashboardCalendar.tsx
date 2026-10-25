@@ -1,5 +1,6 @@
 // 홈 캘린더. 일정은 왼쪽 탭의 '캘린더' 화면과 같은 저장소(shared/planner, 계정별 서버 저장)를 쓴다.
 // 정기인사 D-day 와 발표일·발령일, 팀 공유 일정 표시는 팀장이 등록한 일정(shared/personnel)에서. 정기인사가 없으면 매년 10/26 · 10/28 기본값.
+// 오른쪽에는 고른 날짜(처음엔 오늘)의 일정과 할 일만 보여 준다. 홈에서는 입력하지 않는다(추가는 '캘린더' 화면).
 import { useState } from "react";
 import { Icon } from "@/shared/Icon";
 import { longDate, personnelView, usePersonnel } from "@/shared/personnel";
@@ -11,10 +12,9 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const personnel = personnelView(today, schedules, teamSchedules);
   const markOn = (key: string) => personnel.marks.filter((mark) => mark.key === key);
   const todayKey = dateKey(today);
-  const { events, addEvent: saveEvent, removeEvent: deleteEvent } = usePlanner();
+  const { events, todos, toggleTodo } = usePlanner();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
-  const [draft, setDraft] = useState("");
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const monthLabel = `${year}년 ${month + 1}월`;
@@ -23,6 +23,7 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const selectedKey = dateKey(new Date(year, month, selectedDay));
   const fixedEvents = markOn(selectedKey);
   const selectedEvents = events[selectedKey] ?? [];
+  const selectedTodos = todos.filter((todo) => todo.date === selectedKey);
   const cells: Array<number | null> = [
     ...Array.from({ length: firstDay }, () => null),
     ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
@@ -31,12 +32,6 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const moveMonth = (offset: number) => {
     setViewDate(new Date(year, month + offset, 1));
     setSelectedDay(1);
-  };
-  const addEvent = () => {
-    const nextEvent = draft.trim();
-    if (!nextEvent) return;
-    saveEvent(selectedKey, nextEvent);
-    setDraft("");
   };
 
   return (
@@ -60,7 +55,7 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
               const isAppointmentDay = marks.some((mark) => mark.kind === "appointment");
               const isSpecialDay = isAnnouncementDay || isAppointmentDay;
               const isToday = key === todayKey;
-              const hasItems = Boolean(events[key]?.length) || marks.some((mark) => mark.kind === "shared");
+              const hasItems = Boolean(events[key]?.length) || marks.some((mark) => mark.kind === "shared") || todos.some((todo) => todo.date === key && !todo.done);
               return (
                 <button
                   className={`${day === selectedDay ? "selected" : ""} ${isSpecialDay ? "special-day" : ""} ${isAnnouncementDay ? "announcement-day" : ""} ${isAppointmentDay ? "appointment-day" : ""} ${isToday ? "today" : ""}`}
@@ -88,20 +83,13 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
         <div className="schedule-manager">
           <div className="schedule-items">
             {fixedEvents.map((mark, index) => <div key={`${mark.label}-${index}`} className={mark.kind === "shared" ? "shared-mark" : "personnel-mark"}><i /><span>{mark.label}</span></div>)}
-            {selectedEvents.map((event, index) => (
-              <div key={`${event}-${index}`}><i /><span>{event}</span><button onClick={() => deleteEvent(selectedKey, index)} aria-label={`${event} 삭제`}><Icon name="close" size={11} /></button></div>
+            {selectedEvents.map((event, index) => <div key={`${event}-${index}`} className="read-only"><i /><span>{event}</span></div>)}
+            {selectedTodos.map((todo) => (
+              <button key={todo.id} className={`schedule-todo${todo.done ? " done" : ""}`} onClick={() => toggleTodo(todo.id)} title={todo.done ? "눌러서 되돌리기" : "눌러서 완료"}>
+                <span className="month-todo-check">{todo.done && <Icon name="check" size={9} />}</span><span>{todo.text}</span>
+              </button>
             ))}
-          </div>
-          <div className="schedule-add">
-            <input
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.nativeEvent.isComposing) addEvent(); // 한글 조합 중 Enter 는 글자 확정이라 무시한다
-              }}
-              placeholder="일정 입력"
-            />
-            <button onClick={addEvent} aria-label="일정 추가"><Icon name="arrow" size={13} /></button>
+            {!fixedEvents.length && !selectedEvents.length && !selectedTodos.length && <small>{selectedKey === todayKey ? "오늘" : "이 날"}은 일정이 없어요.</small>}
           </div>
         </div>
       </aside>

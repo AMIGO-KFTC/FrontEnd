@@ -3041,7 +3041,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .us-link-row input { min-width: 0; flex: 1; padding: 0 13px; border: 0; outline: 0; background: transparent; font-size: 14.5px; }
 .us-link-row button { width: 60px; border: 0; border-left: 1px solid #e7e1ea; background: #f8f5ff; color: #694dc4; font-size: 14px; font-weight: 700; }
 .us-focus .integration-panel { margin-top: 0; }
-.us-dock { flex: none; margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.us-dock { flex: none; margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } /* 고른 것을 뺀 나머지 3개 */
 .us-dock .us-card { animation: us-dock-in .7s cubic-bezier(.2, .9, .25, 1) both; animation-delay: calc(var(--i) * 90ms); }
 .us-grid .us-card { animation: us-focus-in .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 50ms); }
 @keyframes us-dock-in { from { opacity: 0; transform: translateY(-260px) scale(1.08); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
@@ -3792,3 +3792,184 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .team-duty-picker-none { margin: 0; padding: 14px 8px; color: #958d98; font-size: 12px; text-align: center; }
 .team-duty-count { margin: 0; padding: 6px 10px; border-top: 1px solid #efeaf0; background: #fbfafc; color: #958d98; font-size: 11.5px; text-align: right; }
 .task-editor .task-input-row { margin-top: 0; }
+
+/* 팀장: 받은 인수인계 · 팀원 인수인계서 탭, 챗봇 '팀원' 배지 */
+.received-content:has(.received-view-tabs) { grid-template-rows: 105px auto minmax(0, 1fr); }
+.received-view-tabs { display: flex; width: fit-content; gap: 4px; padding: 3px; border: 1px solid #e6dfdb; border-radius: 11px; background: #f1edea; }
+.received-view-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 31px; padding: 0 13px; border: 0; border-radius: 8px; background: transparent; color: #6e676c; font-size: 13px; font-weight: 700; cursor: pointer; }
+.received-view-tabs button small { color: #a59da2; font-size: 11.5px; }
+.received-view-tabs button.active { background: #fffdfa; color: #2f2a30; box-shadow: 0 2px 6px rgba(40,30,45,.08); }
+.received-view-tabs button.active small { color: #7a5fd0; }
+.chat-scope-text strong em.team { background: #e9f0ff; color: #4d6db3; }
+
+/* 캘린더 탭 오른쪽(MonthAgenda): 이 달에 해야 할 일(주별 → 날짜별, 달 전체, 다 한 일) */
+.month-agenda-scroll { min-height: 0; flex: 1; overflow-y: auto; margin-top: 8px; padding-right: 2px; }
+.month-section { padding-bottom: 8px; }
+.month-section + .month-section { padding-top: 8px; border-top: 1px solid #e9e3e8; }
+.month-section h3 { margin: 0 0 5px; color: #6b6370; font-size: 11.5px; font-weight: 800; }
+.month-week { margin-bottom: 6px; }
+.month-week-head { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; }
+.month-week-head strong { color: #4a4350; font-size: 11.5px; }
+.month-week-head small { color: #a59da2; font-size: 10.5px; }
+.month-day { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px; padding: 3px 4px; border-radius: 7px; }
+.month-day.today { background: rgba(118,93,201,.07); }
+.month-day.selected { box-shadow: inset 0 0 0 1px #c9bbef; }
+.month-day-label { color: #5f5860; font-size: 11px; font-weight: 700; line-height: 21px; }
+.month-day-label small { margin-left: 2px; color: #aaa2a7; font-size: 9.5px; font-weight: 600; }
+.month-item { min-height: 21px; display: grid; grid-template-columns: 5px minmax(0, 1fr) auto; align-items: center; gap: 6px; color: #5f5860; font-size: 11px; }
+.month-item > i { width: 5px; height: 5px; border-radius: 50%; background: #c45aa4; }
+.month-item > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.month-item > em { padding: 0 5px; border-radius: 6px; background: #f1edf5; color: #7a6f86; font-size: 10px; font-style: normal; }
+.month-item.week > i { border-radius: 2px; background: #7a5fd0; }
+.month-week > .month-item.week { padding-left: 4px; }
+.month-item.personnel { color: #9b5a63; font-weight: 700; }
+.month-item.personnel > i { background: #e0687c; }
+.month-item.shared { color: #2d6a87; font-weight: 700; }
+.month-item.shared > i { background: #3b97c0; }
+.month-item.routine > i { background: #43836b; }
+.month-todo-item { width: 100%; min-height: 21px; display: grid; grid-template-columns: 11px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: #4d464e; font-size: 11px; text-align: left; cursor: pointer; }
+.month-todo-item > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.month-todo-check { width: 11px; height: 11px; display: grid; place-items: center; border: 1.3px solid #bdb3c6; border-radius: 3px; background: #fff; color: #fff; }
+.month-todo-item:hover .month-todo-check { border-color: #7a5fd0; }
+.month-todo-item.done { color: #aaa2a7; }
+.month-todo-item.done > span:nth-child(2) { text-decoration: line-through; }
+.month-todo-item.done .month-todo-check { border-color: #b7aec0; background: #b7aec0; }
+.month-todo-item small { color: #b2aab0; font-size: 10px; }
+.month-section.done h3 { color: #9a9297; }
+.month-empty { margin: 0 0 2px 4px; color: #b2aab0; font-size: 10.5px; }
+.month-agenda-side { display: block; min-height: 0; }
+.month-agenda-card { height: 100%; }
+.month-agenda-card > header strong small { color: #9a9297; font-size: 12px; font-weight: 600; }
+.month-agenda-side .month-section h3 { font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+.month-agenda-side .month-section h3 button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.month-agenda-side .month-section.selected h3 button { color: #5b43b3; text-decoration: underline; text-underline-offset: 3px; }
+.month-agenda-side .month-week-head { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 6px; }
+.month-agenda-side .month-week-head strong { font-size: 12.5px; }
+.month-agenda-side .month-week-head small { font-size: 11.5px; }
+.month-agenda-side .month-week.selected > .month-week-head { background: #f1ecff; }
+.month-agenda-side .month-day { grid-template-columns: 42px minmax(0, 1fr); }
+.month-agenda-side .month-day-label { padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; font-size: 12.5px; line-height: 24px; }
+.month-agenda-side .month-item, .month-agenda-side .month-todo-item { min-height: 24px; font-size: 12.5px; }
+.month-agenda-side .month-item { grid-template-columns: 6px minmax(0, 1fr) auto auto; }
+.month-todo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.month-remove { width: 20px; height: 20px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #b8b0b6; opacity: 0; cursor: pointer; }
+.month-item:hover .month-remove, .month-todo-row:hover .month-remove, .month-remove:focus-visible { opacity: 1; }
+.month-remove:hover { background: #f4ebef; color: #b04f73; }
+@media (hover: none) { .month-remove { opacity: 1; } }
+.month-clear { margin-left: auto; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #a59da2; font-size: 11px; cursor: pointer; }
+.month-clear:hover { background: #f4ebef; color: #b04f73; }
+.month-agenda-add { gap: 6px; }
+.month-agenda-target-unused { flex: none; max-width: 45%; overflow: hidden; padding: 2px 7px; border-radius: 7px; background: #f1ecff; color: #5b43b3; font-size: 11.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+/* 홈 캘린더 오른쪽: 고른 날짜(오늘)의 일정·할 일만, 입력 없음 */
+.schedule-items > div.read-only { grid-template-columns: 5px 1fr; }
+.schedule-todo { width: 100%; min-height: 25px; display: grid; grid-template-columns: 11px minmax(0, 1fr); align-items: center; gap: 6px; padding: 0; border: 0; border-bottom: 1px solid rgba(229,222,226,.75); background: transparent; color: #4d464e; font-size: 11px; text-align: left; cursor: pointer; }
+.schedule-todo > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.schedule-todo.done { color: #aaa2a7; }
+.schedule-todo.done > span:last-child { text-decoration: line-through; }
+.schedule-todo.done .month-todo-check { border-color: #b7aec0; background: #b7aec0; }
+.schedule-items > small { display: block; padding: 6px 2px; font-size: 11.5px; }
+.schedule-more { margin-top: 7px; height: 27px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid #e3dde2; border-radius: 8px; background: rgba(255,255,255,.82); color: #6c6470; font-size: 11px; font-weight: 700; cursor: pointer; }
+.month-agenda-scope { display: flex; align-items: center; gap: 4px; margin-top: 9px; }
+.month-agenda-scope button { min-width: 34px; height: 27px; padding: 0 10px; border: 1px solid #e3dde2; border-radius: 8px; background: #fff; color: #6c6470; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.month-agenda-scope button.active { border-color: #7a5fd0; background: #7a5fd0; color: #fff; }
+.month-agenda-scope span { min-width: 0; margin-left: 4px; overflow: hidden; color: #8f878c; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.month-agenda-add { margin-top: 6px; }
+
+/* 캘린더 탭 체크리스트: 체크 → '다 한 일'로, 글자를 누르면 작은 메모 */
+.check-row { border-radius: 6px; }
+.check-row.open { background: #faf7ff; }
+.check-line { min-height: 24px; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 7px; }
+.check-box { width: 14px; height: 14px; display: grid; place-items: center; padding: 0; border: 1.4px solid #bdb3c6; border-radius: 4px; background: #fff; color: #fff; cursor: pointer; }
+.check-box:hover { border-color: #7a5fd0; }
+.check-row.done .check-box { border-color: #9d8fc4; background: #9d8fc4; }
+.check-text { min-width: 0; display: flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: #403a42; font-size: 12.5px; text-align: left; cursor: text; }
+.check-text > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.check-text > small { flex: none; color: #b2aab0; font-size: 10.5px; }
+.check-row.done .check-text { color: #a8a0a6; }
+.check-row.done .check-text > span { text-decoration: line-through; }
+.check-memo-mark { flex: none; width: 5px; height: 5px; border-radius: 50%; background: #c8b6ee; }
+.check-line:hover .month-remove { opacity: 1; }
+.check-memo { padding: 2px 4px 6px 21px; }
+.check-memo textarea { width: 100%; min-height: 40px; resize: vertical; padding: 5px 7px; border: 1px solid #e3dbe9; border-radius: 7px; outline: 0; background: #fff; color: #554d57; font: inherit; font-size: 12px; line-height: 1.45; }
+.check-memo textarea:focus { border-color: #a995e0; }
+.month-agenda-side .month-day > div { min-width: 0; }
+
+/* 장기휴가 분석 화면: 카드 밖 글자(설명·자료 수)는 밝은 하늘·모래 배경 위라 흰색이면 안 보인다 → 진한 글자 + 반투명 받침 */
+.processing-page.leave-theme .processing-main > h1 { color: #2a2036; }
+.processing-page.leave-theme .processing-main > p { color: #3d3150; text-shadow: none; }
+.processing-page.leave-theme .processing-stats { width: fit-content; margin-left: auto; margin-right: auto; padding: 8px 18px; border: 2px solid rgba(255,255,255,.9); border-radius: 14px; background: rgba(255,255,255,.82); text-shadow: none; box-shadow: 4px 4px 0 rgba(113,206,242,.3); }
+.processing-page.leave-theme .processing-stats > div strong { color: var(--leave-deep-pink); }
+.processing-page.leave-theme .processing-stats > div span { color: #4b3f58; }
+.processing-page.leave-theme .processing-stats > i { background: #f1b5cc; }
+.processing-page.leave-theme .quip { border-color: #f1b5cc; color: #3d3150; }
+
+/* 팀장 관리 모드: 정기인사 발령(보라) · 장기휴가(분홍) 구분 */
+.handover-mode-tabs { flex: none; display: flex; gap: 4px; padding: 3px; border: 1px solid #e1e3e7; border-radius: 11px; background: #f4f5f7; }
+.handover-mode-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 13px; border: 0; border-radius: 8px; background: transparent; color: #5e636c; font-size: 13px; font-weight: 700; cursor: pointer; }
+.handover-mode-tabs button i { width: 8px; height: 8px; border-radius: 50%; }
+.handover-mode-tabs button.reassignment i { background: #7a5fd0; }
+.handover-mode-tabs button.leave i { background: #ec5b97; }
+.handover-mode-tabs button small { color: #9a9fa7; font-size: 11.5px; }
+.handover-mode-tabs button.active { background: #fff; color: #2f3238; box-shadow: 0 2px 6px rgba(30,30,40,.08); }
+.handover-mode-tabs button.reassignment.active { background: #f1ecff; color: #553fb0; }
+.handover-mode-tabs button.leave.active { background: #ffeef5; color: #b8336d; }
+.mode-tag { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 6px; font-size: 10.5px; font-weight: 800; vertical-align: 1px; white-space: nowrap; }
+.mode-tag.reassignment { background: #eee8ff; color: #5b43b3; }
+.mode-tag.leave { background: #ffe3ef; color: #c0306e; }
+.handover-admin-table > button.mode-reassignment { box-shadow: inset 3px 0 0 #b6a4ec; }
+.handover-admin-table > button.mode-leave { box-shadow: inset 3px 0 0 #f59bc0; background: #fffafc; }
+.handover-admin-table > button.mode-leave .handover-admin-title > i { background: #ffe3ef; color: #c0306e; }
+.handover-admin-table > button.mode-leave.selected { background: #fff0f6; }
+.handover-admin-detail.mode-leave { border-color: #f6c6da; }
+.handover-admin-detail > header { display: flex; align-items: center; justify-content: space-between; }
+.handover-admin-detail.mode-leave .handover-detail-title > span { background: #ffe3ef; color: #c0306e; }
+.handover-admin-detail.mode-leave .handover-detail-progress i { background: linear-gradient(90deg, #ff5f9f, #ff8d68); }
+.admin-recent-table > button.mode-leave { box-shadow: inset 3px 0 0 #f59bc0; }
+.admin-recent-table > button.mode-reassignment { box-shadow: inset 3px 0 0 #b6a4ec; }
+.admin-recent-table .mode-period { color: #c0306e; font-size: 11.5px; font-weight: 600; }
+
+/* 완료 화면: 인수자에게 전송하기 + 장기휴가 배경 위 글자 대비 */
+.completion-transfer { height: 46px; margin: 0 auto 10px; padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; background: linear-gradient(135deg, #2f9e7c, #44b48f); color: #fff; font-size: 14.5px; font-weight: 800; box-shadow: 0 10px 26px rgba(47,158,124,.28); cursor: pointer; }
+.completion-transfer:hover { filter: brightness(1.05); }
+.completion-page.leave-theme .completion-main h1 { color: #2a2036; text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 14px rgba(255,255,255,.95), 0 0 28px rgba(255,255,255,.8); }
+.completion-page.leave-theme .completion-main > p { width: fit-content; margin: 0 auto; padding: 6px 14px; border-radius: 12px; background: rgba(255,255,255,.8); color: #3d3150; }
+.completion-page.leave-theme .completion-note { width: fit-content; margin-left: auto; margin-right: auto; padding: 5px 12px; border-radius: 10px; background: rgba(255,255,255,.8); color: #4b3f58; }
+.completion-page.leave-theme .completion-summary strong { color: #2a2036; }
+.completion-page.leave-theme .completion-summary small { color: #5b4f66; }
+.completion-page.leave-theme .completion-transfer { background: linear-gradient(135deg, var(--leave-pink), #ff8b68); box-shadow: 4px 4px 0 var(--leave-yellow); }
+
+/* 완성 문서: 직접 수정 ON/OFF 스위치 */
+.edit-switch { height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 0 8px; border: 1px solid #ddd6dd; border-radius: 999px; background: #fff; color: #5f5860; font-size: 13px; font-weight: 700; cursor: pointer; transition: .15s; }
+.edit-switch:disabled { opacity: .6; cursor: default; }
+.edit-switch-track { width: 34px; height: 20px; position: relative; flex: none; border-radius: 999px; background: #d9d3da; transition: background .18s; }
+.edit-switch-knob { width: 16px; height: 16px; position: absolute; top: 2px; left: 2px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s; }
+.edit-switch-label b { margin-left: 3px; color: #9a9297; font-weight: 800; letter-spacing: .3px; }
+.edit-switch.on { border-color: #2f9e7c; background: #e9f7f1; color: #1f6e55; box-shadow: 0 0 0 3px rgba(47,158,124,.15); }
+.edit-switch.on .edit-switch-track { background: #2f9e7c; }
+.edit-switch.on .edit-switch-knob { transform: translateX(14px); }
+.edit-switch.on .edit-switch-label b { color: #1f8a68; }
+.edit-mode-badge { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 8px; background: #fff7d6; color: #8a6200; font-size: 12px; font-weight: 700; }
+.final-document-toolbar .edit-save { border-color: #2f9e7c; background: #2f9e7c; color: #fff; }
+.final-paper.is-editing { outline: 3px solid rgba(47,158,124,.35); outline-offset: 4px; }
+.final-document-toolbar .edit-switch, .final-document-toolbar .edit-mode-badge, .final-document-toolbar .edit-save, .final-document-toolbar > div > button { flex: none; white-space: nowrap; }
+.final-document-toolbar .edit-switch { padding-right: 14px; }
+/* 캘린더 탭 오른쪽: 월 · 주 · 일 탭(누르면 그 탭 할 일만) */
+.month-agenda-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px; padding: 3px; border-radius: 10px; background: #f1edf3; }
+.month-agenda-tabs button { height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 8px; background: transparent; color: #6c6470; font-size: 13px; font-weight: 800; cursor: pointer; }
+.month-agenda-tabs button small { min-width: 17px; padding: 0 5px; border-radius: 9px; background: #e3dcea; color: #6c6470; font-size: 10.5px; }
+.month-agenda-tabs button.active { background: #fff; color: #5b43b3; box-shadow: 0 2px 6px rgba(40,30,45,.08); }
+.month-agenda-tabs button.active small { background: #7a5fd0; color: #fff; }
+.month-sub { margin-top: 10px !important; color: #9a9297 !important; font-size: 11.5px !important; }
+.month-week-head.static { cursor: default; }
+.month-agenda-where { flex: none; max-width: 40%; overflow: hidden; padding: 2px 7px; border-radius: 7px; background: #f1ecff; color: #5b43b3; font-size: 11.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.month-agenda-add { gap: 6px; }
+/* 캘린더 탭: 월 제목을 누르면 달력 전체, 주 칸을 누르면 그 주 한 줄 전체를 칠한다 */
+.calendar-month-title { padding: 2px 6px; margin-left: -6px; border: 0; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+.calendar-month-title:hover { background: #f3effb; }
+.calendar-month-title.active { background: #7a5fd0; color: #fff; }
+.calendar-month-title h2 { margin: 0; color: inherit; }
+.calendar-board.month-selected { box-shadow: 0 0 0 3px #b9a7ee, 0 8px 28px rgba(48,38,52,.045); }
+.calendar-board.month-selected .calendar-board-grid > button:not(.week-cell), .calendar-board.month-selected .calendar-board-grid > .empty { background: #f6f2ff; }
+.calendar-board-grid > button.in-week:not(.week-cell), .calendar-board-grid > .empty.in-week { background: #efe9ff; box-shadow: inset 0 2px 0 #b9a7ee, inset 0 -2px 0 #b9a7ee; }
+.calendar-board-grid > .week-cell.selected { box-shadow: inset 0 2px 0 #b9a7ee, inset 0 -2px 0 #b9a7ee, inset 3px 0 0 #7a5fd0; }
+
