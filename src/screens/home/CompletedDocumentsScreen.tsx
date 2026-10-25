@@ -10,7 +10,7 @@ import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
 
-export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onChat, onLogout, onDocuments }: Props) {
+export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onChat, onCalendar, onMaterials, onLogout, onDocuments }: Props) {
   const documents = list.sessions ? completedSessions(list.sessions) : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 직접 고친 문서인지(현재 버전을 만든 쪽). 목록을 다시 불러올 때마다 함께 갱신한다.
@@ -39,18 +39,18 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
 
   return (
     <div className="app-shell completed-documents-page">
-      <AppSidebar active="documents" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
+      <AppSidebar active="documents" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} onCalendar={onCalendar} onMaterials={onMaterials} />
       <main className="completed-documents-main">
         <header className="dashboard-header">
-          <div><span>MY WORKSPACE</span><strong>완성 문서</strong></div>
+          <div><strong>완성 문서</strong></div>
         </header>
         <div className="completed-documents-content">
           <section className="documents-title">
-            <div><span>COMPLETED DOCUMENTS</span><h1>완성된 인수인계 문서</h1><p>AMIGO가 근거 자료와 답변을 바탕으로 완성한 문서를 확인하세요.</p></div>
+            <div><h1>완성된 인수인계 문서</h1><p>AMIGO가 근거 자료와 답변을 바탕으로 완성한 문서를 확인하세요.</p></div>
             <div><strong>{documents ? documents.length : "—"}</strong><small>완성 문서</small></div>
           </section>
           {list.error && <div className="list-notice error" role="alert">문서 목록을 불러오지 못했어요: {list.error}<button onClick={list.reload}>다시 시도</button></div>}
-          {documents && documents.length === 0 && !list.error && <div className="list-notice">완성된 문서가 아직 없어요. 질의응답을 마치고 문서를 생성하면 여기에 모입니다.</div>}
+          {documents && documents.length === 0 && !list.error && <div className="list-notice">완성된 문서가 아직 없어요.{"\n"}질의응답을 마치고 문서를 생성하면 여기에 모입니다.</div>}
           {documents && selected && (
             <section className="documents-layout">
               <div className="documents-list">
@@ -65,7 +65,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
               </div>
               <article className="document-preview-card">
                 <header>
-                  <div><span>HANDOVER DOCUMENT</span><h2>{sessionTitle(selected)}</h2><p>{MODE_LABEL[selected.mode]} · 인계자 {selected.owner_name}{selected.position ? ` ${selected.position}` : ""}</p></div>
+                  <div><h2>{sessionTitle(selected)}</h2><p>{MODE_LABEL[selected.mode]} · 인계자 {selected.owner_name}{selected.position ? ` ${selected.position}` : ""}</p></div>
                   <span className="document-complete-label"><Icon name="check" size={13} /> {stateLabel(selected.id)}</span>
                 </header>
                 <div className="document-preview-meta">
@@ -74,7 +74,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                   <div><small>현재 단계</small><strong>{selected.stage === "review" ? "문서 검토" : selected.stage === "composing" ? "새 버전 생성 중" : "질의응답 보완 중"}</strong></div>
                 </div>
                 <div className="document-preview-paper">
-                  <span>AMIGO HANDOVER</span>
+                  <span>AMIGO 인수인계서</span>
                   <h3>{sessionTitle(selected)}</h3>
                   <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
                   <i />
@@ -84,7 +84,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                 </div>
                 <footer>
                   <button onClick={() => list.open(selected.id)}><Icon name="file" size={14} /> 문서 열기</button>
-                  <button onClick={() => setSourcesOpen(true)} disabled={!usedFiles?.length} title="이 인수인계서를 만드는 데 올린 자료 파일을 내려받아요"><Icon name="download" size={14} /> 사용한 자료{usedFiles ? ` ${usedFiles.length}개` : ""}</button>
+                  <button onClick={() => setSourcesOpen(true)} disabled={!usedFiles?.length} title="이 인수인계서를 만드는 데 올린 자료 파일을 내려받아요"><Icon name="download" size={14} /> 근거 자료{usedFiles ? ` ${usedFiles.length}개` : ""}</button>
                   <button onClick={() => onChat(selected.id)}><Icon name="sparkle" size={14} /> 이 업무에 질문하기</button>
                   <button onClick={() => { window.location.href = api.downloadUrl(selected.id, "pdf"); }}><Icon name="download" size={14} /> PDF 내려받기</button>
                 </footer>

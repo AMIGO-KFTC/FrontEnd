@@ -25,6 +25,8 @@ import { DashboardScreen } from "./screens/home/DashboardScreen";
 import { HandoverChatScreen } from "./screens/home/HandoverChatScreen";
 import { OngoingHandoverScreen } from "./screens/home/OngoingHandoverScreen";
 import { ReceivedHandoverScreen } from "./screens/home/ReceivedHandoverScreen";
+import { CalendarScreen } from "./screens/home/CalendarScreen";
+import { MaterialsScreen } from "./screens/home/MaterialsScreen";
 import type { HomeNav, SessionList } from "./screens/home/types";
 
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
@@ -404,6 +406,8 @@ function AppScreens() {
     onDocuments: () => go({ kind: "home", page: "documents" }),
     onReceived: () => go({ kind: "home", page: "received" }),
     onChat: (docId) => go({ kind: "home", page: "chat", docId }),
+    onCalendar: () => go({ kind: "home", page: "calendar" }),
+    onMaterials: () => go({ kind: "home", page: "materials" }),
     onLogout: logout,
   };
   const list: SessionList = {
@@ -468,6 +472,8 @@ function AppScreens() {
     if (route.page === "handover") return <OngoingHandoverScreen {...nav} list={list} onNew={startNew} />;
     if (route.page === "documents") return <CompletedDocumentsScreen {...nav} list={list} />;
     if (route.page === "received") return <ReceivedHandoverScreen {...nav} list={list} />;
+    if (route.page === "calendar") return <CalendarScreen {...nav} list={list} />;
+    if (route.page === "materials") return <MaterialsScreen {...nav} list={list} />;
     if (route.page === "chat") return <HandoverChatScreen key={route.docId ?? "all"} {...nav} list={list} initialDocId={route.docId} onOpenDocument={list.openDocument} />;
     return <DashboardScreen {...nav} list={list} notice={homeNotice} onDismissNotice={() => setHomeNotice(null)} onNew={startNew} isAdmin={profile.isAdmin} onAdmin={enterAdmin} />;
   }
@@ -489,7 +495,7 @@ function AppScreens() {
         state={gate}
         onRetry={() => void refresh()}
         onHome={() => {
-          if (gate.kind === "missing") setHomeNotice("열 수 없는 작업이었어요. 삭제됐거나 내 계정의 작업이 아니에요.");
+          if (gate.kind === "missing") setHomeNotice("열 수 없는 작업이었어요.\n삭제됐거나 내 계정의 작업이 아니에요.");
           goHome();
         }}
       />
@@ -560,7 +566,7 @@ function AppScreens() {
       ? null
       : {
           badge: isSuccessor ? "전달받은 인수인계서" : "팀 구성원 인수인계서",
-          note: `${session.owner_name}님이 작성한 인수인계서예요. 내용을 보고 PDF·Word 로 내려받을 수 있고, 수정은 인계자만 할 수 있어요.`,
+          note: `${session.owner_name}님이 작성한 인수인계서예요.\n내용을 보고 PDF·Word 로 내려받을 수 있고, 수정은 인계자만 할 수 있어요.`,
           exitLabel: isSuccessor ? "받은 인수인계로 돌아가기" : "팀 관리로 돌아가기",
           onExit: () => go(isSuccessor ? { kind: "home", page: "received" } : { kind: "admin", section: adminReturn }),
         };

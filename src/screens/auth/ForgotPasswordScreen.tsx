@@ -78,14 +78,12 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
         {completed ? (
           <div className="signup-complete recovery-complete">
             <span><Icon name="check" size={25} /></span>
-            <small>RESET COMPLETE</small>
             <h2 id="recovery-title">비밀번호 재설정이 완료되었습니다</h2>
             <p>새로운 비밀번호로 AMIGO에 로그인해 주세요.</p>
             <button className="primary-button login-button" type="button" onClick={onBack}>로그인 화면으로 이동 <Icon name="arrow" size={17} /></button>
           </div>
         ) : (
           <form className={`login-form recovery-form step-${step}`} onSubmit={submit}>
-            <span className="eyebrow">{step === 1 ? "RESET YOUR PASSWORD" : step === 2 ? "SECOND VERIFICATION" : "CREATE NEW PASSWORD"}</span>
             <h2 id="recovery-title">{step === 1 ? "비밀번호 재설정" : step === 2 ? "스마트보안카드 인증" : "새 비밀번호 설정"}</h2>
             {step === 1 ? (
               <label>사번
@@ -123,7 +121,7 @@ export function ForgotPasswordScreen({ onBack }: { onBack: () => void }) {
                 <div className="captcha-code" aria-label="CAPTCHA 이미지">{captcha.split("").map((character, index) => <span key={`${character}-${index}`}>{character}</span>)}</div>
                 <button type="button" onClick={() => { setCaptcha(generateCaptcha()); setCaptchaInput(""); }}>새로고침</button>
                 </div>
-                <label>CAPTCHA
+                <label>자동입력 방지 문자
                   <div className="input-wrap"><Icon name="key" size={17} /><input value={captchaInput} onChange={(event) => setCaptchaInput(event.target.value.slice(0, 5))} placeholder="위 문자를 입력하세요" autoComplete="off" /></div>
                 </label>
               </>

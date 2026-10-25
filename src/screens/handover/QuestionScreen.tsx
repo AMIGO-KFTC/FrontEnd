@@ -127,12 +127,12 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
       <main className="question-main">
         <aside className="question-list-panel">
           <div className="question-list-head">
-            <div><span>QUESTION LIST</span><strong>확인할 질문</strong></div>
+            <div><strong>확인할 질문</strong></div>
             <em>{Math.min(askedCount, total)} / {total}</em>
           </div>
           <div className="question-list-progress"><span style={{ width: `${total ? (askedCount / total) * 100 : 0}%` }} /></div>
           <div className="question-list-items" role="list">
-            {session.gaps.length === 0 && <div className="question-list-empty">{session.stage === "qna" ? "확인할 빈 항목이 없어요. 바로 문서를 만들 수 있어요." : "AMIGO가 빈 항목을 정리하고 있어요."}</div>}
+            {session.gaps.length === 0 && <div className="question-list-empty">{session.stage === "qna" ? "확인할 빈 항목이 없어요.\n바로 문서를 만들 수 있어요." : "AMIGO가 빈 항목을 정리하고 있어요."}</div>}
             {session.gaps.map((item, index) => {
               const state = gapState(item, inReview);
               // 지금 묻는 질문이 아니면 눌러서 그 질문으로 이동한다(답한·건너뛴 질문은 다시 답하기, 아직 안 물은 질문은 먼저 답하기).
@@ -167,20 +167,11 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
           <div className="question-list-note"><Icon name="sparkle" size={14} /><p><strong>답변은 자동으로 정리돼요</strong><br />편하게 말하듯 작성해 주세요.</p></div>
         </aside>
         <section className="question-conversation">
-          <div className="question-intro">
-            <span>STEP 03 · 질의응답</span>
-            <h1>빈틈을 함께 채워볼게요</h1>
-            <p>자료에서 확인하기 어려운 내용만 간단히 여쭤볼게요.</p>
-          </div>
           <div className="question-scroll-area" ref={scrollRef}>
-            <div className="question-counter">
-              <span>확인 질문</span>
-              {total > 0 ? <strong>{Math.min(Math.max(askedCount, 1), total)} <small>/ {total}</small></strong> : <strong>—</strong>}
-            </div>
             <section className="amigo-question-card">
               <div className="question-card-top">
                 <span className="question-ai"><Icon name="sparkle" size={16} /></span>
-                <div><strong>AMIGO</strong><small>{viewGap ? (viewThread.length ? "지난 질문과 답변이에요" : "아직 답하지 않은 질문이에요") : "자료 분석을 바탕으로 질문드려요"}</small></div>
+                <div><strong>AMIGO</strong><small>{viewGap ? (viewThread.length ? "지난 질문과 답변이에요" : "아직 답하지 않은 질문이에요") : "3단계 질의응답 · 빈틈을 함께 채워요"}</small></div>
                 {category && <em>{category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>{headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}</h2>

@@ -384,8 +384,10 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 | `#/` | 홈 대시보드 | `screens/home/DashboardScreen` | 진행 중·완료 건수(서버 세션 목록), 새 인수인계 시작, 알림·캘린더(예시 값, 서버 미연결) |
 | `#/home/handover` | 진행 중인 인수인계 | `screens/home/OngoingHandoverScreen` | 문서가 아직 없는 세션 목록, 저장된 단계로 **이어서 작성**, 확인창 뒤 삭제(`DELETE /api/sessions/{id}`) |
 | `#/home/documents` | 완성 문서 | `screens/home/CompletedDocumentsScreen` | 문서가 있는 세션 목록, 문서 열기 |
+| `#/home/calendar` | 캘린더 · 할 일 | `screens/home/CalendarScreen` | 월 달력에 일정·할 일 표시, 날짜별 일정 추가·삭제, 할 일 체크·삭제·완료 정리. 홈 캘린더와 같은 저장소(`shared/planner`, 이 브라우저의 localStorage, 계정별) |
+| `#/home/materials` | 근거 자료 | `screens/home/MaterialsScreen` | 내 업무·받은 업무 중 하나를 고르면 그 인수인계서에 쓴 파일·메일·링크 목록(`GET /api/sessions/{id}` 의 sources). 파일 원본·ZIP 내려받기, 링크 열기, 문서 근거로 쓰인 횟수(`GET …/citations`) |
 | `#/home/received` | 받은 인수인계 | `screens/home/ReceivedHandoverScreen` | `GET /api/handovers/received`. 인수자는 문서 열기·PDF 내려받기만(읽기 전용) |
-| `#/admin`, `#/admin/<tab>` | 팀 관리 모드 | `screens/admin/` | 관리자(`is_admin`)만. 구성원(`/api/admin/members`)·팀 인수인계(`/api/admin/handovers`)·팀 인수인계 항목·AI 맞춤 설정. 일반 구성원이 들어오면 홈으로 |
+| `#/admin`, `#/admin/<tab>` | 팀 관리 모드 | `screens/admin/` | 관리자(`is_admin`)만. 구성원(`/api/admin/members`)·팀 인수인계(`/api/admin/handovers`)·AI 맞춤 설정·일정 관리. 일반 구성원이 들어오면 홈으로 |
 | `#/new`, `#/new/<유형>` | 유형 선택 · 기본 정보 | `HandoverTypeScreen`, `StartScreen` | 정기인사 / 장기휴가 선택, 인계자 정보 입력 → `POST /api/sessions` |
 | `#/s/<세션ID>/upload` | 자료 등록 | `UploadStepScreen` + `MattermostPanel`, `ConfluencePanel` | 드래그 앤 드롭 업로드(PDF·HWPX/HWP·Word·PPT·Excel·메일·소스코드·ZIP), 링크 등록, 가상 Mattermost·Confluence 선택, 처리 상태(대기/처리 중/완료/실패 사유), 분석 시작 |
 | `#/s/<세션ID>/processing` | 분석 | `ProcessingScreen` | STAGE 1~2 진행률·현재 작업 문구, 실패 시 다시 시도 |

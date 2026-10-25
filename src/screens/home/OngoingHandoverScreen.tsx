@@ -8,7 +8,7 @@ import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList; onNew: () => void };
 
-export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocuments, onReceived, onChat, onLogout }: Props) {
+export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocuments, onReceived, onChat, onCalendar, onMaterials, onLogout }: Props) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null); // 삭제 확인 창을 띄운 세션
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -27,15 +27,15 @@ export function OngoingHandoverScreen({ list, onNew, onHome, onHandover, onDocum
 
   return (
     <div className="app-shell ongoing-page">
-      <AppSidebar active="handover" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} />
+      <AppSidebar active="handover" sessions={list.sessions} onOpenSession={list.open} onLogout={onLogout} onHome={onHome} onHandover={onHandover} onDocuments={onDocuments} onReceived={onReceived} onChat={() => onChat()} onCalendar={onCalendar} onMaterials={onMaterials} />
       <main className="ongoing-main">
         <header className="dashboard-header">
-          <div><span>MY WORKSPACE</span><strong>진행 중인 인수인계</strong></div>
+          <div><strong>진행 중인 인수인계</strong></div>
           <button className="ongoing-new" onClick={onNew}><Icon name="sparkle" size={14} /> 새 인수인계</button>
         </header>
         <div className="ongoing-content">
           <section className="ongoing-title">
-            <div><span>IN PROGRESS</span><h1>인수인계를 계속 작성해보세요</h1><p>진행 중인 작업을 확인하고 이어서 작성할 수 있어요.</p></div>
+            <div><h1>인수인계를 계속 작성해보세요</h1><p>진행 중인 작업을 확인하고 이어서 작성할 수 있어요.</p></div>
             <div><strong>{projects ? projects.length : "—"}</strong><span>진행 중</span></div>
           </section>
           <section className="ongoing-list">

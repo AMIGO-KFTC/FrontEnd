@@ -242,7 +242,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <div>
               <button className={`edit-toggle ${isEditing ? "editing" : ""}`} disabled={saveState === "saving"} onClick={() => (isEditing ? void finishEditing() : setIsEditing(true))}><Icon name={isEditing ? "check" : "file"} size={14} /> {isEditing ? (saveState === "saving" ? "저장 중…" : "수정 완료") : "직접 수정하기"}</button>
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
-              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요. 월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
+              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{"\n"}월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
               <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => { setAnswering(null); setRevisionOpen((current) => !current); }}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
             )}
@@ -289,7 +289,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
           {revisionOpen && !answering && (
             <section className="revision-compose">
-              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요. 작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
+              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요.{"\n"}작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
               <textarea
                 value={revision}
                 onChange={(event) => setRevision(event.target.value)}
@@ -390,7 +390,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           </GanttContext.Provider>
         </section>
         <aside className="final-pending" aria-label="시간 될 때 적어 주세요">
-          <div className="final-pending-title"><Icon name="clock" size={15} /><div><strong>시간 될 때 적어 주세요</strong><small>{readOnly ? "인계자가 아직 확인하지 못한 내용이에요." : "누르면 질문이 열려요. 답을 적어 보내면 문서에 반영돼요."}</small></div></div>
+          <div className="final-pending-title"><Icon name="clock" size={15} /><div><strong>시간 될 때 적어 주세요</strong><small>{readOnly ? "인계자가 아직 확인하지 못한 내용이에요." : "누르면 질문이 열려요.\n답을 적어 보내면 문서에 반영돼요."}</small></div></div>
           {pending.length === 0 ? (
             <p className="final-pending-empty">확인할 내용이 남아 있지 않아요.</p>
           ) : (

@@ -229,7 +229,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     const timer = window.setTimeout(() => {
       setWaitFor(null);
       setStarting(false);
-      setLocalNotice("자료를 읽는 데 시간이 걸리고 있어요. 잠시 뒤 'AI 분석 시작'을 다시 눌러 주세요.");
+      setLocalNotice("자료를 읽는 데 시간이 걸리고 있어요.\n잠시 뒤 'AI 분석 시작'을 다시 눌러 주세요.");
     }, START_WAIT_MS);
     return () => window.clearTimeout(timer);
   }, [waitFor]);
@@ -280,7 +280,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
       </header>
       <main className="upload-step-main us-main">
         <div className="upload-step-title">
-          <span>STEP 02 · 자료 등록</span>
+          <span>2단계 · 자료 등록</span>
           <h1>업무 자료를 모아주세요</h1>
           <p>AMIGO가 자료의 내용을 분석해 인수인계 항목과 질문을 준비합니다.</p>
           <div className="upload-richness-note"><Icon name="sparkle" size={14} /><strong>자료가 풍부할수록 인수인계 문서가 더 정확해져요</strong></div>
@@ -315,7 +315,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                           <ul>
                             {FILE_EXAMPLES.map((example) => <li key={example.name}><span>{example.name}</span><small>{example.desc}</small></li>)}
                           </ul>
-                          <p>ZIP 파일은 안에 든 문서를 자동으로 풀어서 읽어요. 한 번에 최대 20개, 파일당 50MB까지 올릴 수 있어요.</p>
+                          <p>ZIP 파일은 안에 든 문서를 자동으로 풀어서 읽어요.{"\n"}한 번에 최대 20개, 파일당 50MB까지 올릴 수 있어요.</p>
                         </div>
                         {renderCompare("file")}
                       </>
@@ -323,7 +323,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                     {active.key === "mail" && (
                       <>
                         <IntegrationLauncher kind="mail" busy={busy || starting} picked={mailPicked} showChips={false} onImport={onImportMails} onOpen={() => openPicker("mail")} opened={opened.mail} />
-                        <p className="us-mail-hint">메일함 창에서 제목이나 관련 사람 이름으로 메일을 찾아 보내면 '등록 예정'에 담겨요. 메일함 창의 '캡처로 올리기'를 누르면 보고 있는 메일이 그림(PNG)으로 바로 등록돼요.</p>
+                        <p className="us-mail-hint">메일함 창에서 제목이나 관련 사람 이름으로 메일을 찾아 보내면 '등록 예정'에 담겨요.{"\n"}메일함 창의 '캡처로 올리기'를 누르면 보고 있는 메일이 그림(PNG)으로 바로 등록돼요.</p>
                         {renderCompare("mail")}
                       </>
                     )}
@@ -358,7 +358,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
           <aside className="us-side">
             <section className="us-side-section us-pending">
               <div className="added-list-title"><strong><Icon name="clock" size={15} /> 등록 예정 자료</strong><span>{allPending.length}개</span></div>
-              <p className="us-side-desc">고르기만 한 자료예요. 'AI 분석 시작'을 누르면 등록돼요.</p>
+              <p className="us-side-desc">고르기만 한 자료예요.{"\n"}'AI 분석 시작'을 누르면 등록돼요.</p>
               {allPending.length === 0 ? <div className="empty-resource">고른 메일·페이지가 여기에 모여요.</div> : allPending.map((row) => renderRow(row, true))}
             </section>
             <section className="us-side-section us-registered">
@@ -368,7 +368,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
             </section>
           </aside>
         </div>
-        <ErrorNote message={error ?? localNotice ?? (needSources && !readable && !allPending.length ? "분석할 자료를 1건 이상 등록해 주세요. 위에서 자료 종류를 골라 보세요." : null)} />
+        <ErrorNote message={error ?? localNotice ?? (needSources && !readable && !allPending.length ? "분석할 자료를 1건 이상 등록해 주세요.\n위에서 자료 종류를 골라 보세요." : null)} />
         <div className="upload-step-actions">
           <button className="previous-step" onClick={onBack}><Icon name="arrow" size={16} /> 이전 단계로 이동</button>
           <button className="primary-button onboarding-next" disabled={busy || starting} onClick={askStart}>{starting ? "자료를 준비하는 중…" : "AI 분석 시작"} <Icon name="arrow" size={18} /></button>

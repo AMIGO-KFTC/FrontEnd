@@ -23,7 +23,7 @@ export function SessionGateScreen({ state, onRetry, onHome }: { state: GateState
           <>
             <div className="session-gate-visual missing"><span><Icon name="close" size={22} /></span></div>
             <h1>열 수 없는 작업이에요</h1>
-            <p>삭제됐거나 내 계정의 작업이 아니에요. 홈의 진행 중 목록에서 다른 작업을 열어 주세요.</p>
+            <p>삭제됐거나 내 계정의 작업이 아니에요.{"\n"}홈의 진행 중 목록에서 다른 작업을 열어 주세요.</p>
             <div className="session-gate-actions"><button className="primary-button onboarding-next" onClick={onHome}><Icon name="home" size={15} /> 홈으로 돌아가기</button></div>
           </>
         )}
