@@ -299,6 +299,7 @@ export interface ReceivedHandover {
   id: string;
   title: string;
   task_name: string;
+  duties?: string[]; // 이 인수인계서에 담긴 담당 업무 이름(여러 개일 수 있다)
   mode: HandoverMode;
   owner_name: string;
   owner_login_id: string;
@@ -363,6 +364,20 @@ export interface TeamDuties {
   editable: boolean;
 }
 
+// 알림(GET /api/notifications, POST /api/notifications/read · /dismiss): 받은 인수인계서 도착·수정. 확인·지움 상태는 서버에 계정별로 남는다.
+export type AppNotification = {
+  id: string;
+  kind: "received" | "updated";
+  session_id: string | null;
+  title: string;
+  text: string;
+  sender_name: string;
+  task_name: string;
+  created_at: string;
+  read: boolean;
+};
+export type NotificationsResult = { message: string; notifications: AppNotification[]; unread: number };
+
 // 인수인계 챗봇(GET /api/handover-chat/scopes, POST /api/handover-chat): 올린 자료·인계자 답변·인수인계서를 근거로 답한다.
 export type ChatScope = {
   id: string; // 질문 범위 = 업무(세션) ID. 지워진 인계 세션의 보낸 시점 문서는 'transfer:<ID>'
@@ -375,6 +390,8 @@ export type ChatScope = {
   source_count: number; // 근거가 되는 올린 자료 수
   session_id: string | null; // 인수인계서를 열 수 있는 세션(없으면 null)
   updated_at: string;
+  duties?: string[]; // 인수인계서에 담긴 담당 업무 이름
+  recipients?: string[]; // 내 업무(mine)를 보낸 인수자 이름
 };
 export type ChatSourceKind = "document" | "answer" | "mail" | "link" | "file" | "note";
 export type ChatSource = { scope_id: string; scope_title: string; scope_task: string; scope_kind: "mine" | "received"; scope_owner: string; session_id: string | null; kind: ChatSourceKind; label: string; source_id: string | null }; // source_id: 올린 파일·메일의 ID(원본 내려받기에 쓴다)

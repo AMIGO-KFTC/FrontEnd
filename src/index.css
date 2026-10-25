@@ -3603,3 +3603,129 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .personnel-submit { height: 42px; margin: 2px 17px 0; border: 0; border-radius: 10px; background: #2d2930; color: #fff; font-size: 14px; font-weight: 700; }
 .personnel-submit:disabled { opacity: .6; }
 @media (max-width: 1100px) { .personnel-layout { grid-template-columns: 1fr; } }
+
+/* 받은 인수인계: 검색 · 업무별 보기(하나라도 포함) */
+.received-layout { height: min(560px, 100%); }
+.received-list { max-height: 100%; overflow-y: auto; padding-top: 0; }
+.received-filter { position: sticky; top: 0; z-index: 1; margin: 0 -8px 4px; padding: 0 8px 10px; border-bottom: 1px solid #eee8e5; background: #fffdfa; }
+.received-search { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 9px; border: 1px solid #e3dcdc; border-radius: 9px; background: #fff; color: #9a9297; }
+.received-search:focus-within { border-color: #8a72cf; box-shadow: 0 0 0 3px rgba(112,84,196,.08); }
+.received-search input { min-width: 0; flex: 1; height: 100%; border: 0; outline: 0; background: transparent; color: #352f35; font-size: 12.5px; }
+.received-search button { width: 20px; height: 20px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #f1edeb; color: #756e73; }
+.received-duty-filter { display: flex; flex-wrap: wrap; gap: 5px; max-height: 92px; overflow-y: auto; margin-top: 8px; }
+.received-duty-filter button { display: inline-flex; align-items: center; gap: 4px; height: 25px; padding: 0 8px; border: 1px solid #e3dcdc; border-radius: 13px; background: #fff; color: #625a60; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.received-duty-filter button small { color: #aaa2a7; font-size: 10.5px; font-weight: 700; }
+.received-duty-filter button.picked { border-color: #8a72cf; background: #f1ecff; color: #5b43b3; }
+.received-duty-filter button.picked small { color: #8a72cf; }
+.received-duty-filter .received-duty-reset { border-style: dashed; color: #9a9297; }
+.received-filter-empty { margin: 18px 6px; color: #9a9297; font-size: 12.5px; line-height: 1.6; text-align: center; white-space: pre-line; }
+.received-duty-more { color: #8a72cf; font-size: 11px; font-style: normal; font-weight: 700; }
+.received-duty-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.received-duty-tags span { padding: 3px 8px; border-radius: 10px; background: #f3efed; color: #6c656a; font-size: 11.5px; font-weight: 600; }
+.received-duty-tags span.picked { background: #f1ecff; color: #5b43b3; }
+.received-detail-empty { display: grid; place-items: center; color: #9a9297; font-size: 13px; }
+
+/* 내 프로필 수정: 이름·사번·소속·팀·직책은 읽기 전용, 비밀번호 변경 */
+.profile-edit-modal input[readonly] { color: #8f878c; background: #f4f1ef; cursor: default; }
+.profile-edit-modal input[readonly]:focus { border-color: #ddd6d7; box-shadow: none; }
+.profile-edit-readonly-note { grid-column: 1 / -1; margin: -4px 0 0; color: #a39ba0; font-size: 12px; }
+.profile-password-section { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 14px; border-top: 1px solid #ece6e3; }
+.profile-password-section > strong { grid-column: 1 / -1; color: #3a343a; font-size: 13.5px; }
+.profile-password-section > strong small { margin-left: 6px; color: #a39ba0; font-size: 12px; font-weight: 500; }
+.profile-password-section > .profile-password-current { grid-column: 1 / -1; }
+.profile-password-caps { grid-column: 1 / -1; margin: -4px 0 0; color: #b0702a; font-size: 12px; }
+.profile-edit-success { grid-column: 1 / -1; margin: 0; padding: 9px 11px; border-radius: 9px; background: #e5f3ed; color: #3f7f68; font-size: 12.5px; }
+.profile-edit-modal form .profile-edit-error { grid-column: 1 / -1; }
+
+/* 근거 자료·받은 인수인계: 고른 문서가 없을 때 안내를 카드 가운데에 둔다(헤더·본문·푸터 3줄 격자를 쓰지 않음) */
+.materials-detail.materials-detail-empty,
+.received-detail.received-detail-empty { min-height: 360px; grid-template-rows: 1fr; place-items: center; align-content: center; }
+.materials-detail.materials-detail-empty p,
+.received-detail.received-detail-empty p { margin: 0; padding: 0 20px; text-align: center; }
+
+/* 인수인계 챗봇: 보낸·받은 인수인계 탭과 검색해서 고르는 창 */
+.chat-toolbar { align-items: center; padding-bottom: 8px; }
+.chat-scope-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid #e6dfdb; border-radius: 11px; background: #f1edea; }
+.chat-scope-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 31px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: #6e676c; font-size: 13px; font-weight: 700; cursor: pointer; }
+.chat-scope-tabs button small { color: #a59da2; font-size: 11.5px; }
+.chat-scope-tabs button.active { background: #fffdfa; color: #2f2a30; box-shadow: 0 2px 6px rgba(40,30,45,.08); }
+.chat-scope-tabs button.active small { color: #7a5fd0; }
+.chat-scope-picker { position: relative; z-index: 5; display: grid; gap: 7px; padding-bottom: 12px; }
+.chat-scope-trigger { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border: 1px solid #e3dcd8; border-radius: 10px; background: #fffdfa; color: #38323a; text-align: left; cursor: pointer; }
+.chat-scope-trigger:disabled { opacity: .6; cursor: default; }
+.chat-scope-trigger[aria-expanded="true"] { border-color: #8a72cf; box-shadow: 0 0 0 3px rgba(112,84,196,.08); }
+.chat-scope-trigger small { color: #837c82; font-size: 12.5px; font-weight: 700; }
+.chat-scope-trigger strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.chat-scope-trigger svg { color: #9a9297; }
+.chat-scope-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chat-scope-chips > span { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 4px 0 9px; border-radius: 13px; background: #f1ecff; color: #5b43b3; font-size: 12px; font-weight: 600; }
+.chat-scope-chips > span button { width: 18px; height: 18px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #7a62c8; cursor: pointer; }
+.chat-scope-chips .chat-scope-reset { height: 26px; padding: 0 9px; border: 1px dashed #d6cfd2; border-radius: 13px; background: transparent; color: #8f878c; font-size: 12px; cursor: pointer; }
+.chat-scope-panel { position: absolute; top: 46px; left: 0; right: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: min(430px, 60vh); overflow: hidden; border: 1px solid #e3dcd8; border-radius: 13px; background: #fffdfa; box-shadow: 0 18px 50px rgba(30,22,36,.16); }
+.chat-scope-search { display: flex; align-items: center; gap: 8px; margin: 10px; height: 36px; padding: 0 10px; border: 1px solid #e3dcdc; border-radius: 9px; background: #fff; color: #9a9297; }
+.chat-scope-search:focus-within { border-color: #8a72cf; }
+.chat-scope-search input { min-width: 0; flex: 1; height: 100%; border: 0; outline: 0; background: transparent; color: #352f35; font-size: 13.5px; }
+.chat-scope-search button { width: 20px; height: 20px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #f1edeb; color: #756e73; cursor: pointer; }
+.chat-scope-panel ul { min-height: 0; overflow-y: auto; margin: 0; padding: 0 6px 6px; list-style: none; }
+.chat-scope-panel li > button { width: 100%; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 10px; padding: 9px 8px; border: 0; border-radius: 9px; background: transparent; color: #373238; text-align: left; cursor: pointer; }
+.chat-scope-panel li > button:hover { background: #f8f4f2; }
+.chat-scope-panel li > button.picked { background: #f4f0ff; }
+.chat-scope-check { width: 17px; height: 17px; margin-top: 1px; display: grid; place-items: center; border: 1.5px solid #cfc7cb; border-radius: 5px; background: #fff; color: #fff; }
+.chat-scope-panel li > button.picked .chat-scope-check { border-color: #7a5fd0; background: #7a5fd0; }
+.chat-scope-text { min-width: 0; display: grid; gap: 3px; }
+.chat-scope-text strong { overflow: hidden; font-size: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
+.chat-scope-text strong em { margin-left: 6px; padding: 1px 6px; border-radius: 7px; background: #e5f3ed; color: #3f7f68; font-size: 10.5px; font-style: normal; }
+.chat-scope-text strong em.received { background: #fff0dc; color: #ae701d; }
+.chat-scope-text small { overflow: hidden; color: #958d92; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.chat-scope-duties { display: flex; flex-wrap: wrap; gap: 4px; }
+.chat-scope-duties i { padding: 1px 7px; border-radius: 8px; background: #f3efed; color: #6c656a; font-size: 11px; font-style: normal; }
+.chat-scope-none { padding: 18px 8px; color: #9a9297; font-size: 13px; text-align: center; }
+.chat-scope-panel footer { display: flex; align-items: center; gap: 7px; padding: 9px 10px; border-top: 1px solid #eee8e5; background: #fbf8f6; }
+.chat-scope-panel footer span { flex: 1; color: #8f878c; font-size: 12px; }
+.chat-scope-panel footer button { height: 30px; padding: 0 11px; border: 1px solid #ddd7d7; border-radius: 8px; background: #fff; color: #5f585e; font-size: 12px; font-weight: 700; cursor: pointer; }
+.chat-scope-panel footer button.primary { border-color: #2d2930; background: #2d2930; color: #fff; }
+@media (max-width: 640px) { .chat-scope-tabs button { padding: 0 8px; font-size: 12px; } .chat-scope-trigger small { display: none; } .chat-scope-panel footer { flex-wrap: wrap; } }
+
+/* 알림: 확인(읽음)·지우기·모두 확인 */
+.notification-row { position: relative; }
+.notification-list > .notification-row > .notification-main,
+.all-notifications-list > .notification-row > .notification-main { width: 100%; position: relative; display: grid; align-items: start; border: 0; border-bottom: 1px solid #f0ebe8; background: transparent; color: #39343a; text-align: left; cursor: pointer; }
+.notification-list > .notification-row > .notification-main { min-height: 56px; grid-template-columns: 29px 1fr; gap: 8px; padding: 7px 34px 7px 8px; }
+.all-notifications-list > .notification-row > .notification-main { min-height: 66px; grid-template-columns: 35px 1fr; gap: 10px; padding: 11px 40px 11px 10px; }
+.notification-row > .notification-main:hover { border-radius: 9px; background: #f8f4f4; }
+.notification-row > .notification-main > i { width: 6px; height: 6px; position: absolute; top: 12px; right: 30px; border-radius: 50%; background: #df5e80; }
+.all-notifications-list .notification-row > .notification-main > i { right: 36px; }
+.notification-row.read strong, .notification-row.read p { color: #a49ca1; }
+.notification-row.read .notification-icon { filter: grayscale(.7); opacity: .6; }
+.notification-delete { position: absolute; top: 7px; right: 4px; width: 22px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #b2aaaf; opacity: 0; cursor: pointer; transition: opacity .12s; }
+.notification-row:hover .notification-delete, .notification-delete:focus-visible { opacity: 1; }
+.notification-delete:hover { background: #f1eceb; color: #6c656a; }
+@media (hover: none) { .notification-delete { opacity: 1; } }
+.notification-header-actions { display: flex; align-items: center; gap: 6px; }
+.notification-popover > header .notification-read-all { width: auto; height: 26px; padding: 0 9px; border-radius: 7px; background: #f1ecff; color: #5b43b3; font-size: 12px; font-weight: 700; }
+.notification-error { margin: 6px 8px; color: #c15148; font-size: 12px; }
+.all-notifications-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 10px 18px 0; }
+.all-notifications-actions button { height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 11px; border: 1px solid #ddd7d7; border-radius: 8px; background: #fff; color: #5f585e; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.all-notifications-actions button:disabled { opacity: .5; cursor: default; }
+
+/* 1단계 담당 업무: 팀 업무가 많아도 넘치지 않게(검색 + 높이 제한 목록) · 화면이 길면 스크롤 */
+.onboarding-main { overflow-y: auto; align-items: flex-start; }
+.onboarding-main > .onboarding-card { margin: auto 0; }
+.picked-duties { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.task-chip.custom { background: #f3efed; color: #5f585e; }
+.team-duty-box { border: 1px solid #e3dee4; border-radius: 10px; background: #fff; overflow: hidden; }
+.onboarding-card .field-grid .team-duty-search { display: flex; margin: 0; align-items: center; gap: 7px; height: 36px; padding: 0 10px; border-bottom: 1px solid #efeaf0; color: #9a92a0; }
+.onboarding-card .team-duty-search input { flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; font-size: 12.5px; }
+.team-duty-search button { width: 20px; height: 20px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #f1edf3; color: #7a7280; }
+.team-duty-box .team-duty-picker { max-height: min(232px, 32vh); overflow-y: auto; display: block; margin: 0; padding: 4px; }
+.team-duty-box .team-duty-picker > button { width: 100%; min-height: 0; display: grid; grid-template-columns: 17px minmax(0, 1fr); align-items: center; gap: 9px; padding: 7px 8px; border: 0; border-radius: 7px; background: transparent; box-shadow: none; }
+.team-duty-box .team-duty-picker > button:hover { background: #f7f4fb; }
+.team-duty-box .team-duty-picker > button.picked { background: #f4f0ff; box-shadow: none; }
+.leave-theme .team-duty-box .team-duty-picker > button.picked { background: #fff3f8; box-shadow: none; }
+.team-duty-box .team-duty-text { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.team-duty-box .team-duty-text strong { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-duty-box .team-duty-text small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-duty-box .team-duty-check { margin-top: 0; }
+.team-duty-picker-none { margin: 0; padding: 14px 8px; color: #958d98; font-size: 12px; text-align: center; }
+.team-duty-count { margin: 0; padding: 6px 10px; border-top: 1px solid #efeaf0; background: #fbfafc; color: #958d98; font-size: 11.5px; text-align: right; }
+.task-editor .task-input-row { margin-top: 0; }

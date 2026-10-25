@@ -1,5 +1,5 @@
-// 근거 자료: 인수인계 업무를 고르면 그 인수인계서를 만드는 데 쓴 자료(올린 파일·메일·링크)를 한곳에서 본다.
-// 내 업무는 서버 세션 목록, 받은 업무는 GET /api/handovers/received 로 채우고, 고른 업무의 자료는 GET /api/sessions/{id} 의 sources 로 불러온다.
+// 근거 자료: 인수인계서를 고르면 그 인수인계서를 만드는 데 쓴 자료(올린 파일·메일·링크)를 한곳에서 본다.
+// 내 인수인계서는 서버 세션 목록, 받은 인수인계서는 GET /api/handovers/received 로 채우고, 고른 인수인계서의 자료는 GET /api/sessions/{id} 의 sources 로 불러온다.
 // 문서가 있으면 GET /api/sessions/{id}/citations 로 자료마다 문서 근거로 쓰인 횟수를 함께 보여 준다.
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/shared/api";
@@ -12,7 +12,7 @@ import type { HomeNav, SessionList } from "./types";
 type Props = HomeNav & { list: SessionList };
 type Tab = "mine" | "received";
 
-// 목록 한 줄: 내 업무와 받은 업무를 같은 모양으로 보여 준다.
+// 목록 한 줄: 내 인수인계서와 받은 인수인계서를 같은 모양으로 보여 준다.
 type Task = { id: string; title: string; owner: string; organization: string; mode: HandoverMode; stage: Stage; documentVersion: number; updatedAt: string };
 
 const STATUS_TEXT: Record<Source["status"], string> = { pending: "대기 중", processing: "읽는 중", ready: "읽기 완료", failed: "읽기 실패" };
@@ -63,7 +63,7 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
   const tasksError = tab === "mine" ? list.error : receivedError;
   const selected = tasks?.find((task) => task.id === selectedId) ?? tasks?.[0];
 
-  // 고른 업무의 자료와 문서 근거 횟수. 업무가 바뀔 때마다 새로 불러온다.
+  // 고른 인수인계서의 자료와 문서 근거 횟수. 고른 문서가 바뀔 때마다 새로 불러온다.
   const [sources, setSources] = useState<Source[] | null>(null);
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [cited, setCited] = useState<Record<string, number>>({});
@@ -114,14 +114,14 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
         </header>
         <div className="materials-content">
           <section className="documents-title">
-            <div><h1>업무별 근거 자료</h1><p>인수인계 업무를 고르면 그 인수인계서를 만드는 데 쓴 파일·메일·링크를 볼 수 있어요.</p></div>
-            <div><strong>{tasks ? tasks.length : "—"}</strong><small>{tab === "mine" ? "내 업무" : "받은 업무"}</small></div>
+            <div><h1>인수인계서별 근거 자료</h1><p>인수인계서를 고르면 그 문서를 만드는 데 쓴 파일·메일·링크를 볼 수 있어요.</p></div>
+            <div><strong>{tasks ? tasks.length : "—"}</strong><small>{tab === "mine" ? "내 인수인계서" : "받은 인수인계서"}</small></div>
           </section>
           <section className="materials-layout">
             <aside className="materials-list">
-              <div className="materials-tabs" role="tablist" aria-label="업무 구분">
-                <button role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "active" : ""} onClick={() => switchTab("mine")}>내 업무{mine ? ` ${mine.length}` : ""}</button>
-                <button role="tab" aria-selected={tab === "received"} className={tab === "received" ? "active" : ""} onClick={() => switchTab("received")}>받은 업무{received ? ` ${received.length}` : ""}</button>
+              <div className="materials-tabs" role="tablist" aria-label="인수인계서 구분">
+                <button role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "active" : ""} onClick={() => switchTab("mine")}>내 인수인계서{mine ? ` ${mine.length}` : ""}</button>
+                <button role="tab" aria-selected={tab === "received"} className={tab === "received" ? "active" : ""} onClick={() => switchTab("received")}>받은 인수인계서{received ? ` ${received.length}` : ""}</button>
               </div>
               {tasksError && <div className="list-notice error" role="alert">목록을 불러오지 못했어요: {tasksError}<button onClick={tab === "mine" ? list.reload : loadReceived}>다시 시도</button></div>}
               {tasks && tasks.length === 0 && !tasksError && <p className="materials-empty">{tab === "mine" ? "아직 만든 인수인계가 없어요." : "아직 받은 인수인계가 없어요."}</p>}
@@ -154,7 +154,7 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
                 <div className="materials-body">
                   {sourcesError && <div className="list-notice error" role="alert">자료를 불러오지 못했어요: {sourcesError}</div>}
                   {!sources && !sourcesError && <p className="materials-empty">자료를 불러오는 중이에요…</p>}
-                  {sources && sources.length === 0 && <p className="materials-empty">이 업무에는 아직 등록한 자료가 없어요.</p>}
+                  {sources && sources.length === 0 && <p className="materials-empty">이 인수인계서에는 아직 등록한 자료가 없어요.</p>}
                   {sources && sources.length > 0 && (
                     <ul className="materials-sources">
                       {sources.map((source) => {
@@ -183,12 +183,12 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
                 </div>
                 <footer>
                   {downloadable.length > 0 && <a className="materials-zip" href={api.sourcesArchiveUrl(selected.id)} download title="올린 자료 파일을 ZIP 한 개로 내려받아요"><Icon name="download" size={14} /> 파일 모두 내려받기 (ZIP)</a>}
-                  <button onClick={() => onChat(selected.id)} disabled={tab === "received" && !selectedHasDocument}><Icon name="sparkle" size={14} /> 이 업무에 질문하기</button>
+                  <button onClick={() => onChat(selected.id)} disabled={tab === "received" && !selectedHasDocument}><Icon name="sparkle" size={14} /> 이 인수인계서에 질문하기</button>
                   <button onClick={() => (tab === "mine" ? list.open(selected.id) : list.openDocument(selected.id))} disabled={tab === "received" && !selectedHasDocument}><Icon name="file" size={14} /> {tab === "mine" && !selectedHasDocument ? "작업 열기" : "문서 열기"}</button>
                 </footer>
               </article>
             ) : (
-              <article className="materials-detail materials-detail-empty"><p>왼쪽에서 업무를 고르면 근거 자료가 여기에 보여요.</p></article>
+              <article className="materials-detail materials-detail-empty"><p>왼쪽에서 인수인계서를 고르면 근거 자료가 여기에 보여요.</p></article>
             )}
           </section>
         </div>

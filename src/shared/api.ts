@@ -6,6 +6,7 @@ import type {
   AuthUser,
   ChatAnswer,
   ChatScope,
+  NotificationsResult,
   ChatMessage,
   ChatTurn,
   CitationsResult,
@@ -102,6 +103,8 @@ export const api = {
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
   signup: (loginId: string, password: string, name: string, employeeNo = "") => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo }),
   saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>("/api/me/password", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
 
   // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용
   members: () => request<{ members: Member[] }>("/api/members"),
@@ -111,6 +114,10 @@ export const api = {
   chatScopes: () => request<{ scopes: ChatScope[] }>("/api/handover-chat/scopes"),
   askHandover: (question: string, history: ChatTurn[], scopeIds: string[] | null) =>
     post<ChatAnswer>("/api/handover-chat", { question, history, scope_ids: scopeIds }),
+  notifications: () => request<NotificationsResult>("/api/notifications"),
+  // ids 가 null 이면 모든 알림
+  readNotifications: (ids: string[] | null) => post<NotificationsResult>("/api/notifications/read", { ids }),
+  dismissNotifications: (ids: string[] | null) => post<NotificationsResult>("/api/notifications/dismiss", { ids }),
   receivedHandovers: () => request<{ handovers: ReceivedHandover[] }>("/api/handovers/received"),
   adminMembers: () => request<{ organization: string; members: AdminMember[] }>("/api/admin/members"),
   adminHandovers: () => request<{ organization: string; handovers: AdminHandover[] }>("/api/admin/handovers"),
