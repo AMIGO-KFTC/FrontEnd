@@ -262,7 +262,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           <nav>
             {sections.map((section, index) => (
               <button className={activeSection === index ? "active" : ""} key={section} onClick={() => goTo(index)}>
-                <span>0{index + 1}</span>{section}<Icon name="chevron" size={12} />
+                <span>{String(index + 1).padStart(2, "0")}</span>{section}<Icon name="chevron" size={12} />
               </button>
             ))}
           </nav>
