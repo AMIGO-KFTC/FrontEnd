@@ -17,6 +17,9 @@ export default defineConfig({
     },
   },
   server: {
+    // 원격 서버(VM)에서 IP·도메인으로 접속할 수 있게 한다. 로컬 개발에는 영향 없음
+    host: true,
+    allowedHosts: true,
     port: 5173,
     proxy: {
       "/api": { target: process.env.AMIGO_API ?? "http://localhost:8000", changeOrigin: true },
