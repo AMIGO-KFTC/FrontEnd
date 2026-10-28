@@ -1,4 +1,5 @@
-// 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번·비밀번호·이름을 보낸다. 사번(숫자 7자리)이 곧 로그인 아이디(login_id)다.
+// 회원가입(새 디자인). BackEnd 의 POST /api/auth/signup 에 사번·비밀번호·이름과 소속(본부·부서, 팀)을 보낸다. 사번(숫자 7자리)이 곧 로그인 아이디(login_id)다.
+// 소속을 가입 때 정해 두면 내 정보를 따로 고치지 않아도 인수인계 시작 화면에 우리 팀의 단위업무가 나온다(목록은 GET /api/auth/org-teams).
 // 비밀번호는 9~20자의 영문·숫자·특수문자 조합(비밀번호 재설정 화면과 같은 규칙). 화면에서 먼저 검사하고, 서버 오류 문구(중복 사번 등)는 그대로 보여 준다.
 // 스마트보안카드 인증번호는 서버 검증 API 가 아직 없어 화면에서 고정 번호(shared/securityCard.ts)로 확인한다(요청 → 30초 안에 6자리 입력). API 가 생기면 submit 에서 함께 보낸다.
 import { useEffect, useState, type FormEvent } from "react";
@@ -15,6 +16,9 @@ type Props = { onBack: () => void; onRegistered?: (message: string) => void };
 export function SignupScreen({ onBack, onRegistered }: Props) {
   const [name, setName] = useState("");
   const [employeeNo, setEmployeeNo] = useState("");
+  const [divisions, setDivisions] = useState<{ name: string; teams: string[] }[] | null>(null); // null = 불러오는 중이거나 못 불러옴
+  const [division, setDivision] = useState("");
+  const [team, setTeam] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [securityCard, setSecurityCard] = useState("");
@@ -23,6 +27,10 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
   const [busy, setBusy] = useState(false);
   const [completed, setCompleted] = useState<string | null>(null); // 서버가 준 완료 안내
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.orgTeams().then(({ divisions: rows }) => setDivisions(rows)).catch(() => setDivisions(null));
+  }, []);
 
   useEffect(() => {
     if (!codeRequested || timeLeft <= 0) return;
@@ -47,6 +55,10 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
       setError("사번은 숫자 7자리여야 해요.");
       return;
     }
+    if (divisions && divisions.length > 0 && (!division || !team)) {
+      setError("소속 본부·부서와 팀을 골라 주세요.");
+      return;
+    }
     if (!PASSWORD_RULE.test(password)) {
       setError("비밀번호는 9~20자의 영문, 숫자, 특수문자를 모두 포함해야 해요.");
       return;
@@ -63,7 +75,7 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
       setError("인증 시간이 만료되었습니다. 다시 요청해 주세요.");
       return;
     }
-    const cardError = checkSecurityCard(securityCard);
+    const cardError = checkSecurityCard(securityCard); // 6자리 숫자면 아무 번호나 통과
     if (cardError) {
       setError(cardError);
       return;
@@ -71,7 +83,7 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
     setBusy(true);
     setError("");
     try {
-      const result = await api.signup(employeeNo, password, name.trim(), employeeNo);
+      const result = await api.signup(employeeNo, password, name.trim(), employeeNo, division, team);
       setCompleted(result.message || "회원가입이 완료되었습니다. 로그인해 주세요.");
     } catch (e) {
       setError((e as Error).message);
@@ -105,6 +117,22 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
             <label>사번
               <div className="input-wrap"><Icon name="user" size={17} /><input value={employeeNo} onChange={(event) => setEmployeeNo(event.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="사번 7자리 숫자 (로그인에 사용)" inputMode="numeric" autoComplete="username" maxLength={7} disabled={busy} /></div>
             </label>
+            {divisions && divisions.length > 0 && (
+              <>
+                <label>소속 본부·부서
+                  <div className="input-wrap"><Icon name="folder" size={17} /><select value={division} onChange={(event) => { setDivision(event.target.value); setTeam(""); }} disabled={busy}>
+                    <option value="">본부·부서를 골라 주세요</option>
+                    {divisions.map((row) => <option key={row.name} value={row.name}>{row.name}</option>)}
+                  </select></div>
+                </label>
+                <label>팀
+                  <div className="input-wrap"><Icon name="folder" size={17} /><select value={team} onChange={(event) => setTeam(event.target.value)} disabled={busy || !division}>
+                    <option value="">{division ? "팀을 골라 주세요" : "먼저 본부·부서를 골라 주세요"}</option>
+                    {(divisions.find((row) => row.name === division)?.teams ?? []).map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select></div>
+                </label>
+              </>
+            )}
             <label>비밀번호
               <div className="input-wrap"><Icon name="shield" size={17} /><input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="9~20자, 영문·숫자·특수문자 포함" type="password" autoComplete="new-password" maxLength={20} disabled={busy} /></div>
             </label>

@@ -8,7 +8,13 @@
 export type Cell = { start: number; end: number; raw: string; kind: "md" | "html" };
 
 const HTML_CELL = /<td(\s[^>]*)?>([\s\S]*?)<\/td>/g;
-const HEADING = /^(#{3,6}\s+\d+\)\s*)(.+)$/; // '### 1) 항목 이름'
+// '### 1) 항목 이름', '##### 가. 세부업무 이름'. '#### 1) 정기업무'·'#### 2) 비정기 업무' 같은 묶음 제목은 고치는 칸이 아니다
+const HEADING = /^(#{3,6}\s+(?:\d+\)|[①-⑳]|\(\d+\))\s*)(.+)$/; // '### 1) 항목', '##### ① 세부업무'(묶음 제목 '#### 가. 정기업무'는 고치지 않는다)
+
+// Markdown 표 구분선(| --- | --- |). 빈 칸 표시 '-' 한 글자뿐인 내용 행(| - | - |)은 구분선이 아니다
+const MD_SEPARATOR = /^\s*\|(\s*:?-{3,}:?\s*\|)+\s*$/;
+
+const HANDWRITTEN = /^\s*ID:\s*_+\s*\/\s*PW:\s*_+\s*$/i; // 수기 기재 칸(AI render.HANDWRITTEN_BLANK)
 
 function isBlank(raw: string): boolean {
   const text = raw.trim();
@@ -50,13 +56,14 @@ export function findCells(body: string): Cell[] {
       const start = offset + heading[1].length;
       cells.push({ start, end: start + heading[2].length, raw: heading[2], kind: "md" });
     } else if (line.trimStart().startsWith("|")) {
-      const isSeparator = /^\s*\|[\s:|-]+\|\s*$/.test(line);
-      const isHeader = /^\s*\|[\s:|-]+\|\s*$/.test(lines[index + 1] ?? ""); // 다음 줄이 구분선이면 머리글
+      const isSeparator = MD_SEPARATOR.test(line);
+      const isHeader = MD_SEPARATOR.test(lines[index + 1] ?? ""); // 다음 줄이 구분선이면 머리글
       if (!isSeparator && !isHeader) cells.push(...markdownRowCells(line, offset));
     }
     offset += line.length + 1;
   });
-  return cells.sort((a, b) => a.start - b.start);
+  // 시스템 접근 권한의 ID/PW 칸('ID: ____ / PW: ____')은 출력한 뒤 손으로 적는 칸이라 화면에서 고칠 수 없다(읽기 전용)
+  return cells.filter((cell) => !HANDWRITTEN.test(cell.raw)).sort((a, b) => a.start - b.start);
 }
 
 export type Row = { start: number; end: number; marker: number; kind: "md" | "html" };
@@ -78,8 +85,8 @@ export function findRows(body: string): Row[] {
   let offset = 0;
   lines.forEach((line, index) => {
     if (line.trimStart().startsWith("|")) {
-      const isSeparator = /^\s*\|[\s:|-]+\|\s*$/.test(line);
-      const isHeader = /^\s*\|[\s:|-]+\|\s*$/.test(lines[index + 1] ?? "");
+      const isSeparator = MD_SEPARATOR.test(line);
+      const isHeader = MD_SEPARATOR.test(lines[index + 1] ?? "");
       const last = line.lastIndexOf("|");
       if (!isSeparator && !isHeader && last > line.indexOf("|")) rows.push({ start: offset, end: offset + line.length, marker: offset + last, kind: "md" });
     }
@@ -118,7 +125,15 @@ function shiftRowspan(body: string, row: Row, delta: number): string {
 export function deleteRow(body: string, index: number): string {
   const row = findRows(body)[index];
   if (!row) return body;
-  if (row.kind === "md") return `${body.slice(0, row.start)}${body.slice(row.end + 1)}`;
+  if (row.kind === "md") {
+    // 표의 마지막 한 행은 지우지 않고 빈 칸('-')으로 비운다(행이 하나도 없으면 행 추가 단추가 없어 다시 더할 수 없다)
+    const siblings = findRows(body).filter((other) => other.kind === "md" && body.lastIndexOf("\n\n", other.start) === body.lastIndexOf("\n\n", row.start));
+    if (siblings.length <= 1) {
+      const count = Math.max(1, body.slice(row.start, row.end).trim().replace(/\\\|/g, "").split("|").length - 2);
+      return `${body.slice(0, row.start)}| ${Array(count).fill("-").join(" | ")} |${body.slice(row.end)}`;
+    }
+    return `${body.slice(0, row.start)}${body.slice(row.end + 1)}`;
+  }
   const out = `${body.slice(0, row.start)}${body.slice(row.end)}`;
   return shiftRowspan(out, row, -1);
 }
@@ -139,16 +154,28 @@ export function addRowAfter(body: string, index: number): string {
 
 const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#x27;": "'", "&#39;": "'" };
 
-/** 칸 원문을 사람이 고칠 글로(이스케이프를 푼다). */
+const DOC_HINT = /<span class="doc-hint">[^<]*<\/span>/g; // 비어 있는 칸의 흐린 안내: 고칠 글이 아니라 빈 칸으로 본다
+
+/** 칸 원문을 사람이 고칠 글로(이스케이프를 푼다). 흐린 안내만 있는 칸은 빈 글. */
+const BR = /<br\s*\/?>/gi; // 칸 안 줄바꿈(문서는 여러 문장을 <br> 로 나눈다)
+
 export function cellText(cell: Cell): string {
-  if (cell.kind === "md") return cell.raw.replace(/\\\|/g, "|");
-  return cell.raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
+  const raw = cell.raw.replace(DOC_HINT, "").replace(BR, "\n");
+  if (cell.kind === "md") return raw.replace(/\\\|/g, "|").replace(/\\~/g, "~"); // 문서의 '\~'(취소선 방지 이스케이프)는 '~'로 보여 준다
+  return raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
+}
+
+/** 꼭 직접 적어야 하는 칸인지: 비어 있거나(흐린 안내만 남은 칸), 수기로 적는 빈칸('________', ID/PW)이 남아 있다. */
+export function needsFill(text: string): boolean {
+  return text.trim() === "" || /_{3,}/.test(text);
 }
 
 function encode(text: string, kind: Cell["kind"]): string {
-  const flat = text.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean).join(" / ").trim() || "-";
-  if (kind === "md") return flat.replace(/\|/g, "\\|");
-  return flat.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  // 입력칸의 줄바꿈은 문서의 칸 안 줄바꿈(<br>)으로 저장한다
+  const lines = text.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return "-";
+  if (kind === "md") return lines.map((line) => line.replace(/\|/g, "\\|").replace(/(?<!\\)~/g, "\\~")).join("<br>"); // '~' 두 개가 취소선이 되지 않게
+  return lines.map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")).join("<br>");
 }
 
 /** 고친 칸만 원문의 같은 자리에 바꿔 넣은 본문. edits 의 키는 findCells 의 순서 번호. */

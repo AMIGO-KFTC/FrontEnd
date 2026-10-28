@@ -1,11 +1,13 @@
 // STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받는다. 성명·소속·직책은 로그인한 사용자 프로필 값을 그대로 쓰고,
 // 인수자는 완성 문서 화면의 '인수자에게 전송하기'에서 고른다.
 // 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장 + 팀장이 관리자 화면에서 더한 업무) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
-// 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
-import { useEffect, useState } from "react";
+// 팀장(관리자)의 인사발령은 단위 업무 대신 ① 주요 사업계획 고르기(경영정보시스템 주요 업무보고 단위의 우리 팀 사업계획) → ② 그중 주요 현안사항이 있는 사업계획 고르기로 받는다.
+// 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 한 목록으로 받는다(정기·비정기로 나누지 않는다. 서버에는 한 목록을 regular 로 보낸다).
+import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
+import { HelpTip } from "@/shared/HelpTip";
 import { dutiesText, type StartData } from "@/shared/handover";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
@@ -14,13 +16,36 @@ import { StepUserMenu } from "@/shared/StepUserMenu";
 import type { HandoverMode, HandoverUnit, OrgDuties } from "@/shared/types";
 
 type Kind = "regular" | "irregular";
-const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무(프로젝트성)" };
+const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무" };
+// 정기·비정기 업무 옆 (?) 를 가리키면(hover) 뜨는 설명. 마지막 줄이 작성 가이드 문장이다.
+const KIND_HELP: Record<Kind, { definition: string; example: string; guide: string }> = {
+  regular: {
+    definition: "일·월·분기 등 일정한 주기로 반복되거나, 일상적인 운영 및 관리를 위해 지속적으로 수행하는 업무",
+    example: "월간 실적 보고, 정산, 데이터 관리, 정기 점검, 상시 문의 대응",
+    guide: "일정한 주기를 두고 반복적으로 수행해야 하는 업무를 작성해 주세요.",
+  },
+  irregular: {
+    definition: "특정 목표 달성을 위해 별도로 추진하거나, 수행 기간이나 완료 시점이 정해져 있는 업무",
+    example: "신규 시스템 도입, 업무 프로세스 개선, 신규 정책 수립, 신규 서비스 기획",
+    guide: "프로젝트, 수시성 업무 등 일정한 주기 없이 수행하는 업무를 작성해 주세요.",
+  },
+};
+function KindHelp({ kind }: { kind: Kind }) {
+  const help = KIND_HELP[kind];
+  return (
+    <HelpTip label={KIND_LABEL[kind]}>
+      <strong>{KIND_LABEL[kind]}</strong>
+      <p>{help.definition}<em>예: {help.example}</em></p>
+      <p className="help-tip-guide">{help.guide}</p>
+    </HelpTip>
+  );
+}
 
 const emptyUnit = (name: string): HandoverUnit => ({ name, regular: [], irregular: [] });
 const draftKey = (unitName: string, kind: Kind) => `${unitName}\u0000${kind}`;
 
 // 세부업무 칩 입력칸. Enter(한글 조합 중 Enter 는 글자 확정이라 무시) 또는 '추가'로 칩을 붙이고 × 로 지운다.
-function ChipField({ label, items, draft, placeholder, onDraft, onChange }: { label: string; items: string[]; draft: string; placeholder: string; onDraft: (value: string) => void; onChange: (items: string[]) => void }) {
+function ChipField({ label, items, draft, placeholder, onDraft, onChange }: { label: ReactNode; items: string[]; draft: string; placeholder: string; onDraft: (value: string) => void; onChange: (items: string[]) => void }) {
   const add = () => {
     const next = draft.trim();
     if (!next) return;
@@ -58,7 +83,7 @@ type Props = { mode: HandoverMode; onStart: (data: StartData) => void; onLogout:
 
 export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, error = null }: Props) {
   const [profile] = useProfile();
-  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: mode === "leave" ? [emptyUnit("")] : [] });
+  const [data, setData] = useState<StartData>({ mode, name: profile.name, division: profile.division, team: profile.team, role: profile.role, task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: mode === "leave" ? [emptyUnit("")] : [], plans: [], issues: [] });
   const [step, setStep] = useState<1 | 2>(1);
   const [drafts, setDrafts] = useState<Record<string, string>>({}); // 세부업무 입력칸에 적어 두고 아직 추가하지 않은 글
   const [customUnits, setCustomUnits] = useState<string[]>([]); // '+ 추가하기'로 직접 넣은 단위 업무
@@ -82,6 +107,24 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       .then((result) => setManagerDuties(result.duties.map((duty) => duty.name.trim()).filter(Boolean)))
       .catch(() => setManagerDuties([]));
   }, []);
+  // 팀장(관리자) 인사발령: 단위 업무 대신 주요 사업계획을 고른다
+  const office = mode === "reassignment" && profile.isAdmin;
+  const [teamPlans, setTeamPlans] = useState<string[] | null>(null); // null = 불러오는 중
+  const [plansFailed, setPlansFailed] = useState(false);
+  useEffect(() => {
+    if (!office) return;
+    api
+      .businessPlans()
+      .then((result) => setTeamPlans([...new Set(result.plans.map((plan) => plan.trim()).filter(Boolean))]))
+      .catch(() => {
+        setTeamPlans([]);
+        setPlansFailed(true);
+      });
+  }, [office]);
+  const [customPlans, setCustomPlans] = useState<string[]>([]); // '+ 직접 추가'로 넣은 사업계획
+  const [planDraft, setPlanDraft] = useState<string | null>(null); // null 이면 직접 추가 입력칸을 닫아 둔다
+  const [planQuery, setPlanQuery] = useState("");
+  const [issueDraft, setIssueDraft] = useState<string | null>(null); // 2단계에서 직접 더하는 현안
   const update = (key: "leaveStart" | "leaveEnd", value: string) => setData({ ...data, [key]: value });
 
   // 우리 팀(프로필의 본부·팀) 단위 업무: 1차로 직제규정 시행세칙 업무분장(본부 이름이 다르면 팀 이름으로만 찾는다), 그다음 팀장이 관리자 화면에서 더한 업무.
@@ -110,7 +153,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   const chipField = (unit: HandoverUnit, kind: Kind, placeholder: string) => (
     <ChipField
       key={kind}
-      label={KIND_LABEL[kind]}
+      label={<>{KIND_LABEL[kind]}<KindHelp kind={kind} /></>}
       items={unit[kind]}
       draft={drafts[draftKey(unit.name, kind)] ?? ""}
       placeholder={placeholder}
@@ -131,8 +174,45 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     return empty.length === 0;
   };
 
+  // 팀장 1단계: 우리 팀 주요 사업계획(+ 직접 추가한 것) 중 여러 개를 고른다. 고른 것은 검색어와 상관없이 보인다.
+  const planOptions = [...(teamPlans ?? []), ...customPlans.filter((name) => !(teamPlans ?? []).includes(name))];
+  const pickedPlans = new Set(data.plans);
+  const planKeyword = planQuery.trim().toLowerCase();
+  const shownPlans = planOptions.filter((name) => !planKeyword || name.toLowerCase().includes(planKeyword) || pickedPlans.has(name));
+  const togglePlan = (name: string) =>
+    setData({ ...data, plans: pickedPlans.has(name) ? data.plans.filter((plan) => plan !== name) : [...data.plans, name], issues: data.issues.filter((issue) => issue !== name) });
+  const addCustomPlan = (): string[] => {
+    const name = (planDraft ?? "").trim();
+    if (!name) return data.plans;
+    if (!planOptions.includes(name)) setCustomPlans([...customPlans, name]);
+    const plans = pickedPlans.has(name) ? data.plans : [...data.plans, name];
+    setData({ ...data, plans });
+    setPlanDraft(null);
+    return plans;
+  };
+  // 팀장 2단계: 고른 사업계획 + 직접 더한 현안(사업계획에 없는 이름) 중 주요 현안사항이 있는 것을 고른다.
+  const customIssues = data.issues.filter((issue) => !data.plans.includes(issue));
+  const issueOptions = [...data.plans, ...customIssues];
+  const pickedIssues = new Set(data.issues);
+  const toggleIssue = (name: string) =>
+    setData({ ...data, issues: pickedIssues.has(name) ? data.issues.filter((issue) => issue !== name) : [...data.issues, name] });
+  const addIssue = (): string[] => {
+    const name = (issueDraft ?? "").trim();
+    if (!name) return data.issues;
+    const issues = pickedIssues.has(name) ? data.issues : [...data.issues, name];
+    setData({ ...data, issues });
+    setIssueDraft(null);
+    return issues;
+  };
+
   // 인사발령 1단계 → 2단계: 단위 업무 1개 이상(입력칸에 적어 두고 '추가'를 안 누른 단위 업무도 포함)
   const next = () => {
+    if (office) {
+      const plans = planDraft?.trim() ? addCustomPlan() : data.plans;
+      if (!check([[!plans.length, "주요 사업계획"]])) return;
+      setStep(2);
+      return;
+    }
     const units = customDraft?.trim() ? addCustomUnit() : data.units;
     if (!check([[!units.length, "단위 업무"]])) return;
     setStep(2);
@@ -140,6 +220,14 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
 
   const submit = () => {
     if (busy) return;
+    if (office) {
+      // 입력칸에 적어 두고 '추가'를 안 누른 현안도 포함한다. 현안은 없어도 된다
+      const issues = issueDraft?.trim() ? addIssue() : data.issues;
+      const form = { ...data, name: profile.name, division: profile.division, team: profile.team, role: profile.role, units: [], task: data.plans.join("\n"), issues };
+      setData(form);
+      onStart(form);
+      return;
+    }
     const units = withDrafts(data.units);
     const form = { ...data, name: profile.name, division: profile.division, team: profile.team, role: profile.role, units, task: dutiesText(units) };
     if (mode === "leave") {
@@ -211,15 +299,116 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     </div>
   );
 
+  // 팀장 1단계: 주요 사업계획 고르기(단위 업무 고르기와 같은 모양)
+  const planPicker = (
+    <div className="wide-field unit-field">
+      <span className="unit-field-label">주요 사업계획 <i>*</i></span>
+      <p className="unit-field-help">
+        {teamPlans === null
+          ? "우리 팀 사업계획을 불러오고 있어요."
+          : plansFailed
+            ? "우리 팀 사업계획을 불러오지 못했어요. 아래 '+ 직접 추가'로 넣어 주세요."
+            : teamPlans.length
+              ? `${profile.team || "우리 팀"} 사업계획 ${teamPlans.length}개예요. 인계할 사업계획을 모두 골라 주세요.`
+              : `${profile.team || "우리 팀"}의 사업계획을 찾지 못했어요. 아래 '+ 직접 추가'로 넣어 주세요.`}
+      </p>
+      {planOptions.length > 6 && (
+        <label className="team-duty-search unit-search">
+          <Icon name="search" size={13} />
+          <input value={planQuery} onChange={(event) => setPlanQuery(event.target.value)} placeholder={`사업계획 ${planOptions.length}개에서 검색`} aria-label="사업계획 검색" />
+          {planQuery && <button type="button" onClick={() => setPlanQuery("")} aria-label="검색어 지우기"><Icon name="close" size={11} /></button>}
+        </label>
+      )}
+      {planOptions.length > 0 && shownPlans.length === 0 && <p className="team-duty-picker-none">‘{planQuery.trim()}’에 맞는 사업계획이 없어요. 아래 '+ 직접 추가'로 넣어 주세요.</p>}
+      {shownPlans.length > 0 && (
+        <div className="unit-options">
+          {shownPlans.map((name) => (
+            <label className={`unit-option ${pickedPlans.has(name) ? "checked" : ""}`} key={name}>
+              <input type="checkbox" checked={pickedPlans.has(name)} onChange={() => togglePlan(name)} />
+              <span>{name}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      {planDraft === null ? (
+        <button type="button" className="unit-add-button" onClick={() => setPlanDraft("")}>+ 직접 추가</button>
+      ) : (
+        <div className="task-editor unit-add-editor">
+          <div className="task-input-row">
+            <input
+              autoFocus
+              value={planDraft}
+              onChange={(event) => setPlanDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  addCustomPlan();
+                } else if (event.key === "Escape") setPlanDraft(null);
+              }}
+              placeholder="사업계획명을 입력하고 Enter를 눌러 추가하세요"
+              aria-label="직접 추가할 사업계획명"
+            />
+            <button type="button" onClick={addCustomPlan}>추가</button>
+            <button type="button" className="unit-add-cancel" onClick={() => setPlanDraft(null)}>취소</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+  // 팀장 2단계: 주요 현안사항이 있는 사업계획 고르기(없으면 고르지 않아도 된다). 목록에 없는 현안은 직접 더한다.
+  const issuePicker = (
+    <div className="wide-field unit-field">
+      <span className="unit-field-label">주요 현안사항</span>
+      <p className="unit-field-help">현안이 있는 사업계획을 눌러 골라 주세요. {issueOptions.length}개 중 {data.issues.length}개를 골랐어요.</p>
+      <div className="unit-options">
+        {issueOptions.map((name) => (
+          <label className={`unit-option ${pickedIssues.has(name) ? "checked" : ""}`} key={name}>
+            <input type="checkbox" checked={pickedIssues.has(name)} onChange={() => toggleIssue(name)} />
+            <span>{name}</span>
+          </label>
+        ))}
+      </div>
+      {issueDraft === null ? (
+        <button type="button" className="unit-add-button" onClick={() => setIssueDraft("")}>+ 현안 직접 추가</button>
+      ) : (
+        <div className="task-editor unit-add-editor">
+          <div className="task-input-row">
+            <input
+              autoFocus
+              value={issueDraft}
+              onChange={(event) => setIssueDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  addIssue();
+                } else if (event.key === "Escape") setIssueDraft(null);
+              }}
+              placeholder="현안을 입력하고 Enter를 눌러 추가하세요"
+              aria-label="직접 추가할 현안"
+            />
+            <button type="button" onClick={addIssue}>추가</button>
+            <button type="button" className="unit-add-cancel" onClick={() => setIssueDraft(null)}>취소</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const leaveUnit = data.units[0] ?? emptyUnit("");
   const leaveFields = (
     <>
       <div className="wide-field unit-field">
         <span className="unit-field-label">담당 업무 <i>*</i></span>
         <p className="unit-field-help">부재 중 처리해야 할 세부업무를 입력하고 Enter를 눌러 추가해 주세요.</p>
-        <div className="unit-detail-grid">
-          {chipField(leaveUnit, "regular", "예: 월말 정산 보고")}
-          {chipField(leaveUnit, "irregular", "예: 시스템 개선 프로젝트")}
+        <div className="unit-detail-grid single">
+          <ChipField
+            label={<>세부업무<HelpTip label="세부업무"><strong>세부업무</strong><p>업무분장표에 명시된 단위업무를 수행하기 위해 필요한 주요 활동을 구분한 것으로, 인수인계 시 개별적으로 수행 방법과 절차를 설명할 수 있는 업무 단위</p></HelpTip></>}
+            items={leaveUnit.regular}
+            draft={drafts[draftKey(leaveUnit.name, "regular")] ?? ""}
+            placeholder="예: 월말 정산 보고, 시스템 개선 프로젝트"
+            onDraft={(value) => setDrafts({ ...drafts, [draftKey(leaveUnit.name, "regular")]: value })}
+            onChange={(items) => setItems(leaveUnit.name, "regular", items)}
+          />
         </div>
       </div>
       <div className="wide-field leave-period-field">
@@ -233,7 +422,13 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     <div className="unit-detail-list">
       {data.units.map((unit, index) => (
         <section className="unit-detail-card" key={unit.name}>
-          <h3><b>{index + 1}.</b> {unit.name}</h3>
+          <h3>
+            <b>{index + 1}.</b> {unit.name}
+            <HelpTip label="세부업무">
+              <strong>세부업무</strong>
+              <p>업무분장표에 명시된 단위업무를 수행하기 위해 필요한 주요 활동을 구분한 것으로, 인수인계 시 개별적으로 수행 방법과 절차를 설명할 수 있는 업무 단위</p>
+            </HelpTip>
+          </h3>
           <div className="unit-detail-grid">
             {chipField(unit, "regular", "예: 월간 실적 보고")}
             {chipField(unit, "irregular", "예: 홈페이지 리뉴얼")}
@@ -262,7 +457,21 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       <main className="onboarding-main start-form-main">
         <section className="onboarding-card">
           <div className="onboarding-card-title">
-            {detailMode ? (
+            {office ? (
+              step === 2 ? (
+                <div>
+                  <span>1단계 · 주요 현안사항 · 정기인사 발령</span>
+                  <h2>주요 현안사항이 있는 사업계획을 선택해 주세요</h2>
+                  <p>선택한 현안은 인수인계서 '2. 주요 현안사항'에 개요·진행상황·고려사항으로 정리돼요. 없으면 선택하지 않아도 돼요.</p>
+                </div>
+              ) : (
+                <div>
+                  <span>1단계 · 주요 사업계획 · 정기인사 발령</span>
+                  <h2>인계할 주요 사업계획을 선택해 주세요</h2>
+                  <p>경영정보시스템 주요 업무보고 단위로 정리된 우리 팀 사업계획이에요. 목록에 없으면 직접 추가해 주세요.</p>
+                </div>
+              )
+            ) : detailMode ? (
               <div>
                 <span>1단계 · 세부업무 · 정기인사 발령</span>
                 <h2>세부업무를 작성해 주세요</h2>
@@ -278,7 +487,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
             {!detailMode && <span className="required-note"><i /> 필수 입력</span>}
           </div>
           <div className="field-grid">
-            {detailMode ? detailStep : (
+            {office ? (step === 2 ? issuePicker : planPicker) : detailMode ? detailStep : (
               mode === "leave" ? leaveFields : unitPicker
             )}
           </div>

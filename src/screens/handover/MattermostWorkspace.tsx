@@ -421,7 +421,7 @@ export function MattermostWorkspace({ picked, onSend, warning, onClose }: Props)
                 )}
               </div>
               <div className="mmw-composer" aria-hidden="true">
-                <span>가상 데이터라 메시지를 보낼 수 없어요. 읽고 고르기만 할 수 있어요.</span>
+                <span>메시지는 보낼 수 없어요. 읽고 고르기만 할 수 있어요.</span>
               </div>
             </>
           ) : (

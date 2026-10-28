@@ -285,7 +285,7 @@ export function ConfluenceWorkspace({ picked, onSend, warning, onClose }: Props)
           <span className="cfw-avatar" aria-hidden="true">김</span>
         </div>
       </header>
-      <div className="cfw-mockbar">가상 컨플루언스예요. 실제 컨플루언스가 아니라 예시 데이터로 보여 줘요.</div>
+      <div className="cfw-mockbar">예시 데이터로 보여 줘요.</div>
 
       <div className="cfw-body">
         <aside className="cfw-sidebar">

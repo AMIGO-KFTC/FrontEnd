@@ -31,7 +31,7 @@ import type { HomeNav, SessionList } from "./screens/home/types";
 
 type AuthPanel = "signup" | "forgot" | null; // 로그인 화면 위에 띄우는 창
 
-const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: [] };
+const EMPTY: StartData = { mode: "reassignment", name: "", division: "", team: "", role: "", task: "", date: "", successor: "", successorLoginId: "", leaveStart: "", leaveEnd: "", units: [], plans: [], issues: [] };
 const EXPIRED = "로그인이 만료됐어요. 다시 로그인해 주세요.";
 const WORKSPACE_KEY = "amigo-workspace"; // 팀장이 고른 작업 공간(일반 / 팀 관리). 탭을 닫거나 로그아웃하면 다시 고른다.
 
@@ -47,6 +47,26 @@ function storedWorkspace(): Workspace | null {
 function citationCount(session: SessionDetail | null): number {
   if (!session) return 0;
   return Object.values(session.slots).reduce((sum, slot) => sum + slot.items.reduce((n, item) => n + item.citations.length, 0), 0);
+}
+
+// 올릴 파일의 형식·크기 검사(서버 설정 기준). 걸러진 파일이 있으면 마지막 이유를 problem 으로 돌려준다.
+function checkFiles(files: File[], config: AppConfig | null): { ok: File[]; problem: string | null } {
+  const max = (config?.max_upload_mb ?? 50) * 1024 * 1024;
+  const allowed = new Set(config?.allowed_extensions ?? []);
+  let problem: string | null = null;
+  const ok = files.filter((f) => {
+    const ext = f.name.includes(".") ? f.name.slice(f.name.lastIndexOf(".")).toLowerCase() : "";
+    if (allowed.size && !allowed.has(ext)) {
+      problem = `'${f.name}' 은(는) 지원하지 않는 형식이에요.`;
+      return false;
+    }
+    if (f.size > max) {
+      problem = `'${f.name}' 이(가) 너무 커요(최대 ${config?.max_upload_mb ?? 50}MB).`;
+      return false;
+    }
+    return true;
+  });
+  return { ok, problem };
 }
 
 export default function App() {
@@ -85,7 +105,7 @@ function AppScreens() {
   const [busy, setBusy] = useState(false); // 세션 생성·분석 시작처럼 화면을 바꾸는 요청
   const [acting, setActing] = useState(false); // 답변·건너뛰기·생성 요청이 서버에 가 있는 동안(중복 요청 방지)
   const [targetVersion, setTargetVersion] = useState(1); // 생성 중 화면이 기다리는 문서 버전
-  const awaitingStart = useRef(false); // 생성·수정 요청을 보낸 뒤 서버가 "처리 중"으로 바뀌는 것을 아직 못 본 상태
+  const awaitingStart = useRef(false); // 생성 요청·답변을 보낸 뒤 서버가 "처리 중"으로 바뀌는 것을 아직 못 본 상태
   const [error, setError] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null); // 홈 화면의 서버 작업 목록(실패하면 null)
   const [sessionsError, setSessionsError] = useState<string | null>(null);
@@ -267,16 +287,19 @@ function AppScreens() {
     }
     setBusy(true);
     setError(null);
+    // 팀장(관리자) 인사발령은 단위업무 대신 주요 사업계획(plans)과 현안이 있는 사업계획(issues)을 보낸다. 양식(office)은 서버가 정한다.
+    const office = form.plans.length > 0;
     try {
       const created = await api.createSession({
         owner_name: form.name.trim(),
         organization: [form.division, form.team].filter(Boolean).join(" · "),
         position: form.role,
         // 단위업무·세부업무는 units 로 보내고, 예전 필드(duties·task_name)에도 읽기 쉬운 글로 풀어 넣는다(서버 길이 제한에 맞춰 자른다)
-        duties: (form.units.length ? dutiesText(form.units) : form.task).slice(0, 8000),
+        duties: (office ? form.plans.join("\n") : form.units.length ? dutiesText(form.units) : form.task).slice(0, 8000),
         mode: form.mode,
-        task_name: (form.units.length ? unitTaskName(form.mode, form.units) : form.task.split(/\r?\n/).filter(Boolean)[0] ?? "").slice(0, 200),
-        units: form.units,
+        task_name: (office ? form.plans.join(", ") : form.units.length ? unitTaskName(form.mode, form.units) : form.task.split(/\r?\n/).filter(Boolean)[0] ?? "").slice(0, 200),
+        units: office ? [] : form.units,
+        ...(office ? { plans: form.plans, issues: form.issues } : {}),
         successor: form.successor,
         successor_login_id: form.successorLoginId,
         handover_date: form.date,
@@ -295,20 +318,8 @@ function AppScreens() {
 
   const uploadFiles = async (files: File[]): Promise<void> => {
     if (!sessionId) return;
-    const max = (config?.max_upload_mb ?? 50) * 1024 * 1024;
-    const allowed = new Set(config?.allowed_extensions ?? []);
-    const ok = files.filter((f) => {
-      const ext = f.name.includes(".") ? f.name.slice(f.name.lastIndexOf(".")).toLowerCase() : "";
-      if (allowed.size && !allowed.has(ext)) {
-        setError(`'${f.name}' 은(는) 지원하지 않는 형식이에요.`);
-        return false;
-      }
-      if (f.size > max) {
-        setError(`'${f.name}' 이(가) 너무 커요(최대 ${config?.max_upload_mb ?? 50}MB).`);
-        return false;
-      }
-      return true;
-    });
+    const { ok, problem } = checkFiles(files, config);
+    if (problem) setError(problem);
     if (ok.length) await run(() => api.upload(sessionId, ok)); // 화면이 '올리는 중' 표시를 끝낼 수 있게 끝날 때까지 기다린다
   };
 
@@ -329,7 +340,7 @@ function AppScreens() {
     if (result) goStep("processing");
   };
 
-  // 문서 생성·수정 요청: 서버가 202 로 받으면 생성 중 화면에서 기다리던 버전이 나올 때까지 폴링 결과를 보여 준다.
+  // 문서 생성·답변 반영: 서버가 202 로 받으면 생성 중 화면에서 기다리던 버전이 나올 때까지 폴링 결과를 보여 준다.
   const generate = async () => {
     if (!sessionId || acting) return;
     const next = (session?.document_version ?? 0) + 1;
@@ -341,7 +352,8 @@ function AppScreens() {
     }
   };
 
-  const revise = async (text: string) => {
+  // 문서 화면 오른쪽 '시간 될 때 적어 주세요' 질문의 답: 검토 단계 chat 으로 보내면 반영한 새 버전을 만든다.
+  const answerInReview = async (text: string) => {
     if (!sessionId || acting) return;
     const next = (session?.document_version ?? 0) + 1;
     const result = await run(() => api.chat(sessionId, text));
@@ -581,6 +593,15 @@ function AppScreens() {
         sessionId={session.id}
         markdown={markdown}
         onGanttEdit={(name, nth, months) => api.editGantt(session.id, name, nth, months).then((d) => setMarkdown(d.markdown))}
+        onUploadDeptFiles={async (item, files) => {
+          // 자료 등록 단계와 같은 형식·크기 검사를 거친 파일만 올린다. 걸러진 이유는 문구로 돌려준다
+          const { ok, problem } = checkFiles(files, config);
+          if (ok.length) {
+            const d = await api.uploadDeptFiles(session.id, item, ok);
+            setMarkdown(d.markdown);
+          }
+          return problem;
+        }}
         onSaveDocument={async (text) => {
           const current = await api.document(session.id); // 일정표를 고쳤다면 그 새 버전을 기준으로 저장한다
           await api.saveDocument(session.id, text, current.version);
@@ -592,8 +613,8 @@ function AppScreens() {
         sources={session.sources}
         config={config}
         failedMessage={session.status === "error" ? session.error : null}
-        revising={acting || session.status === "running"}
-        onRevise={(text) => void revise(text)}
+        sending={acting || session.status === "running"}
+        onAnswer={(text) => void answerInReview(text)}
         onRetry={() => sessionId && void run(() => api.retry(sessionId))}
         onBack={() => goStep("question")}
         onComplete={() => goStep("complete")}

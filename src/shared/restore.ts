@@ -29,5 +29,7 @@ export function dataFromSession(session: SessionDetail): StartData {
     leaveStart: session.leave_start ?? "",
     leaveEnd: session.leave_end ?? "",
     units: unitsFromSession(session),
+    plans: session.plans ?? [],
+    issues: session.issues ?? [],
   };
 }

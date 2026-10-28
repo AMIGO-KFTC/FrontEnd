@@ -112,6 +112,9 @@ export interface UsageTotal extends Usage {
 export interface SessionDetail extends SessionSummary {
   duties: string;
   units?: HandoverUnit[]; // 인계자 정보에서 고른 단위업무와 세부업무(예전 세션·예전 서버는 없거나 빈 목록)
+  form?: string; // 인수인계서 양식. 팀장(관리자)이 만든 세션은 "office"
+  plans?: string[]; // 팀장용: 고른 주요 사업계획
+  issues?: string[]; // 팀장용: 주요 현안사항이 있는 사업계획
   owner_login_id: string; // 인계자 계정의 아이디. 로그인한 사용자와 다르면(인수자·팀장) 문서 화면을 읽기 전용으로 그린다
   viewer?: "owner" | "recipient" | "team" | ""; // 지금 계정과의 관계: 인계자 · 전송받은 사람 · 같은 팀 팀장
   progress: { message: string; current: number; total: number };
@@ -136,7 +139,7 @@ export interface MessageMeta {
   choice?: "yesno"; // 예/아니요 두 선택지로 답하는 질문
   picker?: "period"; // 주기(choices)를 고르거나, 정기적이지 않으면 달력에서 기간을 고르는 질문
   choices?: string[];
-  aux?: boolean; // 보조질문: 질문 왼편에 '보조질문' 태그와 aux_note 안내를 붙인다
+  aux?: boolean; // 보조질문(선택 질문): 질문 왼편에 '선택 질문' 태그와 aux_note 안내를 붙인다
   aux_note?: string;
   retry?: boolean;
   coverage?: Record<string, Coverage>;
@@ -159,6 +162,7 @@ export interface SlotSpec {
   fields: { key: string; label: string }[];
   required: string[];
   leave: boolean;
+  office?: boolean; // 팀장(원내 양식) 인수인계서의 장
 }
 
 export interface AppConfig {
@@ -186,6 +190,15 @@ export interface SessionCreate {
   mode: HandoverMode;
   task_name: string;
   units?: HandoverUnit[];
+  plans?: string[]; // 팀장(관리자)용 인수인계서: 1단계에서 고른 주요 사업계획
+  issues?: string[]; // 팀장용: 주요 현안사항이 있는 사업계획(직접 더한 현안 포함)
+}
+
+// 우리 팀 주요 사업계획(GET /api/business-plans/me). 경영정보시스템 주요 업무보고 단위로 정리된 목록이다.
+export interface BusinessPlans {
+  division: string;
+  team: string;
+  plans: string[];
 }
 
 // 단위업무 1건과 그 세부업무(정기·비정기). 장기휴가는 단위업무 없이 이름을 비운 1건에 세부업무만 담는다.
@@ -408,12 +421,28 @@ export interface TeamGuidelineItem {
   instruction: string;
 }
 
+export interface TeamGlossaryTerm {
+  term: string;
+  meaning: string;
+}
+
+export interface TeamDocument {
+  id: string;
+  name: string;
+  size: number;
+  uploaded_by: string;
+  uploaded_at: string | null;
+}
+
 export interface TeamGuidelines {
   message: string;
   organization: string;
   items: TeamGuidelineItem[];
-  notes: string;
+  notes: string; // STEP4 기타 중요 포인트
   prompt: string;
+  intro: string; // STEP1 팀 소개
+  glossary: TeamGlossaryTerm[]; // STEP2 업무 용어집
+  documents: TeamDocument[]; // STEP3 팀 업무 문서
   updated_at: string | null;
   updated_by: string;
   editable: boolean;
@@ -437,10 +466,10 @@ export interface TeamDuties {
   editable: boolean;
 }
 
-// 알림(GET /api/notifications, POST /api/notifications/read · /dismiss): 받은 인수인계서 도착·수정. 확인·지움 상태는 서버에 계정별로 남는다.
+// 알림(GET /api/notifications, POST /api/notifications/read · /dismiss): 받은 인수인계서 도착·수정, 캘린더 일정·할 일의 마감 임박(due, 일주일 전부터). 확인·지움 상태는 서버에 계정별로 남는다.
 export type AppNotification = {
   id: string;
-  kind: "received" | "updated";
+  kind: "received" | "updated" | "due";
   session_id: string | null;
   title: string;
   text: string;
@@ -496,7 +525,8 @@ export type MailImportResult = { success: boolean; message: string; session_id: 
 
 // 캘린더 일정·할 일(GET /api/planner 등). 로그인 계정마다 서버에 저장한다. id 는 화면이 만들어 보낼 수 있다(같은 id 는 두 번 쌓이지 않음).
 export type PlannerEvent = { id: string; date: string; text: string; memo?: string; done?: boolean }; // date: 'YYYY-MM-DD', memo: 짧은 메모
-export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null; memo?: string }; // date 가 null 이면 날짜 없는 할 일
+export type PlannerHistory = { id: string; text: string; created_at: string }; // 업무 진행 이력 한 줄
+export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null; memo?: string; history?: PlannerHistory[] }; // date 가 null 이면 날짜 없는 할 일
 // 정기 업무: 받은 인수인계서에서 가져온 반복 업무(날짜로 풀지 않고 캘린더 화면의 '정기 업무' 칸에 주기별로 보여 준다)
 export type RoutineCadence = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "other";
 export type PlannerRoutine = { id: string; cadence: RoutineCadence; name: string; timing: string; months: number[]; source: string }; // months: 분기·반기·매년 업무의 해당 월(비면 매달 또는 모름)
@@ -511,3 +541,6 @@ export type PlannerWeekTask = { id: string; week: string; text: string; memo?: s
 export type PlannerData = { message: string; events: PlannerEvent[]; todos: PlannerTodo[]; routines?: PlannerRoutine[]; week_tasks?: PlannerWeekTask[] };
 // 받은 인수인계서 적용하기(POST /api/handovers/received/{id}/calendar)
 export type HandoverCalendarResult = { message: string; events: number; routines: number; skipped: number };
+// 원텔 캘린더와 연동하기(예시 데이터): GET /api/planner/onetel/events 로 가져올 수 있는 일정을 보여 주고, POST /api/planner/onetel/import 로 고른 일정을 내 캘린더에 넣는다.
+export type OnetelEvent = { id: string; date: string; text: string; imported: boolean };
+export type OnetelImportResult = { message: string; events: number; skipped: number };

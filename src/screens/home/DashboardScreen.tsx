@@ -17,7 +17,7 @@ function greeting(): string {
   return "좋은 저녁이에요";
 }
 
-const NOTIFICATION_LOOK: Record<AppNotification["kind"], { icon: IconName; tone: string }> = { received: { icon: "download", tone: "blue" }, updated: { icon: "file", tone: "violet" } };
+const NOTIFICATION_LOOK: Record<AppNotification["kind"], { icon: IconName; tone: string }> = { received: { icon: "download", tone: "blue" }, updated: { icon: "file", tone: "violet" }, due: { icon: "calendar", tone: "coral" } };
 
 // 알림 한 줄: 누르면 확인하고 이동, 오른쪽 X 로 지운다
 function NotificationRow({ item, onOpen, onDismiss }: { item: AppNotification; onOpen: () => void; onDismiss: () => void }) {
@@ -111,7 +111,8 @@ export function DashboardScreen({ list, notice = null, onDismissNotice, onNew, i
       setNotifications((current) => current.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
       syncNotifications(api.readNotifications([item.id]));
     }
-    onReceived();
+    if (item.kind === "due") onCalendar(); // 마감 임박은 캘린더로, 인수인계서 알림은 받은 인수인계로
+    else onReceived();
   };
   const dismissNotification = (item: AppNotification) => {
     setNotifications((current) => current.filter((n) => n.id !== item.id));

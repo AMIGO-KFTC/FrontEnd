@@ -4,6 +4,7 @@ import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon, type IconName } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
+import { useProfile } from "@/shared/profile";
 import { MAIL_CAPTURE_PREFIX } from "@/shared/mailCapture";
 import { openPickerTab, useCaptureReceiver, usePicked, usePickReceiver, type PickAck, type PickItem, type PickKind } from "@/shared/pickBridge";
 import type { HandoverMode, IntegrationImportResult, Source } from "@/shared/types";
@@ -26,21 +27,23 @@ type Props = {
   onImportJira: (itemIds: string[]) => Promise<IntegrationImportResult | undefined>;
 };
 
-type SourceKey = "file" | "mail" | "confluence" | "jira";
+type SourceKey = "previous" | "file" | "mail" | "confluence" | "jira";
 // 목록 한 줄. 등록 예정(고르기만 한 것)과 등록된 자료(서버에 저장된 것)를 같은 모양으로 그린다.
 type ListRow = { id: string; group: SourceKey; icon: IconName; title: string; sub: string; remove: () => void };
 
 const INTEGRATION_LABEL: Record<string, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지", mail: "메일", jira: "지라" };
 // 파일 업로드 예시. 어떤 자료를 올리면 좋은지 보여 준다(서버가 읽는 형식만).
-// recommend: 있으면 결과가 가장 좋아지는 자료라 맨 앞에 두고 따로 눈에 띄게 그린다.
-const FILE_EXAMPLES: { name: string; desc: string; recommend?: boolean }[] = [
+// recommend: 있으면 결과가 가장 좋아지는 자료라 맨 앞에 두고 따로 눈에 띄게 그린다. important: 그중에서도 더 중요하게 보여 줄 자료('중요' 표시).
+const FILE_EXAMPLES: { name: string; desc: string; recommend?: boolean; important?: boolean }[] = [
   { name: "기존 인수인계서.hwp", desc: "있다면 꼭! 문서가 훨씬 정확해져요", recommend: true },
+  { name: "경영정보시스템 업무보고자료.hwp", desc: "있다면 꼭 함께 올려 주세요", recommend: true, important: true },
   { name: "업무정의서.pdf", desc: "담당 업무와 범위" },
+  { name: "추진계획서·보고서.pdf", desc: "일정과 추진 경과" },
   { name: "운영매뉴얼.hwpx", desc: "작업 절차·주의사항" },
   { name: "주간회의록.docx", desc: "진행 중인 이슈와 결정" },
   { name: "계정목록.xlsx", desc: "시스템·계정 현황" },
   { name: "협조요청.eml", desc: "업무 메일 원문" },
-  { name: "화면캡처.png", desc: "스크린샷 속 글자도 읽어요" },
+  { name: "메신저 대화 캡처.png", desc: "스크린샷 속 글자도 읽어요" },
   { name: "자료모음.zip", desc: "여러 파일을 묶어서 한 번에" },
 ];
 const START_WAIT_MS = 120_000; // 등록한 자료를 다 읽을 때까지 기다리는 최대 시간
@@ -51,6 +54,14 @@ const CARDS: { key: SourceKey; icon: IconName; title: string; desc: string; tag?
   { key: "mail", icon: "mail", title: "메일 연결", desc: "업무 메일 검색 및 선택", tag: "제목 · 관련 사람 이름으로 검색 · 메일 캡처" },
   { key: "confluence", icon: "folder", title: "컨플루언스 & 나누미 연결", desc: "업무 페이지 링크 가져오기" },
   { key: "jira", icon: "bolt", title: "지라 연결", desc: "이슈·에픽과 프로젝트 진행 현황 가져오기", tag: "스프린트 진척 · 에픽 진행률 · 막힌 이슈" },
+];
+
+// 팀장(관리자) 정기인사 발령: 자료 올리기 카테고리는 4가지(직전 인수인계서 · 기타 파일 · 메일 · 나누미&컨플루언스). 지라 연결은 쓰지 않는다.
+const OFFICE_CARDS: typeof CARDS = [
+  { key: "previous", icon: "file", title: "직전 인수인계서 파일 첨부", desc: "직전 담당자가 작성한 인수인계서를 올려 주세요. 제계약서·인장·문서목록 등이 이 자료에서 채워져요", tag: "HWP · PDF · Word · Excel" },
+  { key: "file", icon: "upload", title: "기타 파일 첨부", desc: "경영정보시스템 업무보고자료, 추진계획서, 업무 매뉴얼 등 그 밖의 자료", tag: "PDF · HWP · Word · PPT · Excel · PNG · JPG · ZIP" },
+  { key: "mail", icon: "mail", title: "메일 연결", desc: "업무 메일 검색 및 선택", tag: "제목 · 관련 사람 이름으로 검색 · 메일 캡처" },
+  { key: "confluence", icon: "folder", title: "나누미 & 컨플루언스 연결", desc: "업무 페이지 링크 가져오기" },
 ];
 
 function sourceStatus(source: Source): string {
@@ -81,7 +92,14 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   const [link, setLink] = useState("");
   const isIntegration = (source: Source) => source.link_type in INTEGRATION_LABEL;
   const isMailCapture = (source: Source) => source.kind === "file" && source.name.startsWith(MAIL_CAPTURE_PREFIX); // 메일 캡처 그림은 '메일'에 모은다
-  const files = sources.filter((source) => source.kind === "file" && !isIntegration(source) && !isMailCapture(source));
+  const allFiles = sources.filter((source) => source.kind === "file" && !isIntegration(source) && !isMailCapture(source));
+  const [profile] = useProfile();
+  const office = mode === "reassignment" && profile.isAdmin; // 팀장 정기인사 발령은 자료 카테고리가 다르다
+  const cards = office ? OFFICE_CARDS : CARDS;
+  // '직전 인수인계서 파일 첨부'로 올린 파일 이름(서버는 올린 곳을 구분하지 않아 이 화면에서만 나눠 보인다)
+  const [previousNames, setPreviousNames] = useState<string[]>([]);
+  const files = office ? allFiles.filter((source) => !previousNames.includes(source.name)) : allFiles;
+  const previousFiles = office ? allFiles.filter((source) => previousNames.includes(source.name)) : [];
   const links = sources.filter((source) => source.kind === "link" && !isIntegration(source));
   const imported = sources.filter(isIntegration);
   const [activeSource, setActiveSource] = useState<SourceKey | null>(null);
@@ -122,7 +140,9 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   useCaptureReceiver(acceptCapture);
   const addFiles = (fileList: FileList | null) => {
     if (!fileList || !fileList.length) return;
-    onUploadFiles(Array.from(fileList));
+    const picked = Array.from(fileList);
+    if (office && activeSource === "previous") setPreviousNames((prev) => [...prev, ...picked.map((file) => file.name)]);
+    onUploadFiles(picked);
   };
   const addLink = () => {
     const nextLink = link.trim();
@@ -174,6 +194,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     sub: `${INTEGRATION_LABEL.jira} · 등록 전`,
     remove: () => jiraPicked.toggle(item),
   }));
+  const previousRows = previousFiles.map((file) => savedRow(file, "previous", "file", `${(file.size / 1024 / 1024).toFixed(1)} MB`));
   const fileRows = files.map((file) => savedRow(file, "file", "file", `${(file.size / 1024 / 1024).toFixed(1)} MB`));
   const mailRows = imported.filter((item) => item.link_type === "mail").map((item) => savedRow(item, "mail", "mail", INTEGRATION_LABEL.mail));
   const captureRows = sources.filter(isMailCapture).map((item) => savedRow(item, "mail", "file", "메일 캡처 그림"));
@@ -182,6 +203,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   const confluenceRows = imported.filter((item) => item.link_type === "confluence").map((item) => savedRow(item, "confluence", "folder", INTEGRATION_LABEL.confluence));
   const jiraRows = imported.filter((item) => item.link_type === "jira").map((item) => savedRow(item, "jira", "bolt", INTEGRATION_LABEL.jira));
   const groups: Record<SourceKey, { pending: ListRow[]; registered: ListRow[] }> = {
+    previous: { pending: [], registered: previousRows },
     file: { pending: [], registered: [...fileRows, ...mattermostRows] },
     mail: { pending: pendingMailRows, registered: [...mailRows, ...captureRows] },
     confluence: { pending: pendingConfluenceRows, registered: [...confluenceRows, ...linkRows] },
@@ -189,7 +211,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
   };
   const countsOf = (key: SourceKey) => ({ pending: groups[key].pending.length, registered: groups[key].registered.length });
   const allPending = [...groups.mail.pending, ...groups.confluence.pending, ...groups.jira.pending];
-  const allRegistered = [...fileRows, ...mailRows, ...captureRows, ...linkRows, ...mattermostRows, ...confluenceRows, ...jiraRows];
+  const allRegistered = [...previousRows, ...fileRows, ...mailRows, ...captureRows, ...linkRows, ...mattermostRows, ...confluenceRows, ...jiraRows];
 
   // ---- AI 분석 시작: 확인 → 고른(등록 예정) 대화·페이지를 먼저 등록 → 자료를 다 읽으면 분석 시작
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -259,7 +281,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
     return () => window.clearTimeout(timer);
   }, [waitFor]);
 
-  const active = CARDS.find((card) => card.key === activeSource) ?? null;
+  const active = cards.find((card) => card.key === activeSource) ?? null;
   const registeredCount = sources.length;
 
   const renderRow = (row: ListRow, pending: boolean) => (
@@ -315,7 +337,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
           <div className={`us-stage ${active ? "is-focused" : ""}`}>
             {!active ? (
               <section className="us-grid" aria-label="자료 종류">
-                {CARDS.map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} onSelect={select} />)}
+                {cards.map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} onSelect={select} />)}
               </section>
             ) : (
               <>
@@ -326,7 +348,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                     <button type="button" className="us-focus-close" onClick={() => setActiveSource(null)}>모두 보기</button>
                   </header>
                   <div className="us-focus-body">
-                    {active.key === "file" && (
+                    {(active.key === "file" || active.key === "previous") && (
                       <>
                         <div className="us-drop" {...dropProps}>
                           <Icon name="upload" size={26} />
@@ -335,14 +357,17 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                           <small className="source-formats">{active.tag}</small>
                           <button type="button">파일 선택</button>
                         </div>
+{active.key !== "previous" && (
                         <div className="us-examples" aria-label="업로드 파일 예시">
                           <strong>이런 자료를 올려 보세요</strong>
                           <ul>
-                            {FILE_EXAMPLES.map((example) => <li key={example.name} className={example.recommend ? "recommend" : undefined}><span>{example.name}{example.recommend && <em>추천</em>}</span><small>{example.desc}</small></li>)}
+                            {FILE_EXAMPLES.map((example) => <li key={example.name} className={[example.recommend ? "recommend" : "", example.important ? "important" : ""].filter(Boolean).join(" ") || undefined}><span><b>{example.name}</b>{example.recommend && <em>{example.important ? "중요" : "추천"}</em>}</span><small>{example.desc}</small></li>)}
                           </ul>
+                          <p className="us-examples-more">기타 보고서, 추진계획서, 경영정보시스템 업무보고자료, 메신저 대화 캡처 등 업무와 관련된 다양한 자료를 함께 올려 보세요.{"\n"}특히 <b>경영정보시스템 업무보고자료</b>가 있다면 꼭 함께 올려 주세요.</p>
                           <p>ZIP 파일은 안에 든 문서를 자동으로 풀어서 읽어요.{"\n"}한 번에 최대 20개, 파일당 50MB까지 올릴 수 있어요.</p>
                         </div>
-                        {renderCompare("file")}
+)}
+                        {renderCompare(active.key === "previous" ? "previous" : "file")}
                       </>
                     )}
                     {active.key === "mail" && (
@@ -382,7 +407,7 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                   </div>
                 </section>
                 <section className="us-dock" aria-label="다른 자료 종류">
-                  {CARDS.filter((card) => card.key !== active.key).map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} compact onSelect={select} />)}
+                  {cards.filter((card) => card.key !== active.key).map((card, index) => <SourceCard key={card.key} card={card} index={index} counts={countsOf(card.key)} compact onSelect={select} />)}
                 </section>
               </>
             )}

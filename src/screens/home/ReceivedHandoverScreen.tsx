@@ -41,6 +41,20 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [pickedDuties, setPickedDuties] = useState<string[]>([]);
+  // '캘린더에 연결': 고른 인수인계서의 마감일·정기 업무를 내 캘린더에 넣은 결과(인수인계서마다 따로 기억한다)
+  const [calendarBusy, setCalendarBusy] = useState<string | null>(null);
+  const [calendarResult, setCalendarResult] = useState<Record<string, { ok: boolean; message: string }>>({});
+  const connectCalendar = async (id: string) => {
+    setCalendarBusy(id);
+    try {
+      const result = await api.applyReceivedToCalendar(id);
+      setCalendarResult((current) => ({ ...current, [id]: { ok: true, message: result.message } }));
+    } catch (e) {
+      setCalendarResult((current) => ({ ...current, [id]: { ok: false, message: (e as Error).message } }));
+    } finally {
+      setCalendarBusy(null);
+    }
+  };
 
   const load = () => {
     const fail = (e: unknown) => setError(e instanceof ApiError && e.status === 401 ? "로그인이 만료됐어요. 다시 로그인해 주세요." : (e as Error).message);
@@ -119,7 +133,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
             </div>
           )}
           {handovers && handovers.length === 0 && !error && (
-            <div className="list-notice">{view === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요.\n인계자가 완성 문서 화면에서 보내면 여기에 나타납니다."}</div>
+            <div className="list-notice">{view === "team" ? "아직 팀원이 쓴 인수인계서가 없어요." : "아직 받은 인수인계가 없어요.\n인계자가 작성한 문서를 보내면 여기에 나타납니다."}</div>
           )}
           {handovers && handovers.length > 0 && (
             <section className="received-layout">
@@ -191,9 +205,19 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
                   </article>
                 </section>
                 <footer>
+                  {view === "received" && calendarResult[selected.id] && (
+                    <span className={`received-calendar-note${calendarResult[selected.id].ok ? "" : " error"}`} role="status">{calendarResult[selected.id].message}</span>
+                  )}
                   <div className="received-footer-actions">
                     <button disabled={!hasDocument(selected)} onClick={() => list.openDocument(selected.id)}><Icon name="file" size={14} /> 문서 열기</button>
                     <button disabled={!hasDocument(selected)} onClick={() => { window.location.href = api.downloadUrl(selected.id, "pdf"); }}><Icon name="download" size={14} /> PDF 내려받기</button>
+                    {view === "received" && (
+                      calendarResult[selected.id]?.ok ? (
+                        <button className="calendar-linked" onClick={onCalendar}><Icon name="calendar" size={14} /> 캘린더 보기</button>
+                      ) : (
+                        <button disabled={!hasDocument(selected) || calendarBusy !== null} onClick={() => void connectCalendar(selected.id)}><Icon name="calendar" size={14} /> {calendarBusy === selected.id ? "연결 중…" : "캘린더에 연결"}</button>
+                      )
+                    )}
                   </div>
                 </footer>
               </article>

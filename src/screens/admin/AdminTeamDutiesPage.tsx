@@ -111,7 +111,7 @@ export function AdminTeamDutiesPage() {
       <section className="members-page-title">
         <div>
           <h1>팀 담당 업무</h1>
-          <p>우리 팀에서 하는 업무를 정해 두면, 팀원이 인수인계를 시작할 때 이 목록에서 자기 담당 업무를 골라요.{"\n"}목록에 없는 업무는 팀원이 직접 적을 수도 있어요.</p>
+          <p>업무분장에 있는 업무 외에 우리 팀에서 추가적으로 하는 업무가 있다면 작성해 주세요.{"\n"}팀원이 인수인계를 시작할 때 담당하는 업무를 조금 더 쉽게 작성할 수 있어요.</p>
         </div>
         <div className="ai-settings-status"><i /><span>{data ? `${data.organization} · ${statusText}` : statusText}</span></div>
       </section>

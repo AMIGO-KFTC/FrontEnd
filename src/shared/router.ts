@@ -1,7 +1,7 @@
 // 주소 해시 라우터. 화면 상태를 주소에 담아 새로고침·직접 접속·뒤로/앞으로 가기가 모두 같은 규칙으로 동작하게 한다.
 //
 //   #/                     홈 대시보드
-//   #/home/handover        진행 중인 인수인계      #/home/documents  완성 문서      #/home/received  받은 인수인계
+//   #/home/handover        진행 중인 인수인계      #/home/documents  내가 작성한 문서      #/home/received  받은 인수인계
 //   #/home/calendar        캘린더 · 할 일          #/home/materials  근거 자료(업무별)
 //   #/home/chat            인수인계서 챗봇(모든 문서)   #/home/chat/<문서ID>  그 문서만 물어보기
 //   #/admin                팀 관리 모드(팀장)          #/admin/<tab>     팀 관리의 탭(tab = dashboard | members | handovers | duties | ai | personnel)

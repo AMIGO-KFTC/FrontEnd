@@ -39,6 +39,28 @@ function gapState(gap: Gap, inReview: boolean): "active" | "done" | "waiting" {
   return "done";
 }
 
+// 질문 목록 번호. 본 질문은 1, 2, 3 … 으로 매기고, 보조질문은 따로 번호를 먹이지 않고 바로 앞 본 질문에 붙여 4-1, 4-2 로 매긴다.
+// 같은 단위 업무(item_id)의 본 질문이 있으면 서버가 낸 순서와 상관없이 그 본 질문 바로 뒤로 모은다.
+function numberGaps(gaps: Gap[]): { gap: Gap; label: string }[] {
+  // 번호는 실제로 묻는 순서(서버의 질문 목록 순서) 그대로 매긴다: 본 질문은 1, 2, …, 보조질문은 바로 앞 본 질문의 하위 번호(1-1, 1-2).
+  // (보조질문을 같은 업무의 첫 본 질문 밑으로 끌어오면 1 → 2 → 1-1 처럼 번호와 묻는 순서가 어긋난다)
+  // 다른 세부업무(항목)로 넘어가면 보조질문이어도 새 번호를 받는다(앞 업무의 질문 밑에 붙지 않게).
+  const rows: { gap: Gap; label: string }[] = [];
+  const itemOf = (g: Gap) => `${g.slot}|${g.item_id ?? ""}`;
+  let main = 0;
+  let sub = 0;
+  let owner = "";
+  for (const g of gaps) {
+    if (g.aux && main > 0 && itemOf(g) === owner) rows.push({ gap: g, label: `${main}-${++sub}` });
+    else {
+      rows.push({ gap: g, label: String(++main) });
+      sub = 0;
+      owner = itemOf(g);
+    }
+  }
+  return rows;
+}
+
 export function QuestionScreen({ mode, session, messages, config, error, busy, onBack, onSend, onSkip, onReopen, onUploadFiles, onRetry, onComplete, onLogout, onHome }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,17 +89,23 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const thread = viewGap ? viewThread : currentThread;
   const headline = viewGap
     ? plain(viewGap.question || viewGap.description)
-    : asking ? plain(asking.content) : lastAssistant && lastAssistant.kind !== "summary" ? plain(lastAssistant.content) : "";
+    : asking ? plain(asking.content).replace(/^\[선택 질문\]\s*/, "") : lastAssistant && lastAssistant.kind !== "summary" ? plain(lastAssistant.content) : "";
   const gap = viewGap ?? session.gaps.find((g) => g.id === asking?.meta.gap_id);
   const category = viewGap ? slotTitle(viewGap.slot) : asking ? slotTitle(asking.meta.slot) : "";
+  // 이 질문이 어떤 세부업무(항목)에 대한 것인지(예: 정기업무 · 월간 실적 보고). 항목이 없는 질문은 장 이름만 보인다.
+  const itemName = gap?.slot && gap.item_id ? session.slots[gap.slot]?.items.find((item) => item.id === gap.item_id)?.title ?? "" : "";
   // 새 질문이 오면 보기를 닫고 지금 질문으로 돌아온다
   useEffect(() => setViewing(null), [asking?.id]);
-  const suggestions = (lastAssistant?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정"));
+  // "네, 맞아요" 는 정리한 내용이 맞는지 묻는 문장에만 보인다(예/아니요로 답할 수 없는 추가 질문에는 붙이지 않는다)
+  const asksConfirmation = /맞(나요|을까요|습니까|죠|는지|으면|다면|으신가요)|확인해 주|확인 부탁|맞아요\?/.test(lastAssistant?.content ?? "");
+  const suggestions = (lastAssistant?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정") && (!q.startsWith("네, 맞") || asksConfirmation));
   // 지금 질문이 아직 답을 기다리는 상태(그 뒤에 확인 요청 등이 없을 때)에만 예/아니요·주기 선택을 보여 준다
   const awaiting = !viewGap && asking && lastAssistant?.id === asking.id ? asking.meta : null;
   const yesNo = awaiting?.choice === "yesno";
   const aux = viewGap ? Boolean(viewGap.aux) : Boolean(asking?.meta.aux);
-  const auxNote = asking?.meta.aux_note || "꼭 답하지 않아도 돼요. 알고 계시면 적어 주세요.";
+  const numbered = numberGaps(session.gaps);
+  const auxLabel = numbered.find((row) => row.gap.id === gap?.id)?.label; // 지금 보는 보조질문 번호(예: 4-1)
+  const auxNote = asking?.meta.aux_note || "해당 사항이 없으실 경우 '이 질문 건너뛰기'를 클릭하여 넘어가세요.";
   const askedCount = Math.max(session.question_count, session.gaps.filter((g) => g.status !== "open").length);
   const total = askedCount + session.open_gap_count;
   const isLast = session.open_gap_count === 0;
@@ -139,7 +167,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
           <div className="question-list-progress"><span style={{ width: `${total ? (askedCount / total) * 100 : 0}%` }} /></div>
           <div className="question-list-items" role="list">
             {session.gaps.length === 0 && <div className="question-list-empty">{session.stage === "qna" ? "확인할 빈 항목이 없어요.\n바로 문서를 만들 수 있어요." : "AMIGO가 빈 항목을 정리하고 있어요."}</div>}
-            {session.gaps.map((item, index) => {
+            {numbered.map(({ gap: item, label }) => {
               const state = gapState(item, inReview);
               // 지금 묻는 질문이 아니면 눌러서 그 질문으로 이동한다(답한·건너뛴 질문은 다시 답하기, 아직 안 물은 질문은 먼저 답하기).
               // 문서 검토 중에 고르면 답한 뒤 인수인계서를 다시 만든다.
@@ -149,7 +177,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
               const view = () => setViewing(state === "active" || viewing === item.id ? null : item.id);
               return (
                 <div
-                  className={`question-list-item ${state}${item.status === "skipped" && !item.aux ? " unmet" : ""} jumpable${viewing === item.id ? " viewing" : ""}`}
+                  className={`question-list-item ${state}${item.status === "skipped" && !item.aux ? " unmet" : ""} jumpable${item.aux ? " aux" : ""}${viewing === item.id ? " viewing" : ""}`}
                   role="listitem"
                   key={item.id}
                   title="눌러서 이 질문과 지난 답변을 봅니다"
@@ -157,9 +185,9 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                   onClick={view}
                   onKeyDown={(event) => (event.key === "Enter" || event.key === " ") && (event.preventDefault(), view())}
                 >
-                  <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : index + 1}</span>
+                  <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : label}</span>
                   {/* 장 이름은 쓰지 않는다. 건너뛴(답이 없어 아직 채워지지 않은) 질문만 표시하고 주황색으로 구분한다 */}
-                  <div>{(item.status === "skipped" || item.aux) && <small>{[item.aux ? "보조질문" : "", item.status === "skipped" ? "건너뜀" : ""].filter(Boolean).join(" · ")}</small>}<strong>{plain(item.question)}</strong></div>
+                  <div>{item.status === "skipped" && <small>건너뜀</small>}<strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
                     <button type="button" className="question-reopen" disabled={!canJump} onClick={(event) => { event.stopPropagation(); jump(); }} title="이 질문으로 돌아가 답을 고칩니다">
@@ -178,10 +206,10 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
               <div className="question-card-top">
                 <span className="question-ai"><Icon name="sparkle" size={16} /></span>
                 <div><strong>AMIGO</strong><small>{viewGap ? (viewThread.length ? "지난 질문과 답변이에요" : "아직 답하지 않은 질문이에요") : "3단계 질의응답 · 빈틈을 함께 채워요"}</small></div>
-                {category && <em>{category}</em>}
+                {category && <em title={itemName ? `${category} · ${itemName}` : category}>{itemName ? `${category} · ${itemName}` : category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>
-                {aux && headline && <span className="question-aux-tag">보조질문</span>}
+                {aux && headline && <span className="question-aux-tag">선택 질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
                 {headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}
               </h2>
               {aux && headline ? <p className="question-aux-note">{auxNote}</p> : <p>{gap?.description ?? ""}</p>}

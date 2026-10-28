@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { ProfilePhoto, useProfile } from "@/shared/profile";
 
 export type Workspace = "user" | "admin";
 
@@ -18,7 +18,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
       <header className="handover-type-header">
         <Brand />
         <div className="type-header-profile">
-          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃">{profile.name.slice(0, 1)}</button>
+          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃"><ProfilePhoto profile={profile} /></button>
         </div>
       </header>
       <main className="handover-type-main">
@@ -34,7 +34,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
                 <h2>인수인계 작성</h2>
                 <p>내 업무를 다음 담당자에게 전달하거나,<br />전달받은 인수인계를 확인합니다.</p>
               </div>
-              <ul><li>새 인수인계 시작 · 이어서 작성</li><li>완성 문서 확인</li><li>받은 인수인계 열람</li></ul>
+              <ul><li>새 인수인계 시작 · 이어서 작성</li><li>내가 작성한 문서 확인</li><li>받은 인수인계 열람</li></ul>
               <strong>일반 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
             <button className="handover-type-card leave" onClick={() => onSelect("admin")}>
@@ -43,7 +43,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
                 <h2>팀 관리</h2>
                 <p>{team} 구성원의 인수인계 현황을 보고,<br />AI 지침을 정합니다.</p>
               </div>
-              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 맞춤 설정</li></ul>
+              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 팀 맞춤 설정</li></ul>
               <strong>팀 관리 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
           </section>

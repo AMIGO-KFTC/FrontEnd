@@ -22,8 +22,17 @@ export function CompletionScreen({ mode, sessionId, selfLoginId, sourceCount, qu
           <i className="complete-spark spark-three" />
           <i className="complete-spark spark-four" />
         </div>
-        <h1>인수인계가 완료됐어요.<br />그동안 정말 수고하셨습니다.</h1>
-        <p>AMIGO가 정리한 업무의 맥락과 경험이<br />다음 담당자에게 안전하게 이어질 거예요.</p>
+        {mode === "leave" ? (
+          <>
+            <h1>인수인계가 완료됐어요.<br />휴가 잘 다녀오세요~</h1>
+            <p>AMIGO가 정리한 업무의 맥락이<br />자리를 비운 동안에도 업무가 안전하게 이어지도록 도와줄 거예요.</p>
+          </>
+        ) : (
+          <>
+            <h1>인수인계가 완료됐어요.<br />그동안 정말 수고하셨습니다.</h1>
+            <p>AMIGO가 정리한 업무의 맥락과 경험이<br />다음 담당자에게 안전하게 이어질 거예요.</p>
+          </>
+        )}
         <section className="completion-summary">
           <div><span><Icon name="file" size={18} /></span><strong>{sourceCount}</strong><small>분석한 자료</small></div>
           <i />

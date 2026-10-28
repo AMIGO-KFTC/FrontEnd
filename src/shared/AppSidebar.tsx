@@ -1,11 +1,11 @@
-// 홈 화면(대시보드 · 진행 중 · 완성 문서 · 받은 인수인계 · 근거 자료)의 왼쪽 사이드바.
+// 홈 화면(대시보드 · 진행 중 · 내가 작성한 문서 · 받은 인수인계 · 근거 자료)의 왼쪽 사이드바.
 // 진행 중 개수와 최근 작업은 서버 세션 목록으로 채운다. 받은 인수인계는 아직 서버 API 가 없어 개수를 표시하지 않는다.
 import { useRef, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { saveProfilePhoto, useProfile } from "@/shared/profile";
 import { ongoingSessions, recentSessions, sessionTitle, sessionTone } from "@/shared/sessions";
 import type { SessionSummary } from "@/shared/types";
 import { useCapsLock } from "@/shared/useCapsLock";
@@ -84,6 +84,7 @@ export function AppSidebar({
     setProfileError(null);
     setProfileNotice(null);
     if (!changingPassword) {
+      saveProfilePhoto(profile.loginId, profileDraft.photo);
       setProfile({ ...profile, photo: profileDraft.photo });
       setProfileEditOpen(false);
       return;
@@ -91,6 +92,7 @@ export function AppSidebar({
     setProfileSaving(true);
     try {
       const result = await api.changePassword(passwords.current, passwords.next);
+      saveProfilePhoto(profile.loginId, profileDraft.photo);
       setProfile({ ...profile, photo: profileDraft.photo });
       setPasswords(EMPTY_PASSWORDS);
       setProfileNotice(result.message || "비밀번호를 바꿨어요.");
@@ -126,7 +128,7 @@ export function AppSidebar({
         </div>
       )}
       <nav className="sidebar-nav sidebar-nav-secondary">
-        <button className={active === "documents" ? "active" : ""} onClick={onDocuments}><Icon name="file" size={17} /><span>완성 문서</span></button>
+        <button className={active === "documents" ? "active" : ""} onClick={onDocuments}><Icon name="file" size={17} /><span>내가 작성한 문서</span></button>
         <button className={active === "received" ? "active" : ""} onClick={onReceived}><Icon name="download" size={17} /><span>받은 인수인계</span></button>
         {onMaterials && <button className={active === "materials" ? "active" : ""} onClick={onMaterials}><Icon name="folder" size={17} /><span>근거 자료</span></button>}
         {onCalendar && <button className={active === "calendar" ? "active" : ""} onClick={onCalendar}><Icon name="calendar" size={17} /><span>캘린더</span></button>}
