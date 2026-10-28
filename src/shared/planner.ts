@@ -222,6 +222,8 @@ export function usePlanner() {
       const done = !target.done;
       change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, done } : todo)) }), () => api.updatePlannerTodo(id, { done }));
     },
+    // 할 일의 업무 마감일(YYYY-MM-DD, null 이면 이 달 전체로 되돌림). 날짜가 있으면 캘린더의 그날에 나타난다
+    setTodoDate: (id: string, date: string | null) => change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, date } : todo)) }), () => api.updatePlannerTodo(id, { date })),
     removeTodo: (id: string) => change((s) => ({ ...s, todos: s.todos.filter((todo) => todo.id !== id) }), () => api.deletePlannerTodo(id)),
     clearDone: () => change((s) => ({ ...s, todos: s.todos.filter((todo) => !todo.done) }), () => api.clearDonePlannerTodos()),
     routines: state.routines,

@@ -2269,7 +2269,8 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
   color: var(--leave-ink);
   background: linear-gradient(180deg, #bdeeff 0%, #e8f9ff 51%, #fff4d1 100%);
 }
-.leave-theme > :not(.leave-seaside-scene) { position: relative; z-index: 1; }
+/* 배경 그림 위에 내용이 오도록. 화면 위에 뜨는 덮개창(확인창·대화상자, role=presentation/dialog)은 fixed 위치를 덮어쓰지 않게 뺀다 */
+.leave-theme > :not(.leave-seaside-scene):not([role="presentation"]):not([role="dialog"]) { position: relative; z-index: 1; }
 .leave-seaside-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .leave-sun { width: 92px; height: 92px; position: absolute; top: 10%; right: 9%; border: 7px solid rgba(255,255,255,.72); border-radius: 50%; background: #ffd75d; box-shadow: 0 0 0 18px rgba(255,224,106,.17); animation: leave-sun-float 5s ease-in-out infinite; }
 .leave-cloud { width: 110px; height: 28px; position: absolute; top: 15%; left: -130px; border-radius: 30px; background: rgba(255,255,255,.82); filter: drop-shadow(0 7px 0 rgba(124,198,222,.08)); animation: leave-cloud-drift 24s linear infinite; }
@@ -3003,6 +3004,17 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 
 /* ---- 자료 등록(새 배치): 자료 종류를 하나 누르면 내용은 가운데로, 나머지 셋은 아래 독으로 내려가고 오른쪽에 등록 예정·등록된 자료를 보여 준다 ---- */
 .upload-step-main.us-main { width: min(1080px, calc(100% - 48px)); justify-content: flex-start; padding: 24px 0 14px; transform: none; }
+/* 화면 높이가 낮으면 카드를 찌그러뜨려 안쪽 스크롤이 생기지 않게, 본문 최소 높이를 두고 화면 전체가 스크롤되게 한다 */
+.upload-step-main.us-main { overflow-y: auto; scrollbar-width: none; } /* 스크롤은 되지만 막대는 보이지 않게(배경 그림 옆에 막대가 붙어 보이지 않도록) */
+.upload-step-main.us-main::-webkit-scrollbar { display: none; }
+.us-main .us-body { min-height: 430px; }
+@media (max-height: 800px) {
+  /* 낮은 화면: 카드를 화면 높이에 맞춰 찌그러뜨리지 않고 내용만큼 늘린다(안쪽 스크롤 없음, 화면 전체가 스크롤) */
+  .us-main .us-body { flex: none; min-height: 0; }
+  .us-main .us-focus { flex: none; min-height: auto; }
+  .us-main .us-focus-body { overflow: visible; }
+  .us-main .us-side-section { overflow: visible; }
+}
 .us-main .upload-step-title { flex: none; }
 .us-body { flex: 1; min-height: 0; margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; }
 .us-stage { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -4118,3 +4130,14 @@ button.dept-file-head:hover { background: #faf8fd; }
 .dept-file-drop small { color: #928b96; font-size: 12px; }
 .dept-file-error { margin: -5px 13px 12px; color: #c2453d; font-size: 12px; }
 @media print { .dept-file-drop, .dept-file-error, .dept-file-chevron { display: none !important; } }
+
+/* 진행 중인 인수인계: 카드가 많으면 목록 영역 안에서 스크롤한다 (페이지는 100vh 고정) */
+.ongoing-content > .ongoing-list { min-height: 0; align-content: start; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+.ongoing-content > .ongoing-list > .ongoing-card { flex: none; }
+
+/* 월 전체 · 주별 · 날짜별을 한 목록으로 보여 주는 해야 할 일 */
+.month-scope-head { width: 100%; display: block; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.month-section.selected > .month-scope-head { color: #5b43b3; }
+.check-due { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: #6c6470; font-size: 11.5px; font-weight: 700; }
+.check-due input { height: 26px; padding: 0 6px; border: 1px solid #e0d9e6; border-radius: 7px; background: #fff; font-size: 12px; }
+.check-due button { border: 0; background: transparent; color: #a1999e; font-size: 11px; text-decoration: underline; cursor: pointer; }
