@@ -42,6 +42,7 @@ export function MonthAgenda({ year, month, target, onTarget }: { year: number; m
   const planner = usePlanner();
   const { eventItems, todos, routines, weekTasks } = planner;
   const [draft, setDraft] = useState("");
+  const [focusId, setFocusId] = useState<string | null>(null); // 이번 달 해야 할 일 중 상세를 연 할 일
   const [memoOpen, setMemoOpen] = useState<string | null>(null); // 메모를 펼친 항목 `${kind}:${id}`
   const scrollRef = useRef<HTMLDivElement>(null);
   const weeks0 = weeksOf(year, month);
@@ -86,6 +87,11 @@ export function MonthAgenda({ year, month, target, onTarget }: { year: number; m
     if (box && el) box.scrollTo({ top: el.offsetTop - box.offsetTop - 4, behavior: "smooth" });
   }, [anchor, target, year, month]);
 
+  // 이번 달 해야 할 일: 마감일이 이 달인 할 일(날짜순) + 마감일을 아직 안 정한 할 일
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+  const focusTodos = [...todos.filter((t) => t.date?.startsWith(monthPrefix)).sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "")), ...todos.filter((t) => !t.date)];
+  const focused = todos.find((t) => t.id === focusId) ?? null;
+
   const targetLabel = target.kind === "day" ? `${Number(target.key.slice(5, 7))}/${Number(target.key.slice(8))}` : target.kind === "week" ? weekLabel(target.week) : `${month + 1}월 전체`;
   const add = () => {
     const text = draft.trim();
@@ -117,7 +123,7 @@ export function MonthAgenda({ year, month, target, onTarget }: { year: number; m
           </button>
           <button className="month-remove" onClick={() => remove(item)} aria-label={`${item.text} 삭제`} title="삭제"><Icon name="close" size={10} /></button>
         </div>
-        {open && <MemoEditor memo={item.memo} due={item.kind === "todo" ? { value: planner.todos.find((t) => t.id === item.id)?.date ?? "", onChange: (date) => planner.setTodoDate(item.id, date) } : undefined} onSave={(memo) => planner.setMemo(item.kind, item.id, memo)} onClose={() => setMemoOpen(null)} />}
+        {open && <MemoEditor memo={item.memo} onSave={(memo) => planner.setMemo(item.kind, item.id, memo)} onClose={() => setMemoOpen(null)} />}
       </div>
     );
   };
@@ -129,6 +135,28 @@ export function MonthAgenda({ year, month, target, onTarget }: { year: number; m
           <div><span>{month + 1}월에 해야 할 일</span><strong>{openTotal ? `${openTotal}건 남음` : "남은 일 없음"}{done.length ? <small> · 완료 {done.length}</small> : null}</strong></div>
         </header>
         <div className="month-agenda-scroll" ref={scrollRef}>
+          {focusTodos.length > 0 && (
+            <section className="todo-focus">
+              <h3 className="month-sub">이번 달 해야 할 일</h3>
+              <ul className="todo-focus-list">
+                {focusTodos.map((todo) => (
+                  <li key={todo.id} className={`todo-focus-row${todo.done ? " done" : ""}${focusId === todo.id ? " selected" : ""}`}>
+                    <button className="check-box" onClick={() => planner.setDone("todo", todo.id, !todo.done)} aria-pressed={todo.done} aria-label={todo.done ? `${todo.text} 되돌리기` : `${todo.text} 완료`}>
+                      {todo.done && <Icon name="check" size={9} />}
+                    </button>
+                    <button className="todo-focus-main" onClick={() => setFocusId(focusId === todo.id ? null : todo.id)} aria-pressed={focusId === todo.id}>
+                      <span>
+                        <strong>{todo.text}</strong>
+                        <small>{todo.date ? `${Number(todo.date.slice(5, 7))}/${Number(todo.date.slice(8))} 마감` : "마감일 없음"}</small>
+                      </span>
+                      <Icon name="chevron" size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {focused && <TodoDetail key={focused.id} todo={focused} onDate={(date) => planner.setTodoDate(focused.id, date)} onAddHistory={(text) => planner.addTodoHistory(focused.id, text)} />}
+            </section>
+          )}
           <section className={`month-section${target.kind === "month" ? " selected" : ""}`} data-month>
             <button className="month-sub month-scope-head" onClick={() => onTarget({ kind: "month" })} title="이 달 전체에 추가">{month + 1}월 전체</button>
             {openMonth.map((item) => renderCheck(item))}
@@ -182,7 +210,7 @@ export function MonthAgenda({ year, month, target, onTarget }: { year: number; m
 }
 
 // 항목 아래에 펼쳐지는 작은 메모 칸. Enter(또는 칸을 벗어나면) 저장, Shift+Enter 는 줄바꿈, Esc 는 저장하지 않고 닫는다.
-function MemoEditor({ memo, due, onSave, onClose }: { memo: string; due?: { value: string; onChange: (date: string | null) => void }; onSave: (memo: string) => void; onClose: () => void }) {
+function MemoEditor({ memo, onSave, onClose }: { memo: string; onSave: (memo: string) => void; onClose: () => void }) {
   const [value, setValue] = useState(memo);
   const done = useRef(false); // Enter 로 저장한 뒤 닫히면서 blur 가 또 저장하지 않게
   const save = () => {
@@ -197,13 +225,6 @@ function MemoEditor({ memo, due, onSave, onClose }: { memo: string; due?: { valu
   };
   return (
     <div className="check-memo">
-      {due && (
-        <label className="check-due" onMouseDown={() => { done.current = true; }} onBlur={() => { done.current = false; }}>
-          업무 마감일
-          <input type="date" value={due.value} onChange={(event) => due.onChange(event.target.value || null)} />
-          {due.value && <button type="button" onClick={() => due.onChange(null)}>지우기</button>}
-        </label>
-      )}
       <textarea
         autoFocus
         rows={2}
@@ -221,6 +242,51 @@ function MemoEditor({ memo, due, onSave, onClose }: { memo: string; due?: { valu
         }}
       />
       <small className="check-memo-hint">Enter 저장 · Esc 취소</small>
+    </div>
+  );
+}
+
+// 고른 할 일의 상세: 업무 마감일(바꾸면 바로 저장돼 위 목록·달력에 반영) · 업무 진행 이력 · 오늘 진행한 내용 남기기
+function TodoDetail({ todo, onDate, onAddHistory }: { todo: { text: string; date: string | null; history?: { id: string; text: string; created_at: string }[] }; onDate: (date: string | null) => void; onAddHistory: (text: string) => Promise<void> }) {
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const history = todo.history ?? [];
+  const save = async () => {
+    const value = text.trim();
+    if (!value || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      await onAddHistory(value);
+      setText("");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "진행 이력을 저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="todo-detail">
+      <div className="todo-detail-picked"><small>선택한 업무</small><strong>{todo.text}</strong></div>
+      <h4><Icon name="calendar" size={14} />업무 마감일</h4>
+      <label className="todo-detail-date">
+        <Icon name="calendar" size={15} />
+        <input type="date" value={todo.date ?? ""} onChange={(event) => onDate(event.target.value || null)} aria-label="업무 마감일" />
+        <span className="todo-detail-date-text">{todo.date ? `${todo.date.slice(2, 4)}. ${Number(todo.date.slice(5, 7))}. ${Number(todo.date.slice(8))}.` : "날짜 선택"}</span>
+        <Icon name="chevron" size={14} />
+      </label>
+      <p className="todo-detail-note">변경한 날짜는 위 업무 목록에도 반영됩니다.</p>
+      <h4><Icon name="clock" size={14} />업무 진행 이력</h4>
+      {history.length > 0 ? (
+        <ul className="todo-history">
+          {history.map((entry) => <li key={entry.id}><Icon name="clock" size={13} /><span>{entry.text}</span></li>)}
+        </ul>
+      ) : <p className="todo-detail-note">아직 남긴 진행 이력이 없어요.</p>}
+      <label className="todo-history-label" htmlFor="todo-history-text">오늘 어디까지 진행했나요?</label>
+      <textarea id="todo-history-text" rows={3} maxLength={500} value={text} onChange={(event) => setText(event.target.value)} placeholder="예: 유관부서 3곳 중 2곳 실적 확인 완료. 나머지 1곳 회신 대기 중." />
+      {error && <p className="todo-history-error" role="alert">{error}</p>}
+      <button className="todo-history-save" onClick={save} disabled={!text.trim() || saving}>진행 이력 저장</button>
     </div>
   );
 }

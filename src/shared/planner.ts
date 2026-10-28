@@ -224,6 +224,20 @@ export function usePlanner() {
     },
     // 할 일의 업무 마감일(YYYY-MM-DD, null 이면 이 달 전체로 되돌림). 날짜가 있으면 캘린더의 그날에 나타난다
     setTodoDate: (id: string, date: string | null) => change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, date } : todo)) }), () => api.updatePlannerTodo(id, { date })),
+    // 진행 이력 한 줄 추가: 서버가 id·시각을 정하므로 응답을 받은 뒤 화면에 붙인다(앞선 요청을 다 보낸 다음 보내 할 일이 서버에 먼저 생기게). 실패하면 던진다
+    addTodoHistory: (id: string, text: string) =>
+      new Promise<void>((resolve, reject) => {
+        const loginId = store.loginId ?? "";
+        store.queue = store.queue.then(async () => {
+          try {
+            const { entry } = await api.addPlannerTodoHistory(id, text);
+            if (store.loginId === loginId) setState({ ...store.state, todos: store.state.todos.map((t) => (t.id === id ? { ...t, history: [...(t.history ?? []), entry] } : t)) });
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }),
     removeTodo: (id: string) => change((s) => ({ ...s, todos: s.todos.filter((todo) => todo.id !== id) }), () => api.deletePlannerTodo(id)),
     clearDone: () => change((s) => ({ ...s, todos: s.todos.filter((todo) => !todo.done) }), () => api.clearDonePlannerTodos()),
     routines: state.routines,

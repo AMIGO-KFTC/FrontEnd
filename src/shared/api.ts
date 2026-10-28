@@ -40,6 +40,7 @@ import type {
   TeamScheduleInput,
   PlannerData,
   PlannerEvent,
+  PlannerHistory,
   PlannerTodo,
   PlannerWeekTask,
   ProfileInput,
@@ -239,6 +240,7 @@ export const api = {
   addPlannerTodo: (todo: PlannerTodo) => post<{ todo: PlannerTodo }>("/api/planner/todos", todo),
   updatePlannerTodo: (id: string, changes: Partial<Omit<PlannerTodo, "id">>) =>
     request<{ todo: PlannerTodo }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
+  addPlannerTodoHistory: (id: string, text: string) => post<{ entry: PlannerHistory; todo: PlannerTodo }>(`/api/planner/todos/${encodeURIComponent(id)}/history`, { text }),
   deletePlannerTodo: (id: string) => request<{ message: string }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "DELETE" }),
   clearDonePlannerTodos: () => post<{ removed: number }>("/api/planner/todos/clear-done"),
   addPlannerWeekTask: (task: PlannerWeekTask) => post<{ task: PlannerWeekTask }>("/api/planner/week-tasks", task),
