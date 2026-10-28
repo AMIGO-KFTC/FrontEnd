@@ -118,7 +118,7 @@ function GanttRow({ name, months, note, nth, nameId, noteId }: { name: string; m
     );
   }
   return (
-    <tr>
+    <tr className={editable && shown.size === 0 ? "needs-fill-row" : undefined}>
       <td>{nameId !== null ? <EditableCell id={nameId} /> : name}</td>
       {cells}
       <td>{noteId !== null ? <EditableCell id={noteId} /> : note}</td>

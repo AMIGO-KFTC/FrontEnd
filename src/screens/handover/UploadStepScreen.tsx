@@ -32,15 +32,17 @@ type ListRow = { id: string; group: SourceKey; icon: IconName; title: string; su
 
 const INTEGRATION_LABEL: Record<string, string> = { mattermost: "Mattermost 대화", confluence: "컨플루언스 페이지", mail: "메일", jira: "지라" };
 // 파일 업로드 예시. 어떤 자료를 올리면 좋은지 보여 준다(서버가 읽는 형식만).
-// recommend: 있으면 결과가 가장 좋아지는 자료라 맨 앞에 두고 따로 눈에 띄게 그린다.
-const FILE_EXAMPLES: { name: string; desc: string; recommend?: boolean }[] = [
+// recommend: 있으면 결과가 가장 좋아지는 자료라 맨 앞에 두고 따로 눈에 띄게 그린다. important: 그중에서도 더 중요하게 보여 줄 자료('중요' 표시).
+const FILE_EXAMPLES: { name: string; desc: string; recommend?: boolean; important?: boolean }[] = [
   { name: "기존 인수인계서.hwp", desc: "있다면 꼭! 문서가 훨씬 정확해져요", recommend: true },
+  { name: "경영정보시스템 업무보고자료.hwp", desc: "있다면 꼭 함께 올려 주세요", recommend: true, important: true },
   { name: "업무정의서.pdf", desc: "담당 업무와 범위" },
+  { name: "추진계획서·보고서.pdf", desc: "일정과 추진 경과" },
   { name: "운영매뉴얼.hwpx", desc: "작업 절차·주의사항" },
   { name: "주간회의록.docx", desc: "진행 중인 이슈와 결정" },
   { name: "계정목록.xlsx", desc: "시스템·계정 현황" },
   { name: "협조요청.eml", desc: "업무 메일 원문" },
-  { name: "화면캡처.png", desc: "스크린샷 속 글자도 읽어요" },
+  { name: "메신저 대화 캡처.png", desc: "스크린샷 속 글자도 읽어요" },
   { name: "자료모음.zip", desc: "여러 파일을 묶어서 한 번에" },
 ];
 const START_WAIT_MS = 120_000; // 등록한 자료를 다 읽을 때까지 기다리는 최대 시간
@@ -338,8 +340,9 @@ export function UploadStepScreen({ mode, sources, error, busy, onBack, onNext, o
                         <div className="us-examples" aria-label="업로드 파일 예시">
                           <strong>이런 자료를 올려 보세요</strong>
                           <ul>
-                            {FILE_EXAMPLES.map((example) => <li key={example.name} className={example.recommend ? "recommend" : undefined}><span>{example.name}{example.recommend && <em>추천</em>}</span><small>{example.desc}</small></li>)}
+                            {FILE_EXAMPLES.map((example) => <li key={example.name} className={[example.recommend ? "recommend" : "", example.important ? "important" : ""].filter(Boolean).join(" ") || undefined}><span><b>{example.name}</b>{example.recommend && <em>{example.important ? "중요" : "추천"}</em>}</span><small>{example.desc}</small></li>)}
                           </ul>
+                          <p className="us-examples-more">기타 보고서, 추진계획서, 경영정보시스템 업무보고자료, 메신저 대화 캡처 등 업무와 관련된 다양한 자료를 함께 올려 보세요.{"\n"}특히 <b>경영정보시스템 업무보고자료</b>가 있다면 꼭 함께 올려 주세요.</p>
                           <p>ZIP 파일은 안에 든 문서를 자동으로 풀어서 읽어요.{"\n"}한 번에 최대 20개, 파일당 50MB까지 올릴 수 있어요.</p>
                         </div>
                         {renderCompare("file")}

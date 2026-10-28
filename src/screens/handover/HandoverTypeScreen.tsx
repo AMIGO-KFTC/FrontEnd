@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { ProfilePhoto, useProfile } from "@/shared/profile";
 import type { HandoverMode } from "@/shared/types";
 
 export function HandoverTypeScreen({ onSelect, onLogout, onHome }: { onSelect: (mode: HandoverMode) => void; onLogout: () => void; onHome: () => void }) {
@@ -16,10 +16,10 @@ export function HandoverTypeScreen({ onSelect, onLogout, onHome }: { onSelect: (
       <header className="handover-type-header">
         <Brand onClick={onHome} />
         <div className="type-header-profile">
-          <button className="type-profile-avatar" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} aria-label="내 프로필 열기">{profile.name.slice(0, 1)}</button>
+          <button className="type-profile-avatar" onClick={() => setProfileOpen((current) => !current)} aria-expanded={profileOpen} aria-label="내 프로필 열기"><ProfilePhoto profile={profile} /></button>
           {profileOpen && (
             <div className="type-profile-popover">
-              <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
+              <header><span><ProfilePhoto profile={profile} /></span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
               <div className="type-profile-actions">
                 <button className="type-profile-home" onClick={() => { setProfileOpen(false); onHome(); }}><Icon name="home" size={13} /> 홈으로 돌아가기</button>
                 <button className="type-profile-logout" onClick={() => { setProfileOpen(false); setLogoutConfirmOpen(true); }}>로그아웃</button>

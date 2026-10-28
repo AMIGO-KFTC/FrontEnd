@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { ProfilePhoto, useProfile } from "@/shared/profile";
 
 export type Workspace = "user" | "admin";
 
@@ -18,7 +18,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
       <header className="handover-type-header">
         <Brand />
         <div className="type-header-profile">
-          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃">{profile.name.slice(0, 1)}</button>
+          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃"><ProfilePhoto profile={profile} /></button>
         </div>
       </header>
       <main className="handover-type-main">
@@ -43,7 +43,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
                 <h2>팀 관리</h2>
                 <p>{team} 구성원의 인수인계 현황을 보고,<br />AI 지침을 정합니다.</p>
               </div>
-              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 맞춤 설정</li></ul>
+              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 팀 맞춤 설정</li></ul>
               <strong>팀 관리 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
           </section>

@@ -19,6 +19,8 @@ import type {
   IntegrationImportResult,
   TeamDuties,
   TeamGuidelineItem,
+  TeamDocument,
+  TeamGlossaryTerm,
   TeamGuidelines,
   LoginResult,
   MailDetail,
@@ -29,6 +31,8 @@ import type {
   MattermostConversationDetail,
   OrgDuties,
   HandoverCalendarResult,
+  OnetelEvent,
+  OnetelImportResult,
   PersonnelSchedule,
   PersonnelScheduleInput,
   TeamSchedule,
@@ -106,7 +110,11 @@ export const api = {
   login: (loginId: string, password: string) => post<LoginResult>("/api/auth/login", { login_id: loginId, password }),
   logout: () => post<{ message: string }>("/api/auth/logout"),
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
-  signup: (loginId: string, password: string, name: string, employeeNo = "") => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo }),
+  // department·team: 가입과 동시에 팀 배정(내 정보를 고치지 않아도 인수인계에서 팀의 단위업무가 나온다)
+  signup: (loginId: string, password: string, name: string, employeeNo = "", department = "", team = "") =>
+    post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo, department, team }),
+  // 회원가입에서 고를 본부·부와 팀(로그인 없이)
+  orgTeams: () => request<{ divisions: { name: string; teams: string[] }[] }>("/api/auth/org-teams"),
   saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>("/api/me/password", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),
@@ -196,8 +204,15 @@ export const api = {
     request<ConfluenceSearchResult>(`/api/integrations/confluence/search?q=${encodeURIComponent(q)}&space=${encodeURIComponent(space)}`),
   teamGuidelines: () => request<TeamGuidelines>("/api/team-guidelines/me"),
   // 보낸 필드만 서버에서 바뀐다(항목 화면은 items·notes, AI 맞춤 설정 화면은 prompt 만 보낸다)
-  saveTeamGuidelines: (body: { items?: TeamGuidelineItem[]; notes?: string; prompt?: string }) =>
+  saveTeamGuidelines: (body: { items?: TeamGuidelineItem[]; notes?: string; prompt?: string; intro?: string; glossary?: TeamGlossaryTerm[] }) =>
     request<TeamGuidelines>("/api/team-guidelines/me", { method: "PUT", body: JSON.stringify(body) }),
+  // AI 팀 맞춤 설정 STEP3: 팀 공통 업무 자료 올리기·지우기
+  uploadTeamDocuments: (files: File[]) => {
+    const form = new FormData();
+    files.forEach((file) => form.append("files", file));
+    return request<TeamDocument[]>("/api/team-guidelines/me/documents", { method: "POST", body: form });
+  },
+  deleteTeamDocument: (id: string) => request<void>(`/api/team-guidelines/me/documents/${encodeURIComponent(id)}`, { method: "DELETE" }),
   // 팀 담당 업무 목록. 읽기는 같은 소속 누구나, 추가·수정·삭제는 팀 관리자만(응답은 바뀐 뒤의 전체 목록)
   teamDuties: () => request<TeamDuties>("/api/team-duties/me"),
   addTeamDuty: (body: { name: string; description?: string }) => request<TeamDuties>("/api/team-duties/me", { method: "POST", body: JSON.stringify(body) }),
@@ -221,6 +236,9 @@ export const api = {
   deletePlannerWeekTask: (id: string) => request<{ message: string }>(`/api/planner/week-tasks/${encodeURIComponent(id)}`, { method: "DELETE" }),
   deletePlannerRoutine: (id: string) => request<{ message: string }>(`/api/planner/routines/${encodeURIComponent(id)}`, { method: "DELETE" }),
   // 받은 인수인계서의 날짜는 캘린더 일정으로, 반복 업무는 정기 업무 칸으로(같은 내용은 두 번 넣지 않는다)
+  onetelEvents: () => request<{ events: OnetelEvent[] }>("/api/planner/onetel/events"),
+  // ids 를 주면 고른 일정만, 안 주면 모두
+  importOnetelCalendar: (ids?: string[]) => post<OnetelImportResult>("/api/planner/onetel/import", { ids: ids ?? null }),
   applyReceivedToCalendar: (sessionId: string) => post<HandoverCalendarResult>(`/api/handovers/received/${encodeURIComponent(sessionId)}/calendar`),
   // 정기인사 일정: 조회는 누구나(전사 + 내 소속), 추가·수정·삭제는 관리자(팀장)
   personnelSchedules: () => request<{ schedules: PersonnelSchedule[]; organization: string; editable: boolean }>("/api/personnel-schedules"),
