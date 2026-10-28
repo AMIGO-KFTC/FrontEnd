@@ -4,6 +4,7 @@ import type {
   AdminMember,
   AppConfig,
   AuthUser,
+  BusinessPlans,
   ChatAnswer,
   ChatScope,
   JiraIssue,
@@ -122,6 +123,7 @@ export const api = {
   // 구성원(인수자 선택용) · 받은 인수인계 · 관리자(팀장) 전용
   members: () => request<{ members: Member[] }>("/api/members"),
   orgDuties: () => request<OrgDuties>("/api/org-duties"),
+  businessPlans: () => request<BusinessPlans>("/api/business-plans/me"), // 우리 팀 주요 사업계획(팀장용 인수인계서 1단계)
   sessionTransfers: (id: string) => request<{ transfers: SentTransfer[] }>(`/api/sessions/${id}/transfers`),
   sendTransfer: (id: string, recipientId: number, message: string) => post<{ message: string }>(`/api/sessions/${id}/transfers`, { recipient_id: recipientId, message }),
   // 인수인계 챗봇: 질문할 수 있는 업무(올린 자료 · 인수인계서)와 질문. 대화는 서버에 저장하지 않고 history 로 보낸다.
@@ -175,6 +177,13 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, nth, months }),
     }),
+  // 부서·팀별 추가자료: 표의 항목(item)마다 파일을 올리면 서버가 등록 여부를 반영한 문서를 돌려준다
+  uploadDeptFiles: (id: string, item: string, files: File[]) => {
+    const form = new FormData();
+    form.append("item", item);
+    files.forEach((f) => form.append("files", f, f.name));
+    return request<{ markdown: string; version: number }>(`/api/sessions/${id}/dept-files`, { method: "POST", body: form });
+  },
   downloadUrl: (id: string, format: "pdf" | "docx" | "md") => `${BASE}/api/sessions/${id}/download?format=${format}`,
   session: (id: string) => request<SessionDetail>(`/api/sessions/${id}`), // 업무 상세(올린 자료 sources 포함)
   sourcesArchiveUrl: (id: string) => `${BASE}/api/sessions/${id}/sources/archive`, // 올린 파일 전체를 ZIP 한 개로

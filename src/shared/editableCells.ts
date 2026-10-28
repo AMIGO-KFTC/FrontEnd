@@ -8,7 +8,10 @@
 export type Cell = { start: number; end: number; raw: string; kind: "md" | "html" };
 
 const HTML_CELL = /<td(\s[^>]*)?>([\s\S]*?)<\/td>/g;
-const HEADING = /^(#{3,6}\s+\d+\)\s*)(.+)$/; // '### 1) 항목 이름'
+// '### 1) 항목 이름', '##### 가. 세부업무 이름'. '#### 1) 정기업무'·'#### 2) 비정기 업무' 같은 묶음 제목은 고치는 칸이 아니다
+const HEADING = /^(#{3,6}\s+(?:\d+\)|[①-⑳]|\(\d+\))\s*)(.+)$/; // '### 1) 항목', '##### ① 세부업무'(묶음 제목 '#### 가. 정기업무'는 고치지 않는다)
+
+const HANDWRITTEN = /^\s*ID:\s*_+\s*\/\s*PW:\s*_+\s*$/i; // 수기 기재 칸(AI render.HANDWRITTEN_BLANK)
 
 function isBlank(raw: string): boolean {
   const text = raw.trim();
@@ -56,7 +59,8 @@ export function findCells(body: string): Cell[] {
     }
     offset += line.length + 1;
   });
-  return cells.sort((a, b) => a.start - b.start);
+  // 시스템 접근 권한의 ID/PW 칸('ID: ____ / PW: ____')은 출력한 뒤 손으로 적는 칸이라 화면에서 고칠 수 없다(읽기 전용)
+  return cells.filter((cell) => !HANDWRITTEN.test(cell.raw)).sort((a, b) => a.start - b.start);
 }
 
 export type Row = { start: number; end: number; marker: number; kind: "md" | "html" };
@@ -142,9 +146,11 @@ const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">
 const DOC_HINT = /<span class="doc-hint">[^<]*<\/span>/g; // 비어 있는 칸의 흐린 안내: 고칠 글이 아니라 빈 칸으로 본다
 
 /** 칸 원문을 사람이 고칠 글로(이스케이프를 푼다). 흐린 안내만 있는 칸은 빈 글. */
+const BR = /<br\s*\/?>/gi; // 칸 안 줄바꿈(문서는 여러 문장을 <br> 로 나눈다)
+
 export function cellText(cell: Cell): string {
-  const raw = cell.raw.replace(DOC_HINT, "");
-  if (cell.kind === "md") return raw.replace(/\\\|/g, "|");
+  const raw = cell.raw.replace(DOC_HINT, "").replace(BR, "\n");
+  if (cell.kind === "md") return raw.replace(/\\\|/g, "|").replace(/\\~/g, "~"); // 문서의 '\~'(취소선 방지 이스케이프)는 '~'로 보여 준다
   return raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
 }
 
@@ -154,9 +160,11 @@ export function needsFill(text: string): boolean {
 }
 
 function encode(text: string, kind: Cell["kind"]): string {
-  const flat = text.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean).join(" / ").trim() || "-";
-  if (kind === "md") return flat.replace(/\|/g, "\\|");
-  return flat.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  // 입력칸의 줄바꿈은 문서의 칸 안 줄바꿈(<br>)으로 저장한다
+  const lines = text.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return "-";
+  if (kind === "md") return lines.map((line) => line.replace(/\|/g, "\\|").replace(/(?<!\\)~/g, "\\~")).join("<br>"); // '~' 두 개가 취소선이 되지 않게
+  return lines.map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")).join("<br>");
 }
 
 /** 고친 칸만 원문의 같은 자리에 바꿔 넣은 본문. edits 의 키는 findCells 의 순서 번호. */
