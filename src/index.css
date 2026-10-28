@@ -4036,6 +4036,8 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 /* 메모: Enter 저장 안내, 홈 캘린더에서 항목을 누르면 메모 보기 */
 .check-memo-hint { display: block; margin-top: 2px; color: #b2aab0; font-size: 10.5px; text-align: right; }
 .schedule-check { border-bottom: 1px solid rgba(229,222,226,.75); }
+/* .schedule-items > div 의 3칸 격자(5px 1fr 19px)가 할 일 항목에 적용되면 줄이 5px 칸에 갇혀 글이 안 보인다 */
+.schedule-items > .schedule-check { display: block; min-height: 25px; }
 .schedule-check-line { min-height: 25px; display: grid; grid-template-columns: 11px minmax(0, 1fr); align-items: center; gap: 6px; }
 .schedule-check .month-todo-check { padding: 0; cursor: pointer; }
 .schedule-check.done .month-todo-check { border-color: #b7aec0; background: #b7aec0; }
@@ -4176,3 +4178,7 @@ button.dept-file-head:hover { background: #faf8fd; }
 .todo-history-error { margin: 0; color: #c2403d; font-size: 11.5px; }
 .todo-history-save { height: 38px; border: 0; border-radius: 10px; background: #6d5bd0; color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .todo-history-save:disabled { background: #e4e0e8; color: #a8a1ad; cursor: not-allowed; }
+
+/* 문서 제목 직접 수정 */
+.final-paper-cover .paper-title-input { width: 100%; box-sizing: border-box; margin: 0; padding: 4px 8px; border: 1px dashed #b9a9e6; border-radius: 8px; background: #fbf9ff; color: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; outline: none; }
+.final-paper-cover .paper-title-input:focus { border-color: #7659da; background: #fff; }
