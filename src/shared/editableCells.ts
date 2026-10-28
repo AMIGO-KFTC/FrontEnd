@@ -9,7 +9,7 @@ export type Cell = { start: number; end: number; raw: string; kind: "md" | "html
 
 const HTML_CELL = /<td(\s[^>]*)?>([\s\S]*?)<\/td>/g;
 // '### 1) 항목 이름', '##### 가. 세부업무 이름'. '#### 1) 정기업무'·'#### 2) 비정기 업무' 같은 묶음 제목은 고치는 칸이 아니다
-const HEADING = /^(#{3,6}\s+(?:\d+\)|[가-하]\d*\.)\s*)(?!(?:정기|비정기)\s*업무\s*$)(.+)$/;
+const HEADING = /^(#{3,6}\s+(?:\d+\)|[①-⑳]|\(\d+\))\s*)(.+)$/; // '### 1) 항목', '##### ① 세부업무'(묶음 제목 '#### 가. 정기업무'는 고치지 않는다)
 
 const HANDWRITTEN = /^\s*ID:\s*_+\s*\/\s*PW:\s*_+\s*$/i; // 수기 기재 칸(AI render.HANDWRITTEN_BLANK)
 
