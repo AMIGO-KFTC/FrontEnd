@@ -75,7 +75,7 @@ export function SignupScreen({ onBack, onRegistered }: Props) {
       setError("인증 시간이 만료되었습니다. 다시 요청해 주세요.");
       return;
     }
-    const cardError = checkSecurityCard(securityCard);
+    const cardError = checkSecurityCard(securityCard); // 6자리 숫자면 아무 번호나 통과
     if (cardError) {
       setError(cardError);
       return;

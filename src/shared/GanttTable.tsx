@@ -25,9 +25,11 @@ const rowsOf = (table: Hast) => elements(table, "thead").concat(elements(table, 
 const isMonthRow = (cells: Hast[], from: number) => cells.length >= from + 12 && textOf(cells[from]).trim() === "1월" && textOf(cells[from + 11]).trim() === "12월";
 
 // 일정표의 달 칸 하나. key 는 서버로 보내는 값(1~12월 표는 1~12, 해를 넘기는 표는 YYYYMM).
-type Column = { key: number; month: number; year: number | null };
-const MONTHS: Column[] = Array.from({ length: 12 }, (_, i) => ({ key: i + 1, month: i + 1, year: null }));
+// quarter 가 있으면 분기 칸(전년·다음 해에 걸치는 표). 이 칸을 고르면 그 분기의 세 달이 계획기간으로 저장된다(months).
+type Column = { key: number; month: number; year: number | null; label?: string; months: number[] };
+const MONTHS: Column[] = Array.from({ length: 12 }, (_, i) => ({ key: i + 1, month: i + 1, year: null, months: [i + 1] }));
 const monthNumber = (cell: Hast) => Number(textOf(cell).trim().replace(/월$/, ""));
+const quarterNumber = (cell: Hast) => (/^([1-4])분기$/.exec(textOf(cell).trim()) ? Number(textOf(cell).trim()[0]) : 0);
 
 /** 해를 넘기는 표(머리글 3행: '단위업무명 | 계획기간 | 진행상황 요약' + '2026년 | 2027년' + '12월 1월 …')의 달 칸 목록. 아니면 null. */
 function yearColumns(rows: Hast[]): Column[] | null {
@@ -39,7 +41,14 @@ function yearColumns(rows: Hast[]): Column[] | null {
   if (top.length !== 3 || !years.length || spanOf(top[1]) !== months.length || months.length < 12) return null;
   const yearOf: number[] = years.flatMap((cell) => Array.from({ length: spanOf(cell) }, () => Number(textOf(cell).trim().replace(/년$/, ""))));
   if (yearOf.length !== months.length || yearOf.some((y) => !Number.isFinite(y))) return null;
-  const columns = months.map((cell, i) => ({ key: yearOf[i] * 100 + monthNumber(cell), month: monthNumber(cell), year: yearOf[i] }));
+  if (months.every((cell) => quarterNumber(cell))) {
+    return months.map((cell, i) => {
+      const q = quarterNumber(cell);
+      const first = (q - 1) * 3 + 1;
+      return { key: yearOf[i] * 100 + first, month: first, year: yearOf[i], label: `${q}분기`, months: [0, 1, 2].map((d) => yearOf[i] * 100 + first + d) };
+    });
+  }
+  const columns = months.map((cell, i) => ({ key: yearOf[i] * 100 + monthNumber(cell), month: monthNumber(cell), year: yearOf[i], months: [yearOf[i] * 100 + monthNumber(cell)] }));
   return columns.every((c) => c.month >= 1 && c.month <= 12) ? columns : null;
 }
 
@@ -100,12 +109,13 @@ function GanttRow({ name, months, note, nth, nameId, noteId, columns }: { name: 
       const next = [...state.current].sort((a, b) => a - b);
       const before = [...months].sort((a, b) => a - b);
       if (next.join() === before.join()) return setDraft(null);
-      // 서버가 돌려준 문서로 바뀔 때까지 고친 모양을 그대로 보여 준다(실패하면 원래대로)
-      onChange(name, nth, next).catch(() => setDraft(null));
+      // 서버가 돌려준 문서로 바뀔 때까지 고친 모양을 그대로 보여 준다(실패하면 원래대로). 분기 칸은 그 분기의 세 달로 풀어 보낸다.
+      const saved = [...new Set(columns.filter((column) => next.includes(column.key)).flatMap((column) => column.months))].sort((a, b) => a - b);
+      onChange(name, nth, saved).catch(() => setDraft(null));
     };
     window.addEventListener("pointerup", finish);
     return () => window.removeEventListener("pointerup", finish);
-  }, [months, name, nth, onChange]);
+  }, [months, name, nth, onChange, columns]);
 
   // state.last 는 직전 칸의 순번(columns 의 index)
   const apply = (index: number) => {
@@ -171,7 +181,7 @@ export function GanttAwareTable({ node, children }: { node?: Hast; children?: Re
       <thead>
         <tr><th rowSpan={headSpan}>{name}</th><th colSpan={columns.length}>{period}</th><th rowSpan={headSpan}>{note}</th></tr>
         {years.length > 0 && <tr>{years.map((y) => <th key={y.year} colSpan={y.span}>{y.year}년</th>)}</tr>}
-        <tr>{columns.map((column) => <th key={column.key}>{column.month}월</th>)}</tr>
+        <tr>{columns.map((column) => <th key={column.key}>{column.label ?? `${column.month}월`}</th>)}</tr>
       </thead>
       <tbody>
         {rows.slice(heads).map((row, index) => {

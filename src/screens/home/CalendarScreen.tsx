@@ -148,7 +148,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                     const inWeek = selectedWeek === weekKeyOf(weekIndex);
                     if (!day) return <span className={`empty${inWeek ? " in-week" : ""}`} key={`empty-${weekIndex}-${dayIndex}`} />;
                     const key = dateKey(new Date(year, month, day));
-                    const items = [...fixedOn(key).map((d) => ({ text: d.label, kind: d.kind === "shared" ? "shared-mark" : "personnel-mark" })), ...(planner.events[key] ?? []).map((text) => ({ text, kind: "event" }))];
+                    const items = [...fixedOn(key).map((d) => ({ text: d.label, kind: d.kind === "shared" ? "shared-mark" : "personnel-mark" })), ...(planner.events[key] ?? []).map((text) => ({ text, kind: "event" })), ...planner.todos.filter((t) => t.date === key && !t.done).map((t) => ({ text: t.text, kind: "event" }))];
                     return (
                       <button
                         key={key}

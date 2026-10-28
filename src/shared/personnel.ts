@@ -1,7 +1,7 @@
 // 팀장(관리자)이 팀 관리 > '일정 관리'에서 등록하는 우리 팀 일정 두 가지를 불러 둔다.
 // - 정기인사 일정(GET /api/personnel-schedules): 홈 대시보드의 작은 캘린더와 '캘린더' 화면이 다가오는 일정의 D-day 와 발표일·발령일 표시에 쓴다.
 // - 팀 공유 일정(GET /api/team-schedules): 워크숍·회의·마감 등. 같은 두 캘린더에 날짜마다 표시한다(여러 날짜리는 그 기간 모든 날).
-// 등록된 일정이 하나도 없으면 예전처럼 매년 10/26 발표 · 10/28 발령을 기본값으로 쓴다(planner.ts 의 personnelDays).
+// 등록된 일정이 하나도 없으면 예전처럼 매년 1/26 발표 · 2/1 발령을 기본값으로 쓴다(planner.ts 의 personnelDays).
 import { useEffect, useSyncExternalStore } from "react";
 import { api } from "./api";
 import { dateKey, personnelDays } from "./planner";

@@ -89,7 +89,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const thread = viewGap ? viewThread : currentThread;
   const headline = viewGap
     ? plain(viewGap.question || viewGap.description)
-    : asking ? plain(asking.content) : lastAssistant && lastAssistant.kind !== "summary" ? plain(lastAssistant.content) : "";
+    : asking ? plain(asking.content).replace(/^\[선택 질문\]\s*/, "") : lastAssistant && lastAssistant.kind !== "summary" ? plain(lastAssistant.content) : "";
   const gap = viewGap ?? session.gaps.find((g) => g.id === asking?.meta.gap_id);
   const category = viewGap ? slotTitle(viewGap.slot) : asking ? slotTitle(asking.meta.slot) : "";
   // 이 질문이 어떤 세부업무(항목)에 대한 것인지(예: 정기업무 · 월간 실적 보고). 항목이 없는 질문은 장 이름만 보인다.
@@ -209,7 +209,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 {category && <em title={itemName ? `${category} · ${itemName}` : category}>{itemName ? `${category} · ${itemName}` : category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>
-                {aux && headline && <span className="question-aux-tag">보조질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
+                {aux && headline && <span className="question-aux-tag">선택 질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
                 {headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}
               </h2>
               {aux && headline ? <p className="question-aux-note">{auxNote}</p> : <p>{gap?.description ?? ""}</p>}

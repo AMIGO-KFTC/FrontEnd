@@ -11,6 +11,9 @@ const HTML_CELL = /<td(\s[^>]*)?>([\s\S]*?)<\/td>/g;
 // '### 1) 항목 이름', '##### 가. 세부업무 이름'. '#### 1) 정기업무'·'#### 2) 비정기 업무' 같은 묶음 제목은 고치는 칸이 아니다
 const HEADING = /^(#{3,6}\s+(?:\d+\)|[①-⑳]|\(\d+\))\s*)(.+)$/; // '### 1) 항목', '##### ① 세부업무'(묶음 제목 '#### 가. 정기업무'는 고치지 않는다)
 
+// Markdown 표 구분선(| --- | --- |). 빈 칸 표시 '-' 한 글자뿐인 내용 행(| - | - |)은 구분선이 아니다
+const MD_SEPARATOR = /^\s*\|(\s*:?-{3,}:?\s*\|)+\s*$/;
+
 const HANDWRITTEN = /^\s*ID:\s*_+\s*\/\s*PW:\s*_+\s*$/i; // 수기 기재 칸(AI render.HANDWRITTEN_BLANK)
 
 function isBlank(raw: string): boolean {
@@ -53,8 +56,8 @@ export function findCells(body: string): Cell[] {
       const start = offset + heading[1].length;
       cells.push({ start, end: start + heading[2].length, raw: heading[2], kind: "md" });
     } else if (line.trimStart().startsWith("|")) {
-      const isSeparator = /^\s*\|[\s:|-]+\|\s*$/.test(line);
-      const isHeader = /^\s*\|[\s:|-]+\|\s*$/.test(lines[index + 1] ?? ""); // 다음 줄이 구분선이면 머리글
+      const isSeparator = MD_SEPARATOR.test(line);
+      const isHeader = MD_SEPARATOR.test(lines[index + 1] ?? ""); // 다음 줄이 구분선이면 머리글
       if (!isSeparator && !isHeader) cells.push(...markdownRowCells(line, offset));
     }
     offset += line.length + 1;
@@ -82,8 +85,8 @@ export function findRows(body: string): Row[] {
   let offset = 0;
   lines.forEach((line, index) => {
     if (line.trimStart().startsWith("|")) {
-      const isSeparator = /^\s*\|[\s:|-]+\|\s*$/.test(line);
-      const isHeader = /^\s*\|[\s:|-]+\|\s*$/.test(lines[index + 1] ?? "");
+      const isSeparator = MD_SEPARATOR.test(line);
+      const isHeader = MD_SEPARATOR.test(lines[index + 1] ?? "");
       const last = line.lastIndexOf("|");
       if (!isSeparator && !isHeader && last > line.indexOf("|")) rows.push({ start: offset, end: offset + line.length, marker: offset + last, kind: "md" });
     }
@@ -122,7 +125,15 @@ function shiftRowspan(body: string, row: Row, delta: number): string {
 export function deleteRow(body: string, index: number): string {
   const row = findRows(body)[index];
   if (!row) return body;
-  if (row.kind === "md") return `${body.slice(0, row.start)}${body.slice(row.end + 1)}`;
+  if (row.kind === "md") {
+    // 표의 마지막 한 행은 지우지 않고 빈 칸('-')으로 비운다(행이 하나도 없으면 행 추가 단추가 없어 다시 더할 수 없다)
+    const siblings = findRows(body).filter((other) => other.kind === "md" && body.lastIndexOf("\n\n", other.start) === body.lastIndexOf("\n\n", row.start));
+    if (siblings.length <= 1) {
+      const count = Math.max(1, body.slice(row.start, row.end).trim().replace(/\\\|/g, "").split("|").length - 2);
+      return `${body.slice(0, row.start)}| ${Array(count).fill("-").join(" | ")} |${body.slice(row.end)}`;
+    }
+    return `${body.slice(0, row.start)}${body.slice(row.end + 1)}`;
+  }
   const out = `${body.slice(0, row.start)}${body.slice(row.end)}`;
   return shiftRowspan(out, row, -1);
 }

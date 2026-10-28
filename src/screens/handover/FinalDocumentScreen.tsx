@@ -10,8 +10,6 @@ import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
 import type { StartData } from "@/shared/handover";
 import { documentRehypePlugins } from "@/shared/documentMarkdown";
-import { useProfile } from "@/shared/profile";
-import { TransferDialog } from "./TransferDialog";
 import { SourcesDialog } from "./SourcesDialog";
 import type { AppConfig, DocumentCitation, Gap, Source } from "@/shared/types";
 import { MermaidDiagram } from "@/shared/MermaidDiagram";
@@ -84,8 +82,6 @@ function rebuildMarkdown(markdown: string, edits: Record<string, string>): strin
 }
 
 export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, onUploadDeptFiles, loading, gaps, sources, config, failedMessage, sending, onAnswer, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
-  const [profile] = useProfile();
-  const [transferOpen, setTransferOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({}); // 직접 고치는 중인 장 본문(장 번호 → 글). 표가 없는 장
@@ -271,7 +267,6 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <button className="document-back" onClick={readOnly.onExit}><Icon name="arrow" size={15} /> {readOnly.exitLabel}</button>
           ) : (
             <>
-              <button className="send-handover" onClick={() => setTransferOpen(true)}><Icon name="mail" size={15} /> 인수자에게 전송하기</button>
               <button className="finish-handover" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>
               <button className="document-back" onClick={onBack}><Icon name="arrow" size={15} /> 질의응답으로 돌아가기</button>
             </>
@@ -375,6 +370,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             {loading && parsed.length === 0 && failedMessage === null && <section className="paper-section"><p>문서를 불러오고 있어요…</p></section>}
             {visible.map(({ index: original, ...section }, index) => {
               // 수정 중이면 표 칸·항목 이름을 입력칸으로 그린다. 고칠 칸이 없는(표가 없는) 장은 글 상자로 고친다.
+              // 다만 소제목(### A. 단위업무 …)만 있고 세부업무가 아직 없는 장(예: '확인된 내용이 없습니다')은 마크다운 원문 대신 그대로 보여 준다.
               const body = (isEditing && rowBodies[String(original)]) || section.body;
               const cells = isEditing ? findCells(body) : [];
               const rows = isEditing ? findRows(body) : [];
@@ -387,7 +383,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               return (
               <section className="paper-section" id={`paper-section-${index}`} key={`${section.title}-${original}-${isEditing ? rowVersion : 0}`}>
                 <div className="paper-section-heading"><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2></div></div>
-                {isEditing && cells.length === 0 ? (
+                {isEditing && cells.length === 0 && !/^#{3,5} /m.test(body) ? (
                   <textarea
                     className="paper-section-editor"
                     value={drafts[String(original)] ?? section.body}
@@ -492,7 +488,6 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
         </aside>
         {sourcesOpen && <SourcesDialog sessionId={sessionId} files={files} config={config} onClose={() => setSourcesOpen(false)} />}
-        {transferOpen && <TransferDialog sessionId={sessionId} selfLoginId={profile.loginId} onClose={() => setTransferOpen(false)} />}
         {!readOnly && <button className="finish-handover finish-handover-mobile" onClick={onComplete}><Icon name="check" size={15} /> 인수인계 완료하기</button>}
       </main>
     </div>

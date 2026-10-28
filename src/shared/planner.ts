@@ -17,15 +17,15 @@ export function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// 정기인사 발표(10/26)·발령(10/28). 올해 발령일이 지났으면 내년 날짜를 쓴다. 저장하지 않고 늘 계산해서 보여 준다.
+// 정기인사 발표(1/26)·발령(2/1). 올해 발령일이 지났으면 내년 날짜를 쓴다. 저장하지 않고 늘 계산해서 보여 준다.
 export function personnelDays(today: Date) {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const year = todayStart.getTime() > new Date(today.getFullYear(), 9, 28).getTime() ? today.getFullYear() + 1 : today.getFullYear();
+  const year = todayStart.getTime() > new Date(today.getFullYear(), 1, 1).getTime() ? today.getFullYear() + 1 : today.getFullYear();
   const dday = (date: Date) => Math.ceil((date.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
   return {
     year,
-    announcement: { key: `${year}-10-26`, label: "정기인사 발표일", dday: dday(new Date(year, 9, 26)) },
-    appointment: { key: `${year}-10-28`, label: "정기인사 발령일", dday: dday(new Date(year, 9, 28)) },
+    announcement: { key: `${year}-01-26`, label: "정기인사 발표일", dday: dday(new Date(year, 0, 26)) },
+    appointment: { key: `${year}-02-01`, label: "정기인사 발령일", dday: dday(new Date(year, 1, 1)) },
   };
 }
 
@@ -222,6 +222,22 @@ export function usePlanner() {
       const done = !target.done;
       change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, done } : todo)) }), () => api.updatePlannerTodo(id, { done }));
     },
+    // 할 일의 업무 마감일(YYYY-MM-DD, null 이면 이 달 전체로 되돌림). 날짜가 있으면 캘린더의 그날에 나타난다
+    setTodoDate: (id: string, date: string | null) => change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, date } : todo)) }), () => api.updatePlannerTodo(id, { date })),
+    // 진행 이력 한 줄 추가: 서버가 id·시각을 정하므로 응답을 받은 뒤 화면에 붙인다(앞선 요청을 다 보낸 다음 보내 할 일이 서버에 먼저 생기게). 실패하면 던진다
+    addTodoHistory: (id: string, text: string) =>
+      new Promise<void>((resolve, reject) => {
+        const loginId = store.loginId ?? "";
+        store.queue = store.queue.then(async () => {
+          try {
+            const { entry } = await api.addPlannerTodoHistory(id, text);
+            if (store.loginId === loginId) setState({ ...store.state, todos: store.state.todos.map((t) => (t.id === id ? { ...t, history: [...(t.history ?? []), entry] } : t)) });
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }),
     removeTodo: (id: string) => change((s) => ({ ...s, todos: s.todos.filter((todo) => todo.id !== id) }), () => api.deletePlannerTodo(id)),
     clearDone: () => change((s) => ({ ...s, todos: s.todos.filter((todo) => !todo.done) }), () => api.clearDonePlannerTodos()),
     routines: state.routines,
