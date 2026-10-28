@@ -68,6 +68,22 @@ const CiteSup: Components["sup"] = ({ node, children, ...rest }) => {
 const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", skipped: "인계자 미확인" };
 
 
+// 문서 제목: 첫 "# " 줄. 없으면 기본 제목.
+const DEFAULT_TITLE = "업무 인수인계서";
+const TITLE_LINE = /^#[ \t]+(.+)$/m;
+function documentTitle(markdown: string): string {
+  const head = markdown.split(/^##\s+/m)[0];
+  return head.match(TITLE_LINE)?.[1].trim() || DEFAULT_TITLE;
+}
+// 제목 줄만 바꾼다(없으면 맨 앞에 넣는다). 내려받는 PDF·Word·Markdown 이 이 줄을 제목으로 쓴다.
+function withTitle(markdown: string, title: string): string {
+  const next = title.trim().replace(/\s+/g, " ") || DEFAULT_TITLE;
+  const first = markdown.search(/^##\s+/m);
+  const head = first === -1 ? markdown : markdown.slice(0, first);
+  if (!TITLE_LINE.test(head)) return `# ${next}\n\n${markdown}`;
+  return head.replace(TITLE_LINE, `# ${next}`) + (first === -1 ? "" : markdown.slice(first));
+}
+
 // 고친 장(章)의 본문만 바꿔 문서 전체 Markdown 을 다시 만든다. 고치지 않은 부분은 글자 그대로 둔다. edits 의 키는 장 번호(0부터).
 function rebuildMarkdown(markdown: string, edits: Record<string, string>): string {
   return markdown
@@ -90,6 +106,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const [rowVersion, setRowVersion] = useState(0);
   // 표가 있는 장은 칸마다 그 자리에서 고친다(장 번호 → 칸 번호 → 고친 글). 입력할 때마다 다시 그리지 않도록 ref 에 모은다.
   const cellDrafts = useRef<Record<string, Record<number, string>>>({});
+  const [titleDraft, setTitleDraft] = useState<string | null>(null); // 직접 고치는 중인 문서 제목
   const [saveError, setSaveError] = useState("");
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
   const [answer, setAnswer] = useState("");
@@ -175,6 +192,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   // 부서·팀별 추가자료 카드: 읽기 전용이거나 직접 수정 중이면 등록 상태만 보여 준다
   const deptFiles = useMemo(() => ({ upload: readOnly || isEditing ? null : onUploadDeptFiles }), [readOnly, isEditing, onUploadDeptFiles]);
   const sections = visible.map((section) => section.title);
+  const title = documentTitle(markdown);
   // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
   const finishEditing = async () => {
     const edited: Record<string, string> = { ...drafts, ...rowBodies };
@@ -183,7 +201,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
       if (body !== undefined) edited[index] = applyCellEdits(body, edits);
     }
     const changed = Object.fromEntries(Object.entries(edited).filter(([index, text]) => text.trim() !== (parsed[Number(index)]?.body ?? "").trim()));
-    if (Object.keys(changed).length === 0) {
+    const newTitle = titleDraft === null ? title : titleDraft.trim() || DEFAULT_TITLE;
+    const titleChanged = newTitle !== title;
+    if (Object.keys(changed).length === 0 && !titleChanged) {
+      setTitleDraft(null);
       setIsEditing(false);
       setDrafts({});
       setRowBodies({});
@@ -193,8 +214,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     setSaveState("saving");
     setSaveError("");
     try {
-      await onSaveDocument(rebuildMarkdown(markdown, changed));
+      const rebuilt = rebuildMarkdown(markdown, changed);
+      await onSaveDocument(titleChanged ? withTitle(rebuilt, newTitle) : rebuilt);
       setSaveState("saved");
+      setTitleDraft(null);
       setIsEditing(false);
       setDrafts({});
       setRowBodies({});
@@ -205,6 +228,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     }
   };
   const cancelEditing = () => {
+    setTitleDraft(null);
     setIsEditing(false);
     setDrafts({});
     setRowBodies({});
@@ -350,7 +374,11 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${sending ? " is-revising" : ""}${readOnly ? " is-readonly" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span className="brand-emblem" aria-hidden="true" /><PrintEmblem leave={data.mode === "leave"} /> AMIGO HANDOVER</div>
-              <h1>업무 인수인계서</h1>
+              {isEditing ? (
+                <input className="paper-title-input" aria-label="문서 제목" maxLength={60} value={titleDraft ?? title} onChange={(event) => setTitleDraft(event.target.value)} placeholder={DEFAULT_TITLE} />
+              ) : (
+                <h1>{title}</h1>
+              )}
               <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
               <div className="paper-meta">
                 <div><small>인계자</small><strong>{data.name}</strong></div>
