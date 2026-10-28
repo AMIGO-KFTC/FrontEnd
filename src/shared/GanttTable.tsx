@@ -24,18 +24,39 @@ const rowsOf = (table: Hast) => elements(table, "thead").concat(elements(table, 
 
 const isMonthRow = (cells: Hast[], from: number) => cells.length >= from + 12 && textOf(cells[from]).trim() === "1월" && textOf(cells[from + 11]).trim() === "12월";
 
-/** 머리글 행 수: 2행('단위업무명 | 계획기간(12칸 병합) | 진행상황 요약' + '1월 … 12월'), 예전 문서의 1행('이름 | 1월 … 12월 | 진행상황 요약'), 일정표가 아니면 0. */
-function headerRows(table: Hast): number {
-  const [first, second] = rowsOf(table);
-  if (!first) return 0;
+// 일정표의 달 칸 하나. key 는 서버로 보내는 값(1~12월 표는 1~12, 해를 넘기는 표는 YYYYMM).
+type Column = { key: number; month: number; year: number | null };
+const MONTHS: Column[] = Array.from({ length: 12 }, (_, i) => ({ key: i + 1, month: i + 1, year: null }));
+const monthNumber = (cell: Hast) => Number(textOf(cell).trim().replace(/월$/, ""));
+
+/** 해를 넘기는 표(머리글 3행: '단위업무명 | 계획기간 | 진행상황 요약' + '2026년 | 2027년' + '12월 1월 …')의 달 칸 목록. 아니면 null. */
+function yearColumns(rows: Hast[]): Column[] | null {
+  const [first, second, third] = rows;
+  if (!first || !second || !third) return null;
   const top = elements(first, "th");
-  if (top.length === 14 && isMonthRow(top, 1)) return 1;
-  if (top.length === 3 && spanOf(top[1]) === 12 && second && isMonthRow(elements(second, "th"), 0)) return 2;
-  return 0;
+  const years = elements(second, "th");
+  const months = elements(third, "th");
+  if (top.length !== 3 || !years.length || spanOf(top[1]) !== months.length || months.length < 12) return null;
+  const yearOf: number[] = years.flatMap((cell) => Array.from({ length: spanOf(cell) }, () => Number(textOf(cell).trim().replace(/년$/, ""))));
+  if (yearOf.length !== months.length || yearOf.some((y) => !Number.isFinite(y))) return null;
+  const columns = months.map((cell, i) => ({ key: yearOf[i] * 100 + monthNumber(cell), month: monthNumber(cell), year: yearOf[i] }));
+  return columns.every((c) => c.month >= 1 && c.month <= 12) ? columns : null;
+}
+
+/** 머리글 행 수와 달 칸: 3행(해를 넘기는 표), 2행('단위업무명 | 계획기간(12칸 병합) | 진행상황 요약' + '1월 … 12월'), 예전 문서의 1행('이름 | 1월 … 12월 | 진행상황 요약'), 일정표가 아니면 0. */
+function layoutOf(table: Hast): { heads: number; columns: Column[] } {
+  const rows = rowsOf(table);
+  const [first, second] = rows;
+  if (!first) return { heads: 0, columns: [] };
+  const top = elements(first, "th");
+  if (top.length === 14 && isMonthRow(top, 1)) return { heads: 1, columns: MONTHS };
+  if (top.length === 3 && spanOf(top[1]) === 12 && second && isMonthRow(elements(second, "th"), 0)) return { heads: 2, columns: MONTHS };
+  const columns = yearColumns(rows);
+  return columns ? { heads: 3, columns } : { heads: 0, columns: [] };
 }
 
 export function isGanttTable(table: Hast): boolean {
-  return headerRows(table) > 0;
+  return layoutOf(table).heads > 0;
 }
 
 // '직접 수정하기' 중이면 칸 안에 입력칸 표시(<span data-cell>)가 있다. 그 번호(없으면 null).
@@ -48,22 +69,22 @@ function editId(node: Hast): number | null {
   return null;
 }
 
-function monthsOfRow(row: Hast): { name: string; months: Set<number>; note: string; nameId: number | null; noteId: number | null } | null {
+function monthsOfRow(row: Hast, columns: Column[]): { name: string; months: Set<number>; note: string; nameId: number | null; noteId: number | null } | null {
   const cells = elements(row, "td");
   if (cells.length < 3) return null;
-  const months = new Set<number>();
-  let month = 1;
+  const months = new Set<number>(); // 칠해진 칸의 key
+  let index = 0;
   for (const cell of cells.slice(1, -1)) {
     const span = spanOf(cell);
-    if (isBar(cell)) for (let m = month; m < month + span; m += 1) months.add(m);
-    month += span;
+    if (isBar(cell)) for (let i = index; i < index + span && i < columns.length; i += 1) months.add(columns[i].key);
+    index += span;
   }
-  if (month !== 13) return null; // 1~12월 칸이 아닌 행은 손대지 않는다
+  if (index !== columns.length) return null; // 달 칸 수가 머리글과 다른 행은 손대지 않는다
   const last = cells[cells.length - 1];
   return { name: textOf(cells[0]).trim(), months, note: textOf(last), nameId: editId(cells[0]), noteId: editId(last) };
 }
 
-function GanttRow({ name, months, note, nth, nameId, noteId }: { name: string; months: Set<number>; note: string; nth: number; nameId: number | null; noteId: number | null }) {
+function GanttRow({ name, months, note, nth, nameId, noteId, columns }: { name: string; months: Set<number>; note: string; nth: number; nameId: number | null; noteId: number | null; columns: Column[] }) {
   const { editable, onChange } = useContext(GanttContext);
   const [draft, setDraft] = useState<Set<number> | null>(null);
   const drag = useRef<{ paint: boolean; current: Set<number>; last: number } | null>(null);
@@ -86,37 +107,37 @@ function GanttRow({ name, months, note, nth, nameId, noteId }: { name: string; m
     return () => window.removeEventListener("pointerup", finish);
   }, [months, name, nth, onChange]);
 
-  const apply = (month: number) => {
+  // state.last 는 직전 칸의 순번(columns 의 index)
+  const apply = (index: number) => {
     const state = drag.current;
     if (!state) return;
     // 마우스가 빠르면 사이 칸을 건너뛰므로, 직전 칸부터 지금 칸까지 한꺼번에 칠한다.
     const next = new Set(state.current);
-    for (let m = Math.min(state.last, month); m <= Math.max(state.last, month); m += 1) {
-      if (state.paint) next.add(m);
-      else next.delete(m);
+    for (let i = Math.min(state.last, index); i <= Math.max(state.last, index); i += 1) {
+      if (state.paint) next.add(columns[i].key);
+      else next.delete(columns[i].key);
     }
     state.current = next;
-    state.last = month;
+    state.last = index;
     setDraft(next);
   };
 
-  const cells: ReactNode[] = [];
-  for (let month = 1; month <= 12; month += 1) {
-    const on = shown.has(month);
-    const joined = on && shown.has(month - 1);
-    cells.push(
+  const cells: ReactNode[] = columns.map((column, index) => {
+    const on = shown.has(column.key);
+    const joined = on && index > 0 && shown.has(columns[index - 1].key);
+    return (
       <td
-        key={month}
+        key={column.key}
         className={`${on ? "bar" : ""} ${joined ? "joined" : ""} ${editable ? "gantt-cell" : ""}`.trim()}
         onPointerDown={editable ? (event) => {
           event.preventDefault();
-          drag.current = { paint: !shown.has(month), current: new Set(shown), last: month };
-          apply(month);
+          drag.current = { paint: !shown.has(column.key), current: new Set(shown), last: index };
+          apply(index);
         } : undefined}
-        onPointerEnter={editable ? () => apply(month) : undefined}
-      >{on ? " " : ""}</td>,
+        onPointerEnter={editable ? () => apply(index) : undefined}
+      >{on ? " " : ""}</td>
     );
-  }
+  });
   return (
     <tr className={editable && shown.size === 0 ? "needs-fill-row" : undefined}>
       <td>{nameId !== null ? <EditableCell id={nameId} /> : name}</td>
@@ -131,25 +152,34 @@ export function GanttAwareTable({ node, children }: { node?: Hast; children?: Re
   const { editable } = useContext(GanttContext);
   if (!node || !isGanttTable(node)) return <table>{children}</table>;
   const rows = rowsOf(node);
-  const heads = headerRows(node);
+  const { heads, columns } = layoutOf(node);
   const top = elements(rows[0], "th");
   const name = textOf(top[0]);
   const note = textOf(top[top.length - 1]);
-  const period = heads === 2 ? textOf(top[1]) : "계획기간"; // 예전 문서(1행 머리글)도 2행으로 보여 준다
+  const period = heads >= 2 ? textOf(top[1]) : "계획기간"; // 예전 문서(1행 머리글)도 2행으로 보여 준다
+  const years: { year: number; span: number }[] = []; // 해를 넘기는 표의 연도 머리글
+  for (const column of columns) {
+    if (column.year === null) break;
+    const last = years[years.length - 1];
+    if (last && last.year === column.year) last.span += 1;
+    else years.push({ year: column.year, span: 1 });
+  }
+  const headSpan = years.length ? 3 : 2;
   const seen = new Map<string, number>();
   return (
-    <table className={`gantt-table ${editable ? "gantt-editable" : ""}`}>
+    <table className={`gantt-table ${editable ? "gantt-editable" : ""} ${years.length ? "gantt-years" : ""}`.trim()}>
       <thead>
-        <tr><th rowSpan={2}>{name}</th><th colSpan={12}>{period}</th><th rowSpan={2}>{note}</th></tr>
-        <tr>{Array.from({ length: 12 }, (_, i) => <th key={i}>{i + 1}월</th>)}</tr>
+        <tr><th rowSpan={headSpan}>{name}</th><th colSpan={columns.length}>{period}</th><th rowSpan={headSpan}>{note}</th></tr>
+        {years.length > 0 && <tr>{years.map((y) => <th key={y.year} colSpan={y.span}>{y.year}년</th>)}</tr>}
+        <tr>{columns.map((column) => <th key={column.key}>{column.month}월</th>)}</tr>
       </thead>
       <tbody>
         {rows.slice(heads).map((row, index) => {
-          const parsed = monthsOfRow(row);
+          const parsed = monthsOfRow(row, columns);
           if (!parsed) return <tr key={index}>{elements(row, "td").map((cell, i) => <td key={i}>{textOf(cell)}</td>)}</tr>;
           const nth = seen.get(parsed.name) ?? 0;
           seen.set(parsed.name, nth + 1);
-          return <GanttRow key={`${parsed.name}-${nth}`} {...parsed} nth={nth} />;
+          return <GanttRow key={`${parsed.name}-${nth}`} {...parsed} nth={nth} columns={columns} />;
         })}
       </tbody>
     </table>

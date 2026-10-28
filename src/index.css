@@ -2992,6 +2992,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .final-paper table.gantt-editable td.gantt-cell { cursor: crosshair; user-select: none; touch-action: none; }
 .final-paper table.gantt-editable td.gantt-cell:not(.bar):hover { background: #efeafc; }
 .final-paper table.gantt-table { -webkit-user-select: none; user-select: none; }
+/* 해를 넘기는 일정표: 연도 행을 더해 머리글이 3행이고 달 칸이 12칸보다 많을 수 있어 달 머리글 글자를 줄인다 */
+.final-paper table.gantt-years thead tr:nth-child(2) th { background: #f6f3fd; font-weight: 700; }
+.final-paper table.gantt-years thead tr:nth-child(3) th { font-size: 12px; letter-spacing: -0.04em; white-space: nowrap; overflow-wrap: normal; }
 .gantt-hint { margin-left: 12px; color: #7a7470; font-size: 15.5px; }
 
 /* 로고 클릭 → 홈. 버튼 기본 모양을 지우고 div 였을 때와 같은 글꼴·색을 유지한다 */
