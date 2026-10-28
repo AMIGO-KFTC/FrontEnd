@@ -11,6 +11,8 @@ const HTML_CELL = /<td(\s[^>]*)?>([\s\S]*?)<\/td>/g;
 // '### 1) 항목 이름', '##### 가. 세부업무 이름'. '#### 1) 정기업무'·'#### 2) 비정기 업무' 같은 묶음 제목은 고치는 칸이 아니다
 const HEADING = /^(#{3,6}\s+(?:\d+\)|[가-하]\d*\.)\s*)(?!(?:정기|비정기)\s*업무\s*$)(.+)$/;
 
+const HANDWRITTEN = /^\s*ID:\s*_+\s*\/\s*PW:\s*_+\s*$/i; // 수기 기재 칸(AI render.HANDWRITTEN_BLANK)
+
 function isBlank(raw: string): boolean {
   const text = raw.trim();
   return text === "" || text === "&nbsp;";
@@ -57,7 +59,8 @@ export function findCells(body: string): Cell[] {
     }
     offset += line.length + 1;
   });
-  return cells.sort((a, b) => a.start - b.start);
+  // 시스템 접근 권한의 ID/PW 칸('ID: ____ / PW: ____')은 출력한 뒤 손으로 적는 칸이라 화면에서 고칠 수 없다(읽기 전용)
+  return cells.filter((cell) => !HANDWRITTEN.test(cell.raw)).sort((a, b) => a.start - b.start);
 }
 
 export type Row = { start: number; end: number; marker: number; kind: "md" | "html" };
@@ -147,7 +150,7 @@ const BR = /<br\s*\/?>/gi; // 칸 안 줄바꿈(문서는 여러 문장을 <br> 
 
 export function cellText(cell: Cell): string {
   const raw = cell.raw.replace(DOC_HINT, "").replace(BR, "\n");
-  if (cell.kind === "md") return raw.replace(/\\\|/g, "|");
+  if (cell.kind === "md") return raw.replace(/\\\|/g, "|").replace(/\\~/g, "~"); // 문서의 '\~'(취소선 방지 이스케이프)는 '~'로 보여 준다
   return raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
 }
 
@@ -160,7 +163,7 @@ function encode(text: string, kind: Cell["kind"]): string {
   // 입력칸의 줄바꿈은 문서의 칸 안 줄바꿈(<br>)으로 저장한다
   const lines = text.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
   if (!lines.length) return "-";
-  if (kind === "md") return lines.map((line) => line.replace(/\|/g, "\\|")).join("<br>");
+  if (kind === "md") return lines.map((line) => line.replace(/\|/g, "\\|").replace(/(?<!\\)~/g, "\\~")).join("<br>"); // '~' 두 개가 취소선이 되지 않게
   return lines.map((line) => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")).join("<br>");
 }
 

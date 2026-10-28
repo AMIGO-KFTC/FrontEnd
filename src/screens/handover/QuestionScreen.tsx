@@ -42,24 +42,21 @@ function gapState(gap: Gap, inReview: boolean): "active" | "done" | "waiting" {
 // 질문 목록 번호. 본 질문은 1, 2, 3 … 으로 매기고, 보조질문은 따로 번호를 먹이지 않고 바로 앞 본 질문에 붙여 4-1, 4-2 로 매긴다.
 // 같은 단위 업무(item_id)의 본 질문이 있으면 서버가 낸 순서와 상관없이 그 본 질문 바로 뒤로 모은다.
 function numberGaps(gaps: Gap[]): { gap: Gap; label: string }[] {
-  const ownerOf = (aux: Gap) => (aux.item_id ? gaps.find((g) => !g.aux && g.slot === aux.slot && g.item_id === aux.item_id) : undefined);
-  const attached = new Map<string, Gap[]>(); // 본 질문 id → 그 뒤에 붙는 보조질문
-  for (const g of gaps) {
-    const owner = g.aux ? ownerOf(g) : undefined;
-    if (owner) attached.set(owner.id, [...(attached.get(owner.id) ?? []), g]);
-  }
-  const placed = new Set([...attached.values()].flat().map((g) => g.id));
+  // 번호는 실제로 묻는 순서(서버의 질문 목록 순서) 그대로 매긴다: 본 질문은 1, 2, …, 보조질문은 바로 앞 본 질문의 하위 번호(1-1, 1-2).
+  // (보조질문을 같은 업무의 첫 본 질문 밑으로 끌어오면 1 → 2 → 1-1 처럼 번호와 묻는 순서가 어긋난다)
+  // 다른 세부업무(항목)로 넘어가면 보조질문이어도 새 번호를 받는다(앞 업무의 질문 밑에 붙지 않게).
   const rows: { gap: Gap; label: string }[] = [];
+  const itemOf = (g: Gap) => `${g.slot}|${g.item_id ?? ""}`;
   let main = 0;
   let sub = 0;
+  let owner = "";
   for (const g of gaps) {
-    if (placed.has(g.id)) continue;
-    if (g.aux && main > 0) rows.push({ gap: g, label: `${main}-${++sub}` }); // 짝이 되는 본 질문이 없으면 바로 앞 본 질문에 붙인다
+    if (g.aux && main > 0 && itemOf(g) === owner) rows.push({ gap: g, label: `${main}-${++sub}` });
     else {
       rows.push({ gap: g, label: String(++main) });
       sub = 0;
+      owner = itemOf(g);
     }
-    for (const aux of attached.get(g.id) ?? []) rows.push({ gap: aux, label: `${main}-${++sub}` });
   }
   return rows;
 }
@@ -190,7 +187,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 >
                   <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : label}</span>
                   {/* 장 이름은 쓰지 않는다. 건너뛴(답이 없어 아직 채워지지 않은) 질문만 표시하고 주황색으로 구분한다 */}
-                  <div>{(item.status === "skipped" || item.aux) && <small>{[item.aux ? "선택 질문" : "", item.status === "skipped" ? "건너뜀" : ""].filter(Boolean).join(" · ")}</small>}<strong>{plain(item.question)}</strong></div>
+                  <div>{item.status === "skipped" && <small>건너뜀</small>}<strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
                     <button type="button" className="question-reopen" disabled={!canJump} onClick={(event) => { event.stopPropagation(); jump(); }} title="이 질문으로 돌아가 답을 고칩니다">
@@ -212,7 +209,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 {category && <em title={itemName ? `${category} · ${itemName}` : category}>{itemName ? `${category} · ${itemName}` : category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>
-                {aux && headline && <span className="question-aux-tag">선택 질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
+                {aux && headline && <span className="question-aux-tag">보조질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
                 {headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}
               </h2>
               {aux && headline ? <p className="question-aux-note">{auxNote}</p> : <p>{gap?.description ?? ""}</p>}

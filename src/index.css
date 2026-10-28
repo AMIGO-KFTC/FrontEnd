@@ -2143,7 +2143,7 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .finish-handover { width: 100%; height: 38px; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 9px; background: linear-gradient(135deg, #5e47bb, #795bd3); color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 7px 18px rgba(98,72,188,.16); }
 .finish-handover:hover { transform: translateY(-1px); }
 .final-document-view { min-width: 0; overflow-y: auto; }
-.final-document-toolbar { height: 52px; position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: flex-end; padding: 0 22px; border-bottom: 1px solid #dfdad7; background: rgba(250,248,246,.94); backdrop-filter: blur(12px); }
+.final-document-toolbar { min-height: 52px; box-sizing: border-box; position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: flex-end; padding: 8px 22px; border-bottom: 1px solid #dfdad7; background: rgba(250,248,246,.94); backdrop-filter: blur(12px); } /* 안내 문구가 여러 줄이 되면 높이가 늘어난다(고정 높이면 글자가 잘린다) */
 .final-document-toolbar > div { display: flex; align-items: center; gap: 9px; }
 .final-document-toolbar > div:last-child { justify-content: flex-end; }
 .final-document-toolbar > div > strong { font-size: 12.5px; }
@@ -2153,7 +2153,9 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .final-paper.is-editing [contenteditable] { outline: none; }
 .final-paper-cover { padding-bottom: 36px; border-bottom: 2px solid #29232e; }
 .paper-brand { display: flex; align-items: center; gap: 7px; color: #6550bd; font: 800 12px "Manrope", sans-serif; letter-spacing: 1.2px; }
-.paper-brand > span { width: 23px; height: 23px; display: grid; place-items: center; border-radius: 7px; background: #ebe5fc; }
+.paper-brand > .brand-emblem { width: 23px; height: 23px; }
+.paper-brand > .brand-emblem-print { display: none; flex: none; }
+@media print { .paper-brand > .brand-emblem { display: none; } .paper-brand > .brand-emblem-print { display: block; } } /* 인쇄는 CSS mask 를 그리지 않아 SVG 마크로 바꾼다(Brand.PrintEmblem) */ /* 상단 메뉴 왼쪽 위와 같은 로고(장기휴가는 .leave-theme 색) */
 .paper-type { display: block; margin-top: 34px; color: #7b62cb; font: 700 12px "Manrope", sans-serif; letter-spacing: 1.8px; }
 .final-paper-cover h1 { margin: 13px 0 10px; font-size: 34px; line-height: 1.35; letter-spacing: -1.8px; }
 .final-paper-cover > p { margin: 0; color: #818087; font-size: 15px; }
@@ -2177,7 +2179,7 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .paper-task-list strong { font-size: 12px; }
 .paper-task-list small { color: #9c959e; font-size: 13.5px; }
 .final-paper table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.final-paper th, .final-paper td { padding: 10px; border-bottom: 1px solid #e7e3e6; text-align: left; }
+.final-paper th, .final-paper td { padding: 10px; border-bottom: 1px solid #e7e3e6; text-align: left; word-break: keep-all; overflow-wrap: break-word; } /* 한국어도 단어(띄어쓰기) 단위로 줄을 바꾼다. 칸보다 긴 한 단어만 넘칠 때 자른다(화면·인쇄 공통) */
 .final-paper th { background: #f6f4f6; color: #67616a; }
 .paper-footer { margin-top: 48px; padding-top: 12px; display: flex; justify-content: space-between; border-top: 1px solid #e6e1e5; color: #a39da4; font-size: 13.5px; }
 
@@ -2416,7 +2418,6 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 .leave-theme .paper-brand,
 .leave-theme .paper-section-heading > span,
 .leave-theme .paper-section sup { color: var(--leave-deep-pink); }
-.leave-theme .paper-brand > span { background: #fff0b5; }
 .leave-theme .paper-highlight { border-left-color: var(--leave-pink); background: #fff3f8; color: #ba3e72; }
 .completion-page.leave-theme .completion-main:before { background: var(--leave-yellow); opacity: .24; }
 .completion-page.leave-theme .completion-main:after { background: var(--leave-pink); opacity: .18; }
@@ -2986,7 +2987,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 /* 해를 넘기는 일정표: 연도 행을 더해 머리글이 3행이고 달 칸이 12칸보다 많을 수 있어 달 머리글 글자를 줄인다 */
 .final-paper table.gantt-years thead tr:nth-child(2) th { background: #f6f3fd; font-weight: 700; }
 .final-paper table.gantt-years thead tr:nth-child(3) th { font-size: 12px; letter-spacing: -0.04em; white-space: nowrap; overflow-wrap: normal; }
-.gantt-hint { margin-left: 12px; color: #7a7470; font-size: 15.5px; }
+.gantt-hint { margin-left: 12px; color: #7a7470; font-size: 13px; line-height: 1.5; }
 
 /* 로고 클릭 → 홈. 버튼 기본 모양을 지우고 div 였을 때와 같은 글꼴·색을 유지한다 */
 .brand-link { appearance: none; border: 0; background: none; padding: 0; margin: 0; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; border-radius: 10px; }
@@ -3029,7 +3030,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .us-drop button { height: 36px; margin-top: 6px; padding: 0 18px; border: 0; border-radius: 10px; background: #262326; color: #fff; font-size: 14px; font-weight: 700; }
 .us-examples { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: #faf8ff; border: 1px solid #ece6f7; }
 .us-examples > strong { display: block; margin-bottom: 8px; color: #3d3642; font-size: 14px; }
-.us-examples ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 10px; margin: 0; padding: 0; list-style: none; }
+.us-examples ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; } /* 추천·중요 박스(좌우로 6px 튀어나옴)끼리도 12px 떨어지게 */
 .us-examples li { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .us-examples li span { display: flex; align-items: center; min-width: 0; color: #5b3fc4; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .us-examples li span b { min-width: 0; overflow: hidden; font-weight: inherit; text-overflow: ellipsis; } /* 긴 파일명만 줄이고 '추천'·'중요' 표시는 항상 보이게 */
@@ -3360,7 +3361,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 
 /* ===== 인계자 정보(StartScreen): 단위 업무 고르기 · 세부업무(정기·비정기) 입력 — 시작 ===== */
 /* 단위 업무 목록·세부업무 카드가 길어지면 카드 안에서 세로로 스크롤한다(가운데 정렬은 넘치지 않을 때만) */
-.onboarding-main.start-form-main { align-items: safe center; overflow-y: auto; scrollbar-width: thin; }
+/* 스크롤 영역은 화면 전체 폭으로 두고 카드는 안쪽 여백으로 가운데에 둔다(좁은 스크롤 영역이면 막대가 카드 옆에 붙어 보인다) */
+.onboarding-main.start-form-main { width: 100%; box-sizing: border-box; margin: 0; padding-inline: max(24px, calc((100% - 480px) / 2)); align-items: safe center; overflow-y: auto; scrollbar-width: thin; }
+@media (max-width: 640px) { .onboarding-main.start-form-main { padding-inline: 12px; } }
 .onboarding-card .unit-field { margin-bottom: 10px; }
 .unit-field-label { display: block; color: #5b555e; font-size: 12.5px; font-weight: 700; }
 .unit-field-label i { color: #7958d5; font-style: normal; }
@@ -3396,8 +3399,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .help-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 4px; outline: none; }
 .help-tip-mark { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9bdee; border-radius: 50%; background: #f6f3ff; color: #664bc3; font-size: 11px; font-weight: 800; line-height: 1; cursor: help; }
 .help-tip:hover .help-tip-mark, .help-tip:focus .help-tip-mark { background: #7958d5; border-color: #7958d5; color: #fff; }
-.help-tip-pop { position: absolute; z-index: 30; top: calc(100% + 8px); left: -8px; width: 300px; max-width: calc(100vw - 48px); padding: 11px 13px; border: 1px solid #e3dee4; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(60, 40, 110, .16); color: #4a4450; font-size: 12px; font-weight: 500; line-height: 1.55; text-align: left; white-space: normal; opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .12s ease, transform .12s ease, visibility .12s; pointer-events: none; }
-.help-tip:hover .help-tip-pop, .help-tip:focus .help-tip-pop, .help-tip:focus-within .help-tip-pop { opacity: 1; visibility: visible; transform: translateY(0); }
+.help-tip-pop { position: absolute; z-index: 30; top: calc(100% + 8px); left: -8px; width: 300px; max-width: calc(100vw - 48px); padding: 11px 13px; border: 1px solid #e3dee4; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(60, 40, 110, .16); color: #4a4450; font-size: 12px; font-weight: 500; line-height: 1.55; text-align: left; white-space: normal; display: none; pointer-events: none; } /* 숨김은 display:none(보이지 않게만 두면 자리를 차지해 화면에 쓸데없는 스크롤이 생긴다) */
+.help-tip:hover .help-tip-pop, .help-tip:focus .help-tip-pop, .help-tip:focus-within .help-tip-pop { display: block; animation: help-tip-in .12s ease; }
+@keyframes help-tip-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 .help-tip-pop strong { display: block; margin-bottom: 3px; color: #2f2a33; font-size: 12.5px; font-weight: 800; }
 .help-tip-pop p { margin: 0 0 6px; }
 .help-tip-pop p:last-child { margin-bottom: 0; }

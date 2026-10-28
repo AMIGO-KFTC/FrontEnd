@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/shared/api";
-import { Brand } from "@/shared/Brand";
+import { Brand, PrintEmblem } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { StepUserMenu } from "@/shared/StepUserMenu";
@@ -354,7 +354,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           <CitationContext.Provider value={citationContext}>
           <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${sending ? " is-revising" : ""}${readOnly ? " is-readonly" : ""}`}>
             <header className="final-paper-cover">
-              <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
+              <div className="paper-brand"><span className="brand-emblem" aria-hidden="true" /><PrintEmblem leave={data.mode === "leave"} /> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
               <p>안정적인 업무 연속성을 위한 핵심 정보와 실행 가이드</p>
               <div className="paper-meta">
