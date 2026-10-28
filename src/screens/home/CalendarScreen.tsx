@@ -4,14 +4,14 @@
 // "받은 인수인계서 적용하기"를 누르면 날짜가 정해진 일(마감일 등)은 달력 일정으로, 반복하는 일은 정기 업무로 들어온다.
 // - 매주 하는 일: 달력 왼쪽 '주간 업무' 칸에 주(N째주)마다. 칸을 누르면 오른쪽에서 그 주에만 할 일(주간 업무)을 적을 수 있다
 // - 매월·매일·수시 업무와 그 달에 해당하는 분기·반기·매년 업무: 오른쪽 'N월에 해야 할 일'의 'N월 전체' 칸
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
 import { personnelView, usePersonnel } from "@/shared/personnel";
 import { dateKey, formatDday, usePlanner } from "@/shared/planner";
 import { formatRelativeTime, hasDocument } from "@/shared/sessions";
-import type { PlannerRoutine, ReceivedHandover } from "@/shared/types";
+import type { OnetelEvent, PlannerRoutine, ReceivedHandover } from "@/shared/types";
 import { MonthAgenda } from "./MonthAgenda";
 import type { HomeNav, SessionList } from "./types";
 
@@ -46,6 +46,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null); // 주간 칸을 누르면 그 주 일요일, 날짜를 누르면 null
   const [agendaMonth, setAgendaMonth] = useState(false); // 오른쪽 입력 대상이 '이 달 전체'인지
   const [applyOpen, setApplyOpen] = useState(false);
+  const [onetelOpen, setOnetelOpen] = useState(false); // '원텔 캘린더와 연동하기'(예시 데이터) 모달
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -105,6 +106,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                   </button>
                 </div>
                 <div>
+                  <button className="calendar-apply onetel" onClick={() => setOnetelOpen(true)}><Icon name="calendar" size={14} /> 원텔 캘린더와 연동하기</button>
                   <button className="calendar-apply" onClick={() => setApplyOpen(true)}><Icon name="download" size={14} /> 받은 인수인계서 적용하기</button>
                   <button className="calendar-today" onClick={goToday}>오늘</button>
                   <button className="calendar-prev" onClick={() => moveMonth(-1)} aria-label="이전 달"><Icon name="chevron" size={15} /></button>
@@ -185,6 +187,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
 
         </div>
       </main>
+      {onetelOpen && <OnetelImportDialog onClose={() => setOnetelOpen(false)} onImported={() => void planner.refresh()} />}
       {applyOpen && <ApplyReceivedDialog onClose={() => setApplyOpen(false)} onApplied={() => void planner.refresh()} />}
     </div>
   );
@@ -231,6 +234,87 @@ function ApplyReceivedDialog({ onClose, onApplied }: { onClose: () => void; onAp
             </div>
           ))}
         </div>
+      </section>
+    </div>
+  );
+}
+
+// "2026-10-29" → "10/29 (목)"
+function onetelDate(key: string): string {
+  const [year, month, day] = key.split("-").map(Number);
+  return `${month}/${day} (${WEEKDAYS[new Date(year, month - 1, day).getDay()]})`;
+}
+
+// '원텔 캘린더와 연동하기'(예시 데이터): 원텔 캘린더에서 가져올 수 있는 일정을 먼저 보여 주고, 고른 일정만 내 캘린더에 넣는다. 이미 가져온 일정은 '가져옴'으로 보인다.
+function OnetelImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const [events, setEvents] = useState<OnetelEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const load = (selectNew: boolean) =>
+    api
+      .onetelEvents()
+      .then(({ events: rows }) => {
+        setEvents(rows);
+        setPicked(selectNew ? new Set(rows.filter((row) => !row.imported).map((row) => row.id)) : new Set());
+      })
+      .catch((e: Error) => setError(e.message));
+  useEffect(() => {
+    void load(true);
+  }, []);
+
+  const importable = (events ?? []).filter((row) => !row.imported);
+  const allPicked = importable.length > 0 && importable.every((row) => picked.has(row.id));
+  const toggle = (id: string) =>
+    setPicked((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const run = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const done = await api.importOnetelCalendar([...picked]);
+      setResult({ ok: true, message: done.message });
+      onImported();
+      await load(false);
+    } catch (e) {
+      setResult({ ok: false, message: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="apply-received-overlay" role="presentation" onClick={onClose}>
+      <section className="apply-received-modal" role="dialog" aria-modal="true" aria-labelledby="onetel-import-title" onClick={(event) => event.stopPropagation()}>
+        <header>
+          <div><h2 id="onetel-import-title">원텔 캘린더와 연동하기</h2><p>원텔 캘린더에서 가져올 수 있는 일정이에요. 고른 일정이 내 캘린더에 들어와요.{"\n"}지금은 연동 전이라 예시 일정이 나와요.</p></div>
+          <button onClick={onClose} aria-label="닫기"><Icon name="close" size={16} /></button>
+        </header>
+        <div className="apply-received-list">
+          {error && <div className="list-notice error" role="alert">원텔 일정을 불러오지 못했어요: {error}</div>}
+          {!events && !error && <div className="apply-received-empty">불러오는 중…</div>}
+          {events?.map((row) => (
+            <label className={`onetel-row${row.imported ? " imported" : ""}`} key={row.id}>
+              <input type="checkbox" checked={row.imported || picked.has(row.id)} disabled={row.imported || busy} onChange={() => toggle(row.id)} />
+              <div><strong>{row.text}</strong><small>{onetelDate(row.date)}</small></div>
+              {row.imported && <em>가져옴</em>}
+            </label>
+          ))}
+        </div>
+        <footer className="onetel-footer">
+          <div>
+            {result ? <span className={result.ok ? "ok" : "error"} role="status">{result.message}</span> : events && importable.length > 0 ? (
+              <label className="onetel-all"><input type="checkbox" checked={allPicked} disabled={busy} onChange={() => setPicked(allPicked ? new Set() : new Set(importable.map((row) => row.id)))} /> 전체 선택</label>
+            ) : events ? <span>가져올 새 일정이 없어요.</span> : null}
+          </div>
+          <button type="button" onClick={() => void run()} disabled={busy || picked.size === 0}>{busy ? "가져오는 중…" : `선택한 ${picked.size}건 가져오기`}</button>
+        </footer>
       </section>
     </div>
   );

@@ -374,7 +374,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
           )}
           <GanttContext.Provider value={gantt}>
           <CitationContext.Provider value={citationContext}>
-          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}`}>
+          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}${readOnly ? " is-readonly" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>

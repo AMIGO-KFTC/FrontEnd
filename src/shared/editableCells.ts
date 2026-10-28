@@ -139,10 +139,18 @@ export function addRowAfter(body: string, index: number): string {
 
 const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#x27;": "'", "&#39;": "'" };
 
-/** 칸 원문을 사람이 고칠 글로(이스케이프를 푼다). */
+const DOC_HINT = /<span class="doc-hint">[^<]*<\/span>/g; // 비어 있는 칸의 흐린 안내: 고칠 글이 아니라 빈 칸으로 본다
+
+/** 칸 원문을 사람이 고칠 글로(이스케이프를 푼다). 흐린 안내만 있는 칸은 빈 글. */
 export function cellText(cell: Cell): string {
-  if (cell.kind === "md") return cell.raw.replace(/\\\|/g, "|");
-  return cell.raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
+  const raw = cell.raw.replace(DOC_HINT, "");
+  if (cell.kind === "md") return raw.replace(/\\\|/g, "|");
+  return raw.replace(/&(amp|lt|gt|quot|#x27|#39);/g, (entity) => ENTITIES[entity] ?? entity);
+}
+
+/** 꼭 직접 적어야 하는 칸인지: 비어 있거나(흐린 안내만 남은 칸), 수기로 적는 빈칸('________', ID/PW)이 남아 있다. */
+export function needsFill(text: string): boolean {
+  return text.trim() === "" || /_{3,}/.test(text);
 }
 
 function encode(text: string, kind: Cell["kind"]): string {

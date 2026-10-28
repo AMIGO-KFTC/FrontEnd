@@ -2,10 +2,11 @@
 // 인수자는 완성 문서 화면의 '인수자에게 전송하기'에서 고른다.
 // 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장 + 팀장이 관리자 화면에서 더한 업무) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
 // 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
+import { HelpTip } from "@/shared/HelpTip";
 import { dutiesText, type StartData } from "@/shared/handover";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
@@ -14,13 +15,36 @@ import { StepUserMenu } from "@/shared/StepUserMenu";
 import type { HandoverMode, HandoverUnit, OrgDuties } from "@/shared/types";
 
 type Kind = "regular" | "irregular";
-const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무(프로젝트성)" };
+const KIND_LABEL: Record<Kind, string> = { regular: "정기 업무", irregular: "비정기 업무" };
+// 정기·비정기 업무 옆 (?) 를 가리키면(hover) 뜨는 설명. 마지막 줄이 작성 가이드 문장이다.
+const KIND_HELP: Record<Kind, { definition: string; example: string; guide: string }> = {
+  regular: {
+    definition: "일·월·분기 등 일정한 주기로 반복되거나, 일상적인 운영 및 관리를 위해 지속적으로 수행하는 업무",
+    example: "월간 실적 보고, 정산, 데이터 관리, 정기 점검, 상시 문의 대응",
+    guide: "일정한 주기를 두고 반복적으로 수행해야 하는 업무를 작성해 주세요.",
+  },
+  irregular: {
+    definition: "특정 목표 달성을 위해 별도로 추진하거나, 수행 기간이나 완료 시점이 정해져 있는 업무",
+    example: "신규 시스템 도입, 업무 프로세스 개선, 신규 정책 수립, 신규 서비스 기획",
+    guide: "프로젝트, 수시성 업무 등 일정한 주기 없이 수행하는 업무를 작성해 주세요.",
+  },
+};
+function KindHelp({ kind }: { kind: Kind }) {
+  const help = KIND_HELP[kind];
+  return (
+    <HelpTip label={KIND_LABEL[kind]}>
+      <strong>{KIND_LABEL[kind]}</strong>
+      <p>{help.definition}<em>예: {help.example}</em></p>
+      <p className="help-tip-guide">{help.guide}</p>
+    </HelpTip>
+  );
+}
 
 const emptyUnit = (name: string): HandoverUnit => ({ name, regular: [], irregular: [] });
 const draftKey = (unitName: string, kind: Kind) => `${unitName}\u0000${kind}`;
 
 // 세부업무 칩 입력칸. Enter(한글 조합 중 Enter 는 글자 확정이라 무시) 또는 '추가'로 칩을 붙이고 × 로 지운다.
-function ChipField({ label, items, draft, placeholder, onDraft, onChange }: { label: string; items: string[]; draft: string; placeholder: string; onDraft: (value: string) => void; onChange: (items: string[]) => void }) {
+function ChipField({ label, items, draft, placeholder, onDraft, onChange }: { label: ReactNode; items: string[]; draft: string; placeholder: string; onDraft: (value: string) => void; onChange: (items: string[]) => void }) {
   const add = () => {
     const next = draft.trim();
     if (!next) return;
@@ -110,7 +134,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
   const chipField = (unit: HandoverUnit, kind: Kind, placeholder: string) => (
     <ChipField
       key={kind}
-      label={KIND_LABEL[kind]}
+      label={<>{KIND_LABEL[kind]}<KindHelp kind={kind} /></>}
       items={unit[kind]}
       draft={drafts[draftKey(unit.name, kind)] ?? ""}
       placeholder={placeholder}
@@ -233,7 +257,13 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
     <div className="unit-detail-list">
       {data.units.map((unit, index) => (
         <section className="unit-detail-card" key={unit.name}>
-          <h3><b>{index + 1}.</b> {unit.name}</h3>
+          <h3>
+            <b>{index + 1}.</b> {unit.name}
+            <HelpTip label="세부업무">
+              <strong>세부업무</strong>
+              <p>업무분장표에 명시된 단위업무를 수행하기 위해 필요한 주요 활동을 구분한 것으로, 인수인계 시 개별적으로 수행 방법과 절차를 설명할 수 있는 업무 단위</p>
+            </HelpTip>
+          </h3>
           <div className="unit-detail-grid">
             {chipField(unit, "regular", "예: 월간 실적 보고")}
             {chipField(unit, "irregular", "예: 홈페이지 리뉴얼")}

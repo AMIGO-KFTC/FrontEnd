@@ -43,7 +43,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
                 <h2>팀 관리</h2>
                 <p>{team} 구성원의 인수인계 현황을 보고,<br />AI 지침을 정합니다.</p>
               </div>
-              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 맞춤 설정</li></ul>
+              <ul><li>구성원 관리</li><li>팀 인수인계 현황</li><li>AI 팀 맞춤 설정</li></ul>
               <strong>팀 관리 모드로 들어가기 <Icon name="arrow" size={16} /></strong>
             </button>
           </section>

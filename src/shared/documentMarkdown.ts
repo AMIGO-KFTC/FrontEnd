@@ -10,7 +10,7 @@ const schema = {
     ...defaultSchema.attributes,
     td: [...(defaultSchema.attributes?.td ?? []), "colSpan", "rowSpan", ["className", "bar"]],
     th: [...(defaultSchema.attributes?.th ?? []), "colSpan", "rowSpan"],
-    span: [...(defaultSchema.attributes?.span ?? []), "dataCell", "dataRow", ["className", "doc-hint"]], // '직접 수정하기'의 입력칸·행 추가/삭제 표시(editableCells.markCells), 비어 있는 칸의 흐린 안내(doc-hint)
+    span: [...(defaultSchema.attributes?.span ?? []), "dataCell", "dataRow", ["className", "doc-hint", "doc-guide"]], // '직접 수정하기'의 입력칸·행 추가/삭제 표시(editableCells.markCells), 비어 있는 칸의 흐린 안내(doc-hint), 장 위의 작성 안내(doc-guide)
   },
 };
 

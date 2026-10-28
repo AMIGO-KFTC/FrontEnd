@@ -136,7 +136,7 @@ export interface MessageMeta {
   choice?: "yesno"; // 예/아니요 두 선택지로 답하는 질문
   picker?: "period"; // 주기(choices)를 고르거나, 정기적이지 않으면 달력에서 기간을 고르는 질문
   choices?: string[];
-  aux?: boolean; // 보조질문: 질문 왼편에 '보조질문' 태그와 aux_note 안내를 붙인다
+  aux?: boolean; // 보조질문(선택 질문): 질문 왼편에 '선택 질문' 태그와 aux_note 안내를 붙인다
   aux_note?: string;
   retry?: boolean;
   coverage?: Record<string, Coverage>;
@@ -408,12 +408,28 @@ export interface TeamGuidelineItem {
   instruction: string;
 }
 
+export interface TeamGlossaryTerm {
+  term: string;
+  meaning: string;
+}
+
+export interface TeamDocument {
+  id: string;
+  name: string;
+  size: number;
+  uploaded_by: string;
+  uploaded_at: string | null;
+}
+
 export interface TeamGuidelines {
   message: string;
   organization: string;
   items: TeamGuidelineItem[];
-  notes: string;
+  notes: string; // STEP4 기타 중요 포인트
   prompt: string;
+  intro: string; // STEP1 팀 소개
+  glossary: TeamGlossaryTerm[]; // STEP2 업무 용어집
+  documents: TeamDocument[]; // STEP3 팀 업무 문서
   updated_at: string | null;
   updated_by: string;
   editable: boolean;
@@ -437,10 +453,10 @@ export interface TeamDuties {
   editable: boolean;
 }
 
-// 알림(GET /api/notifications, POST /api/notifications/read · /dismiss): 받은 인수인계서 도착·수정. 확인·지움 상태는 서버에 계정별로 남는다.
+// 알림(GET /api/notifications, POST /api/notifications/read · /dismiss): 받은 인수인계서 도착·수정, 캘린더 일정·할 일의 마감 임박(due, 일주일 전부터). 확인·지움 상태는 서버에 계정별로 남는다.
 export type AppNotification = {
   id: string;
-  kind: "received" | "updated";
+  kind: "received" | "updated" | "due";
   session_id: string | null;
   title: string;
   text: string;
@@ -511,3 +527,6 @@ export type PlannerWeekTask = { id: string; week: string; text: string; memo?: s
 export type PlannerData = { message: string; events: PlannerEvent[]; todos: PlannerTodo[]; routines?: PlannerRoutine[]; week_tasks?: PlannerWeekTask[] };
 // 받은 인수인계서 적용하기(POST /api/handovers/received/{id}/calendar)
 export type HandoverCalendarResult = { message: string; events: number; routines: number; skipped: number };
+// 원텔 캘린더와 연동하기(예시 데이터): GET /api/planner/onetel/events 로 가져올 수 있는 일정을 보여 주고, POST /api/planner/onetel/import 로 고른 일정을 내 캘린더에 넣는다.
+export type OnetelEvent = { id: string; date: string; text: string; imported: boolean };
+export type OnetelImportResult = { message: string; events: number; skipped: number };

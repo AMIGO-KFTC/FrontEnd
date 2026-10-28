@@ -1268,6 +1268,11 @@ body:has(.handover-type-page), #root:has(.handover-type-page) { height: 100vh; o
 .received-footer-actions { display: flex; align-items: center; gap: 5px; }
 .received-footer-actions > button { height: 32px; display: flex; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid #ddd7d7; border-radius: 8px; background: #fff; color: #5e575d; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .received-footer-actions > button:nth-child(2) { border-color: #2c282d; background: #2c282d; color: #fff; }
+.received-footer-actions > button:nth-child(3) { border-color: #cfc3ee; background: #f6f3ff; color: #5b3fc4; }
+.received-footer-actions > button:nth-child(3):disabled { border-color: #ddd7d7; background: #fff; color: #a8a1ad; }
+.received-footer-actions > button.calendar-linked { border-color: #d7e9e1; background: #e4f1eb; color: #3f7f68; }
+.received-calendar-note { margin-right: auto; max-width: 60%; color: #3f7f68; font-size: 12.5px; line-height: 1.45; white-space: pre-line; }
+.received-calendar-note.error { color: #b4475f; }
 .received-footer-actions > button.confirmed { border-color: #d7e9e1; color: #3f7f68; background: #e4f1eb; }
 
 /* Shared workspace page geometry */
@@ -2931,6 +2936,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .question-list-item.done:hover { border-color: #dceae3; background: #f9fcfa; }
 .question-list-item.unmet:hover { border-color: #f0dcb0; background: #fffaf0; }
 .question-list-item.done > span svg { width: 12px; height: 12px; }
+.question-list-item.aux > span { font-size: 10.5px; letter-spacing: -.02em; } /* 보조질문 번호(4-1)는 두 자리 번호라 글자를 줄인다 */
 .question-list-empty { padding: 12px 8px; border: 1px dashed #e3dde7; border-radius: 9px; color: #9a929d; font-size: 14.5px; line-height: 1.5; text-align: center; }
 .question-chat-message p { white-space: pre-line; }
 .answer-suggestions button:disabled { opacity: .55; cursor: default; }
@@ -3026,11 +3032,18 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .us-examples > strong { display: block; margin-bottom: 8px; color: #3d3642; font-size: 14px; }
 .us-examples ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 10px; margin: 0; padding: 0; list-style: none; }
 .us-examples li { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.us-examples li span { overflow: hidden; color: #5b3fc4; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.us-examples li span { display: flex; align-items: center; min-width: 0; color: #5b3fc4; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.us-examples li span b { min-width: 0; overflow: hidden; font-weight: inherit; text-overflow: ellipsis; } /* 긴 파일명만 줄이고 '추천'·'중요' 표시는 항상 보이게 */
+.us-examples li span em { flex: none; }
 .us-examples li small { color: #8d868f; font-size: 12px; }
 .us-examples li.recommend { margin: -4px -6px; padding: 4px 6px; border-radius: 8px; background: #fff4e8; box-shadow: inset 0 0 0 1px #f2cfad; }
 .us-examples li.recommend span { color: #b45d23; }
 .us-examples li.recommend small { color: #b45d23; font-weight: 600; }
+.us-examples li.important { background: #ffeceb; box-shadow: inset 0 0 0 1.5px #ef8a84; }
+.us-examples li.important span, .us-examples li.important small { color: #c2352d; }
+.us-examples li.important em { background: #dc3f35; }
+.us-examples p.us-examples-more { color: #5f5863; }
+.us-examples p.us-examples-more b { color: #c2352d; }
 .us-examples li em { margin-left: 5px; padding: 1px 6px; border-radius: 999px; background: #e9823f; color: #fff; font-size: 10.5px; font-style: normal; font-weight: 700; vertical-align: 1px; }
 .us-examples p { margin: 8px 0 0; color: #8d868f; font-size: 12.5px; line-height: 1.55; }
 .us-drop.slim { flex: none; min-height: 0; display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 12px; padding: 9px 14px; border-width: 1px; text-align: left; }
@@ -3324,6 +3337,12 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 /* '직접 수정하기': 표 칸·항목 이름을 그 자리에서 고치는 입력칸 */
 .final-paper .cell-edit { display: inline-block; min-width: 2em; min-height: 1.4em; padding: 2px 6px; margin: -2px -6px; border-radius: 6px; outline: 1px dashed #c7b9ef; background: #fbf9ff; white-space: pre-wrap; cursor: text; }
 .final-paper .cell-edit:focus { outline: 2px solid #7055c8; background: #fff; }
+/* 꼭 직접 적어야 하는 칸(수정 모드): 노란 바탕 + '작성 필요' 표시. 다 적으면 사라진다. */
+.final-paper .cell-edit.needs-fill { outline: 1.5px solid #f2b705; background: #fff8d9; }
+.final-paper .cell-edit.needs-fill:focus { outline: 2px solid #d79a00; background: #fffbea; }
+.final-paper .cell-edit.needs-fill::after { content: "작성 필요"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: #f2b705; color: #5c4300; font-size: 10.5px; font-weight: 800; line-height: 17px; vertical-align: 1px; pointer-events: none; user-select: none; }
+.final-paper table.gantt-editable tr.needs-fill-row td.gantt-cell { background: #fff8d9; box-shadow: inset 0 0 0 1px #f2d56a; }
+.final-paper table.gantt-editable tr.needs-fill-row td:first-child::after { content: "막대를 그려 주세요"; display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: #f2b705; color: #5c4300; font-size: 10.5px; font-weight: 800; line-height: 17px; vertical-align: 1px; white-space: nowrap; }
 .final-paper td > .cell-edit { display: block; }
 .final-paper h3 > .cell-edit { margin: 0 0 0 4px; }
 
@@ -3375,6 +3394,18 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .unit-options { max-height: 228px; overflow-y: auto; scrollbar-width: thin; } /* 단위 업무가 많아도 카드가 넘치지 않게 목록 안에서 스크롤 */
 .onboarding-card .field-grid .unit-search { margin-top: 7px; border: 1px solid #e3dee4; border-radius: 8px; background: #fff; }
 @media (max-width: 540px) { .unit-options { grid-template-columns: minmax(0, 1fr); } }
+/* (?) 도움말: hover·focus 때 말풍선이 라벨 아래로 펼쳐진다 */
+.help-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 4px; outline: none; }
+.help-tip-mark { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #c9bdee; border-radius: 50%; background: #f6f3ff; color: #664bc3; font-size: 11px; font-weight: 800; line-height: 1; cursor: help; }
+.help-tip:hover .help-tip-mark, .help-tip:focus .help-tip-mark { background: #7958d5; border-color: #7958d5; color: #fff; }
+.help-tip-pop { position: absolute; z-index: 30; top: calc(100% + 8px); left: -8px; width: 300px; max-width: calc(100vw - 48px); padding: 11px 13px; border: 1px solid #e3dee4; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(60, 40, 110, .16); color: #4a4450; font-size: 12px; font-weight: 500; line-height: 1.55; text-align: left; white-space: normal; opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .12s ease, transform .12s ease, visibility .12s; pointer-events: none; }
+.help-tip:hover .help-tip-pop, .help-tip:focus .help-tip-pop, .help-tip:focus-within .help-tip-pop { opacity: 1; visibility: visible; transform: translateY(0); }
+.help-tip-pop strong { display: block; margin-bottom: 3px; color: #2f2a33; font-size: 12.5px; font-weight: 800; }
+.help-tip-pop p { margin: 0 0 6px; }
+.help-tip-pop p:last-child { margin-bottom: 0; }
+.help-tip-pop em { display: block; margin-top: 2px; color: #7a7380; font-style: normal; }
+.help-tip-pop .help-tip-guide { padding-top: 6px; border-top: 1px dashed #e3dee4; color: #664bc3; font-weight: 700; }
+.unit-detail-card h3 .help-tip { margin-left: 6px; }
 /* ===== 인계자 정보(StartScreen): 단위 업무 고르기 · 세부업무 입력 — 끝 ===== */
 /* ===== 질의응답(QuestionScreen): 보조질문 태그 · 예/아니요 · 수행 시기 선택(주기 / 달력 기간) ===== */
 .question-aux-tag { display: inline-block; margin-right: 8px; padding: 3px 8px; border-radius: 10px; background: #e3f4ea; color: #2f7a4c; font-size: 12px; font-weight: 700; vertical-align: 3px; }
@@ -3416,6 +3447,12 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .calendar-page-stats strong, .calendar-page-stats small { display: block; }
 .calendar-board > header button.calendar-apply, .routine-section > header .calendar-apply { display: inline-flex; align-items: center; gap: 5px; padding: 0 11px; border: 0; border-radius: 8px; background: #2d2930; color: #fff; font-size: 13px; font-weight: 700; }
 .calendar-board > header button.calendar-apply:hover, .routine-section > header .calendar-apply:hover { background: #47414b; }
+.calendar-board > header button.calendar-apply.onetel { background: #5b3fc4; }
+.calendar-board > header button.calendar-apply.onetel:hover { background: #4b32a8; }
+.calendar-board > header button.calendar-apply:disabled { opacity: .6; cursor: default; }
+.calendar-board > header { flex-wrap: wrap; gap: 8px 10px; }
+.calendar-board > header h2 { white-space: nowrap; }
+.calendar-board > header button.calendar-apply { white-space: nowrap; }
 .card-hint { display: block; margin-top: 3px; color: #a29aa5; font-size: 12px; font-weight: 500; letter-spacing: 0; }
 .calendar-page-stats strong { color: #6750b7; font: 800 21px "Manrope", sans-serif; }
 .calendar-page-stats strong.overdue { color: #d15568; }
@@ -3799,7 +3836,9 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .task-editor .task-input-row { margin-top: 0; }
 /* 인수인계서: 묻지 않는 칸이 비었을 때의 흐린 안내(직접 적거나 행을 지운다). 인쇄에는 싣지 않는다 */
 .final-paper .doc-hint { color: #a8a1ad; font-style: italic; }
-@media print { .final-paper .doc-hint { visibility: hidden; } }
+.final-paper .doc-guide { color: #a8a1ad; font-size: 13px; }
+.final-paper.is-readonly .doc-guide { display: none; } /* 인계자가 아닌 사람이 보는 문서에는 작성 안내를 보이지 않는다 */
+@media print { .final-paper .doc-hint, .final-paper .doc-guide { visibility: hidden; } }
 
 /* 팀장: 받은 인수인계 · 팀원 인수인계서 탭, 챗봇 '팀원' 배지 */
 .received-content:has(.received-view-tabs) { grid-template-rows: 105px auto minmax(0, 1fr); }
@@ -3992,3 +4031,59 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .schedule-check.done .schedule-check-text > span { text-decoration: line-through; }
 .schedule-memo { margin: 0 0 6px 17px; padding: 5px 8px; border-radius: 7px; background: #f6f2ff; color: #5a5260; font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
 
+
+/* ===== 내가 작성한 문서(CompletedDocumentsScreen): 고정 높이(430px·105px 행) 대신 flex 로 남은 높이를 쓴다 =====
+   문서가 많거나 화면이 낮으면 예전에는 목록·미리보기가 잘려 안 보였다. 이제 목록·미리보기 본문이 각자 안에서 스크롤한다. */
+.completed-documents-content { display: flex; flex-direction: column; gap: 13px; }
+.completed-documents-content > .documents-title,
+.completed-documents-content > .list-notice { flex: none; }
+.completed-documents-content > .documents-layout { flex: 1 1 0; min-height: 0; height: auto; display: flex; align-items: stretch; align-self: flex-start; gap: 12px; }
+.documents-layout > .documents-list { flex: 0 0 clamp(240px, 32%, 300px); min-width: 0; height: auto; align-self: flex-start; max-height: 100%; overflow-y: auto; scrollbar-width: thin; }
+.documents-layout > .document-preview-card { flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.document-preview-card > header, .document-preview-card > .document-preview-meta, .document-preview-card > footer { flex: none; }
+.document-preview-card > .document-preview-paper { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.document-preview-card > footer { flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .completed-documents-content > .documents-layout { flex-direction: column; overflow-y: auto; align-self: stretch; width: 100%; }
+  .documents-layout > .documents-list { flex: none; max-height: 240px; width: 100%; }
+  .documents-layout > .document-preview-card { flex: none; }
+}
+
+/* ===== AI 팀 맞춤 설정(AdminAiSettingsPage): STEP 1~4 ===== */
+.ai-step-badge { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: #7958d5; color: #fff; font: 800 13px "Manrope", sans-serif; }
+.ai-settings-card > header > .ai-step-badge { background: #7958d5; color: #fff; }
+.ai-glossary-list { margin: 0 0 10px; padding: 0; display: grid; gap: 7px; list-style: none; }
+.ai-glossary-list > li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 28px; gap: 7px; align-items: center; }
+.ai-glossary-list input { height: 34px; min-width: 0; padding: 0 10px; border: 1px solid #e3e5e8; border-radius: 8px; background: #fff; color: #444a53; font-size: 12px; outline: 0; }
+.ai-glossary-list input:focus { border-color: #927cce; box-shadow: 0 0 0 3px rgba(112,85,190,.07); }
+.ai-glossary-list input:disabled { background: #f4f5f7; color: #9a9ea6; }
+.ai-glossary-list button, .ai-doc-list button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #9a9ea6; cursor: pointer; }
+.ai-glossary-list button:hover, .ai-doc-list button:hover { background: #f1eef7; color: #5b4aa0; }
+.ai-doc-list { margin: 0 0 10px; padding: 0; display: grid; gap: 7px; list-style: none; }
+.ai-doc-list > li { display: grid; grid-template-columns: 34px minmax(0, 1fr) 28px; gap: 9px; align-items: center; padding: 8px 10px; border: 1px solid #e3e5e8; border-radius: 10px; background: #fcfcfd; }
+.ai-doc-list > li > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #eee9fb; color: #684fb7; }
+.ai-doc-list strong, .ai-doc-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-doc-list strong { font-size: 12.5px; }
+.ai-doc-list small { margin-top: 2px; color: #9a9ea6; font-size: 11.5px; }
+.ai-advanced-toggle { width: 100%; height: 44px; display: flex; align-items: center; gap: 7px; padding: 0 16px; border: 0; background: transparent; color: #55596a; font-size: 12.5px; font-weight: 700; text-align: left; cursor: pointer; }
+.ai-advanced-toggle > span { margin-left: auto; color: #8c8fa0; font-size: 11.5px; font-weight: 600; }
+@media (max-width: 640px) { .ai-glossary-list > li { grid-template-columns: minmax(0, 1fr) 28px; } .ai-glossary-list > li input:nth-child(2) { grid-column: 1 / 2; } }
+.system-prompt-editor textarea[rows="3"] { height: 84px; } /* AI 팀 맞춤 설정 STEP1 팀 소개(3줄 이내) */
+
+/* 원텔 캘린더와 연동하기 모달(CalendarScreen > OnetelImportDialog): 가져올 일정을 체크로 고른다 */
+.apply-received-modal > header p { white-space: pre-line; }
+.onetel-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 6px; border-bottom: 1px solid #f0ebe8; cursor: pointer; }
+.onetel-row input { width: 17px; height: 17px; accent-color: #5b3fc4; }
+.onetel-row strong, .onetel-row small { display: block; }
+.onetel-row strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.onetel-row small { margin-top: 2px; color: #9a9297; font-size: 12.5px; }
+.onetel-row em { padding: 2px 8px; border-radius: 999px; background: #e4f1eb; color: #3f7b63; font-size: 11.5px; font-style: normal; font-weight: 700; }
+.onetel-row.imported { cursor: default; opacity: .65; }
+.onetel-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid #ece6e3; background: #fbf8f6; }
+.onetel-footer > div { min-width: 0; color: #7d767b; font-size: 13px; font-weight: 600; }
+.onetel-footer .ok { color: #3f7b63; }
+.onetel-footer .error { color: #b4475f; }
+.onetel-all { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.onetel-all input { width: 16px; height: 16px; accent-color: #5b3fc4; }
+.onetel-footer > button { height: 36px; flex: none; padding: 0 16px; border: 0; border-radius: 9px; background: #5b3fc4; color: #fff; font-size: 13.5px; font-weight: 700; }
+.onetel-footer > button:disabled { opacity: .45; cursor: default; }
