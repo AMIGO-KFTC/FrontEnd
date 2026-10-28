@@ -251,7 +251,7 @@ export function MailWorkspace({ picked, onSend, onCapture, warning, onClose }: P
         </Section>
 
         <div className="mbx-side-foot">
-          <strong>{data?.provider === "mock" || !data ? "가상 메일함" : data.provider}</strong>
+          <strong>{data?.provider === "mock" || !data ? "메일함" : data.provider}</strong>
           <span>{mailbox?.email}</span>
           <button type="button" className="mbx-link" onClick={onClose}>이 탭 닫기</button>
         </div>

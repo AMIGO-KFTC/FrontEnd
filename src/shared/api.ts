@@ -31,6 +31,8 @@ import type {
   MattermostConversationDetail,
   OrgDuties,
   HandoverCalendarResult,
+  OnetelEvent,
+  OnetelImportResult,
   PersonnelSchedule,
   PersonnelScheduleInput,
   TeamSchedule,
@@ -230,6 +232,9 @@ export const api = {
   deletePlannerWeekTask: (id: string) => request<{ message: string }>(`/api/planner/week-tasks/${encodeURIComponent(id)}`, { method: "DELETE" }),
   deletePlannerRoutine: (id: string) => request<{ message: string }>(`/api/planner/routines/${encodeURIComponent(id)}`, { method: "DELETE" }),
   // 받은 인수인계서의 날짜는 캘린더 일정으로, 반복 업무는 정기 업무 칸으로(같은 내용은 두 번 넣지 않는다)
+  onetelEvents: () => request<{ events: OnetelEvent[] }>("/api/planner/onetel/events"),
+  // ids 를 주면 고른 일정만, 안 주면 모두
+  importOnetelCalendar: (ids?: string[]) => post<OnetelImportResult>("/api/planner/onetel/import", { ids: ids ?? null }),
   applyReceivedToCalendar: (sessionId: string) => post<HandoverCalendarResult>(`/api/handovers/received/${encodeURIComponent(sessionId)}/calendar`),
   // 정기인사 일정: 조회는 누구나(전사 + 내 소속), 추가·수정·삭제는 관리자(팀장)
   personnelSchedules: () => request<{ schedules: PersonnelSchedule[]; organization: string; editable: boolean }>("/api/personnel-schedules"),

@@ -135,7 +135,7 @@ export function JiraWorkspace({ picked, onSend, warning, onClose }: Props) {
         </span>
         <strong>Jira</strong>
         <span className="jw-top-nav">프로젝트 · 보드 · 필터</span>
-        <span className="jw-mock">가상 지라 · 예시 데이터</span>
+        <span className="jw-mock">지라 · 예시 데이터</span>
         <div className="jw-top-actions">
           <span>{picked.items.length ? `${picked.items.length}개 고름` : "인수인계에 쓸 항목을 체크하세요"}</span>
           <button className="jw-send" disabled={!picked.items.length || sending} onClick={() => void send()}>{sending ? "보내는 중…" : "AMIGO로 보내기"}</button>

@@ -104,7 +104,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
   const aux = viewGap ? Boolean(viewGap.aux) : Boolean(asking?.meta.aux);
   const numbered = numberGaps(session.gaps);
   const auxLabel = numbered.find((row) => row.gap.id === gap?.id)?.label; // 지금 보는 보조질문 번호(예: 4-1)
-  const auxNote = asking?.meta.aux_note || "꼭 답하지 않아도 돼요. 알고 계시면 적어 주세요.";
+  const auxNote = asking?.meta.aux_note || "해당 사항이 없으실 경우 '이 질문 건너뛰기'를 클릭하여 넘어가세요.";
   const askedCount = Math.max(session.question_count, session.gaps.filter((g) => g.status !== "open").length);
   const total = askedCount + session.open_gap_count;
   const isLast = session.open_gap_count === 0;
@@ -186,7 +186,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 >
                   <span>{state === "done" ? <Icon name={item.status === "skipped" ? "close" : "check"} size={13} /> : label}</span>
                   {/* 장 이름은 쓰지 않는다. 건너뛴(답이 없어 아직 채워지지 않은) 질문만 표시하고 주황색으로 구분한다 */}
-                  <div>{(item.status === "skipped" || item.aux) && <small>{[item.aux ? "보조질문" : "", item.status === "skipped" ? "건너뜀" : ""].filter(Boolean).join(" · ")}</small>}<strong>{plain(item.question)}</strong></div>
+                  <div>{(item.status === "skipped" || item.aux) && <small>{[item.aux ? "선택 질문" : "", item.status === "skipped" ? "건너뜀" : ""].filter(Boolean).join(" · ")}</small>}<strong>{plain(item.question)}</strong></div>
                   {state === "active" && <i>현재</i>}
                   {state === "done" && (
                     <button type="button" className="question-reopen" disabled={!canJump} onClick={(event) => { event.stopPropagation(); jump(); }} title="이 질문으로 돌아가 답을 고칩니다">
@@ -208,7 +208,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
                 {category && <em>{category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>
-                {aux && headline && <span className="question-aux-tag">보조질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
+                {aux && headline && <span className="question-aux-tag">선택 질문{auxLabel ? ` ${auxLabel}` : ""}</span>}
                 {headline || (failed ? "처리 중 문제가 생겨 멈췄어요" : "AMIGO가 다음 질문을 준비하고 있어요")}
               </h2>
               {aux && headline ? <p className="question-aux-note">{auxNote}</p> : <p>{gap?.description ?? ""}</p>}
