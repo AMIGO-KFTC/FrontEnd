@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Brand } from "@/shared/Brand";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { ProfilePhoto, useProfile } from "@/shared/profile";
 
 export type Workspace = "user" | "admin";
 
@@ -18,7 +18,7 @@ export function WorkspaceSelectScreen({ onSelect, onLogout }: { onSelect: (works
       <header className="handover-type-header">
         <Brand />
         <div className="type-header-profile">
-          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃">{profile.name.slice(0, 1)}</button>
+          <button className="type-profile-avatar" onClick={() => setLogoutConfirmOpen(true)} aria-label="로그아웃"><ProfilePhoto profile={profile} /></button>
         </div>
       </header>
       <main className="handover-type-main">

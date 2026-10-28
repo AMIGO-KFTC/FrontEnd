@@ -1,7 +1,7 @@
 // STEP 01 기본 정보. 유형은 앞 화면(HandoverTypeScreen)에서 고른 값을 받는다. 성명·소속·직책은 로그인한 사용자 프로필 값을 그대로 쓰고,
 // 인수자는 완성 문서 화면의 '인수자에게 전송하기'에서 고른다.
 // 인사발령은 ① 단위 업무 고르기(직제규정 시행세칙의 우리 팀 업무분장 + 팀장이 관리자 화면에서 더한 업무) → ② 단위 업무별 세부업무(정기·비정기) 두 단계로 받는다.
-// 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 정기·비정기로 나눠 받는다.
+// 장기휴가는 단위 업무를 고르지 않고, 부재 중 처리할 세부업무만 한 목록으로 받는다(정기·비정기로 나누지 않는다. 서버에는 한 목록을 regular 로 보낸다).
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
@@ -241,9 +241,15 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       <div className="wide-field unit-field">
         <span className="unit-field-label">담당 업무 <i>*</i></span>
         <p className="unit-field-help">부재 중 처리해야 할 세부업무를 입력하고 Enter를 눌러 추가해 주세요.</p>
-        <div className="unit-detail-grid">
-          {chipField(leaveUnit, "regular", "예: 월말 정산 보고")}
-          {chipField(leaveUnit, "irregular", "예: 시스템 개선 프로젝트")}
+        <div className="unit-detail-grid single">
+          <ChipField
+            label={<>세부업무<HelpTip label="세부업무"><strong>세부업무</strong><p>업무분장표에 명시된 단위업무를 수행하기 위해 필요한 주요 활동을 구분한 것으로, 인수인계 시 개별적으로 수행 방법과 절차를 설명할 수 있는 업무 단위</p></HelpTip></>}
+            items={leaveUnit.regular}
+            draft={drafts[draftKey(leaveUnit.name, "regular")] ?? ""}
+            placeholder="예: 월말 정산 보고, 시스템 개선 프로젝트"
+            onDraft={(value) => setDrafts({ ...drafts, [draftKey(leaveUnit.name, "regular")]: value })}
+            onChange={(items) => setItems(leaveUnit.name, "regular", items)}
+          />
         </div>
       </div>
       <div className="wide-field leave-period-field">

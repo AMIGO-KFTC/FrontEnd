@@ -63,8 +63,9 @@ const CiteSup: Components["sup"] = ({ node, children, ...rest }) => {
   return number ? <CitationRef number={number} /> : <sup {...rest}>{children}</sup>;
 };
 
-// 문서에 넣지 않고 오른쪽 목록으로 보여 줄 질문 상태와 그 이름
-const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", answered: "확인 대기", skipped: "인계자 미확인" };
+// 문서에 넣지 않고 오른쪽 목록으로 보여 줄 질문 상태와 그 이름.
+// answered(답을 받아 문서에 반영한 질문)는 뺀다: 여기서 답하면 서버가 answered 로 두는데, 그대로 두면 이미 반영된 질문이 오른쪽에 계속 떠 있었다.
+const PENDING_LABEL: Partial<Record<Gap["status"], string>> = { open: "미질문", asked: "답변 대기", skipped: "인계자 미확인" };
 
 
 // 고친 장(章)의 본문만 바꿔 문서 전체 Markdown 을 다시 만든다. 고치지 않은 부분은 글자 그대로 둔다. edits 의 키는 장 번호(0부터).

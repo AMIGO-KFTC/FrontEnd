@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { ProfilePhoto, useProfile } from "@/shared/profile";
 
 export function StepUserMenu({ onLogout, onHome }: { onLogout: () => void; onHome: () => void }) {
   const [profile] = useProfile();
@@ -29,10 +29,10 @@ export function StepUserMenu({ onLogout, onHome }: { onLogout: () => void; onHom
   return (
     <>
       <div className="step-user-menu" ref={menuRef}>
-        <button className="step-user-avatar" aria-label={`${profile.name} 프로필 열기`} aria-expanded={open} onClick={() => setOpen((current) => !current)}>{profile.name.slice(0, 1)}</button>
+        <button className="step-user-avatar" aria-label={`${profile.name} 프로필 열기`} aria-expanded={open} onClick={() => setOpen((current) => !current)}><ProfilePhoto profile={profile} /></button>
         {open && (
           <div className="type-profile-popover">
-            <header><span>{profile.name.slice(0, 1)}</span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
+            <header><span><ProfilePhoto profile={profile} /></span><div><strong>{profile.name}</strong><small>사번 {profile.employeeId || "미등록"}</small></div></header>
             <div className="type-profile-actions">
               <button className="type-profile-home" onClick={() => {
                 setOpen(false);
