@@ -17,15 +17,15 @@ export function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// 정기인사 발표(10/26)·발령(10/28). 올해 발령일이 지났으면 내년 날짜를 쓴다. 저장하지 않고 늘 계산해서 보여 준다.
+// 정기인사 발표(1/26)·발령(2/1). 올해 발령일이 지났으면 내년 날짜를 쓴다. 저장하지 않고 늘 계산해서 보여 준다.
 export function personnelDays(today: Date) {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const year = todayStart.getTime() > new Date(today.getFullYear(), 9, 28).getTime() ? today.getFullYear() + 1 : today.getFullYear();
+  const year = todayStart.getTime() > new Date(today.getFullYear(), 1, 1).getTime() ? today.getFullYear() + 1 : today.getFullYear();
   const dday = (date: Date) => Math.ceil((date.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
   return {
     year,
-    announcement: { key: `${year}-10-26`, label: "정기인사 발표일", dday: dday(new Date(year, 9, 26)) },
-    appointment: { key: `${year}-10-28`, label: "정기인사 발령일", dday: dday(new Date(year, 9, 28)) },
+    announcement: { key: `${year}-01-26`, label: "정기인사 발표일", dday: dday(new Date(year, 0, 26)) },
+    appointment: { key: `${year}-02-01`, label: "정기인사 발령일", dday: dday(new Date(year, 1, 1)) },
   };
 }
 
