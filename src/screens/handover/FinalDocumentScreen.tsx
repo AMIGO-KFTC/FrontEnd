@@ -15,7 +15,8 @@ import { TransferDialog } from "./TransferDialog";
 import { SourcesDialog } from "./SourcesDialog";
 import type { AppConfig, DocumentCitation, Gap, Source } from "@/shared/types";
 import { MermaidDiagram } from "@/shared/MermaidDiagram";
-import { GanttAwareTable, GanttContext } from "@/shared/GanttTable";
+import { GanttContext } from "@/shared/GanttTable";
+import { DeptFilesContext, DocumentTable } from "@/shared/DeptFilesTable";
 import { CitationContext, CitationRef } from "@/shared/CitationRef";
 import { EditableCell, EditCellsContext } from "@/shared/EditableCell";
 import { addRowAfter, applyCellEdits, cellText, deleteRow, findCells, findRows, markCells } from "@/shared/editableCells";
@@ -26,13 +27,14 @@ type Props = {
   markdown: string;
   onGanttEdit: (name: string, nth: number, months: number[]) => Promise<void>;
   onSaveDocument: (markdown: string) => Promise<void>; // 직접 고친 문서를 새 버전으로 저장
+  onUploadDeptFiles: (item: string, files: File[]) => Promise<string | null>; // 부서·팀별 추가자료 항목에 파일 올리기(걸러진 파일이 있으면 그 이유)
   loading: boolean;
   gaps: Gap[]; // 오른쪽 '시간 될 때 적어 주세요' 목록
   sources: Source[]; // '출처 N개 연결됨' 창의 자료 목록
   config: AppConfig | null; // 장 제목·자료 형식 이름
   failedMessage: string | null;
-  revising: boolean; // 수정 요청이 서버에 가 있는 동안
-  onRevise: (text: string) => void;
+  sending: boolean; // 오른쪽 목록 질문의 답변을 반영하는 동안
+  onAnswer: (text: string) => void; // 오른쪽 목록 질문의 답변(질문을 함께 붙여 보낸다)
   onRetry: () => void;
   onBack: () => void;
   onComplete: () => void;
@@ -81,7 +83,7 @@ function rebuildMarkdown(markdown: string, edits: Record<string, string>): strin
     .join("");
 }
 
-export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, loading, gaps, sources, config, failedMessage, revising, onRevise, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
+export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, onSaveDocument, onUploadDeptFiles, loading, gaps, sources, config, failedMessage, sending, onAnswer, onRetry, onBack, onComplete, onLogout, onHome, readOnly = null }: Props) {
   const [profile] = useProfile();
   const [transferOpen, setTransferOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
@@ -94,11 +96,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   const cellDrafts = useRef<Record<string, Record<number, string>>>({});
   const [saveError, setSaveError] = useState("");
   const [saveState, setSaveState] = useState<"" | "saving" | "saved" | "failed">("");
-  const [revisionOpen, setRevisionOpen] = useState(false);
-  const [revision, setRevision] = useState("");
+  const [answer, setAnswer] = useState("");
   const [answering, setAnswering] = useState<Gap | null>(null); // 오른쪽 목록에서 고른 질문(입력칸에는 답만 쓴다)
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const revisionRef = useRef<HTMLTextAreaElement>(null);
+  const answerRef = useRef<HTMLTextAreaElement>(null);
   const [fillTick, setFillTick] = useState(0); // 목록에서 질문을 채울 때마다 늘려 커서를 다시 옮긴다
   const slotTitle = (key: string) => config?.slots.find((spec) => spec.key === key)?.title ?? "";
   const files = sources.filter((source) => source.kind === "file" && source.status !== "failed"); // '출처' 창에서 내려받는 올린 파일
@@ -141,31 +142,27 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
   // 오른쪽 목록의 항목을 누르면 AI 대화창처럼 질문을 카드로 보여 주고, 입력칸에는 답만 쓴다.
   // 보낼 때 질문을 함께 붙여 보내면 AMIGO가 반영한 새 버전을 만든다.
   const answerGap = (gap: Gap) => {
-    if (readOnly || revising) return;
+    if (readOnly || sending) return;
     setAnswering(gap);
-    setRevision("");
-    setRevisionOpen(true);
+    setAnswer("");
     setFillTick((n) => n + 1);
   };
-  const closeRevision = () => {
-    setRevisionOpen(false);
-    setAnswering(null);
-  };
+  const closeAnswer = () => setAnswering(null);
   // 채워 넣은 글 끝에 커서를 둬 바로 답을 이어 쓰게 한다
   useEffect(() => {
-    const box = revisionRef.current;
-    if (!revisionOpen || !box) return;
+    const box = answerRef.current;
+    if (!answering || !box) return;
     box.focus();
     box.setSelectionRange(box.value.length, box.value.length);
-  }, [revisionOpen, fillTick]);
-  // "AMIGO에게 수정 요청": 검토 단계의 chat API 로 보내면 서버가 반영한 새 버전을 만든다(README 의 v2 생성과 같은 경로).
-  const sendRevision = () => {
-    const text = revision.trim();
-    if (!text || revising) return;
-    const question = answering ? answering.question || answering.description : "";
-    setRevision("");
-    closeRevision();
-    onRevise(question ? `[질문] ${question}\n[답변] ${text}` : text);
+  }, [answering, fillTick]);
+  // 고른 질문의 답: 검토 단계의 chat API 로 질문과 함께 보내면 서버가 반영한 새 버전을 만든다.
+  const sendAnswer = () => {
+    const text = answer.trim();
+    if (!text || sending || !answering) return;
+    const question = answering.question || answering.description;
+    setAnswer("");
+    closeAnswer();
+    onAnswer(question ? `[질문] ${question}\n[답변] ${text}` : text);
   };
   const parsed = splitSections(markdown);
   // 화면에 그릴 장. index 는 원래 문서의 장 번호(직접 고친 글을 저장할 때 rebuildMarkdown 이 쓴다).
@@ -179,6 +176,8 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
       return done;
     },
   }), [isEditing, onGanttEdit]);
+  // 부서·팀별 추가자료 카드: 읽기 전용이거나 직접 수정 중이면 등록 상태만 보여 준다
+  const deptFiles = useMemo(() => ({ upload: readOnly || isEditing ? null : onUploadDeptFiles }), [readOnly, isEditing, onUploadDeptFiles]);
   const sections = visible.map((section) => section.title);
   // '수정 완료': 고친 장이 있으면 문서 전체를 새 버전으로 저장한다. 저장에 실패하면 수정 상태를 그대로 두고 이유를 보여 준다.
   const finishEditing = async () => {
@@ -301,19 +300,18 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               {isEditing && <button onClick={() => void finishEditing()} disabled={saveState === "saving"} className="edit-save"><Icon name="check" size={13} /> 수정 완료</button>}
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
               {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{"\n"}월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
-              <button className={`amigo-revision-button ${revisionOpen ? "editing" : ""}`} disabled={revising || parsed.length === 0} onClick={() => { setAnswering(null); setRevisionOpen((current) => !current); }}><Icon name="sparkle" size={14} /> {revising ? "수정 요청 보내는 중…" : "AMIGO에게 수정 요청"}</button>
             </div>
             )}
           </div>
-          {revising && (
-            <div className="revise-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>AMIGO가 수정 요청을 반영하고 있어요</strong><small>새 버전의 인수인계서를 쓰는 중이에요. 잠시만 기다려 주세요.</small></div></div>
+          {sending && (
+            <div className="revise-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>AMIGO가 답변을 반영하고 있어요</strong><small>새 버전의 인수인계서를 쓰는 중이에요. 잠시만 기다려 주세요.</small></div></div>
           )}
-          {revisionOpen && answering && createPortal(
+          {answering && createPortal(
             // 오른쪽 목록에서 고른 질문은 모달 창으로 띄운다(배경을 누르거나 ESC·취소로 닫는다).
             // 화면 전체를 덮도록 body 에 그린다(문서 영역 안에 두면 배경이 문서 영역만 덮는다).
-            <div className="logout-overlay" role="presentation" onClick={closeRevision} onKeyDown={(event) => event.key === "Escape" && closeRevision()}>
+            <div className="logout-overlay" role="presentation" onClick={closeAnswer} onKeyDown={(event) => event.key === "Escape" && closeAnswer()}>
             <section className="transfer-modal revision-answer" role="dialog" aria-modal="true" aria-label="질문에 답하기" onClick={(event) => event.stopPropagation()}>
-              <button className="sources-close" type="button" aria-label="닫기" onClick={closeRevision}><Icon name="close" size={16} /></button>
+              <button className="sources-close" type="button" aria-label="닫기" onClick={closeAnswer}><Icon name="close" size={16} /></button>
               <section className="amigo-question-card">
                 <div className="question-card-top">
                   <span className="question-ai"><Icon name="sparkle" size={16} /></span>
@@ -324,58 +322,37 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               </section>
               <section className="answer-compose">
                 <textarea
-                  value={revision}
-                  onChange={(event) => setRevision(event.target.value)}
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 보내지 않는다
                       event.preventDefault();
-                      sendRevision();
+                      sendAnswer();
                     }
                   }}
                   placeholder="답변을 입력해 주세요"
-                  ref={revisionRef}
+                  ref={answerRef}
                   autoFocus
                 />
                 <div>
-                  <button className="answer-cancel" onClick={closeRevision}>취소</button>
-                  <button className="answer-send" disabled={!revision.trim() || revising} onClick={sendRevision}>답변 보내기 <Icon name="arrow" size={17} /></button>
+                  <button className="answer-cancel" onClick={closeAnswer}>취소</button>
+                  <button className="answer-send" disabled={!answer.trim() || sending} onClick={sendAnswer}>답변 보내기 <Icon name="arrow" size={17} /></button>
                 </div>
               </section>
             </section>
             </div>,
             document.body,
           )}
-          {revisionOpen && !answering && (
-            <section className="revision-compose">
-              <div><strong>고칠 점이나 빠진 내용을 알려 주세요</strong><small>AMIGO가 반영해 다음 버전의 인수인계서를 다시 작성해요.{"\n"}작성이 끝나면 새 버전이 이 자리에 표시됩니다.</small></div>
-              <textarea
-                value={revision}
-                onChange={(event) => setRevision(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { // 한글 조합 중 Enter 는 글자 확정이라 보내지 않는다
-                    event.preventDefault();
-                    sendRevision();
-                  }
-                }}
-                placeholder="예: 협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요"
-                ref={revisionRef}
-                autoFocus
-              />
-              <div>
-                <button onClick={closeRevision}>취소</button>
-                <button className="revision-send" disabled={!revision.trim() || revising} onClick={sendRevision}><Icon name="sparkle" size={13} /> 수정 요청 보내기</button>
-              </div>
-            </section>
-          )}
           {!readOnly && parsed.length > 0 && failedMessage !== null && (
             <div className="revision-error">
-              <ErrorNote message={failedMessage || "수정 요청을 처리하는 중 문제가 생겼어요."} />
+              <ErrorNote message={failedMessage || "답변을 반영하는 중 문제가 생겼어요."} />
               <button onClick={onRetry}>다시 시도</button>
             </div>
           )}
           <GanttContext.Provider value={gantt}>
+          <DeptFilesContext.Provider value={deptFiles}>
           <CitationContext.Provider value={citationContext}>
-          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${revising ? " is-revising" : ""}${readOnly ? " is-readonly" : ""}`}>
+          <article ref={paperRef} className={`final-paper ${isEditing ? "is-editing" : ""}${sending ? " is-revising" : ""}${readOnly ? " is-readonly" : ""}`}>
             <header className="final-paper-cover">
               <div className="paper-brand"><span><Icon name="sparkle" size={14} /></span> AMIGO HANDOVER</div>
               <h1>업무 인수인계서</h1>
@@ -425,7 +402,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={documentRehypePlugins}
                   components={{
-                    table: GanttAwareTable,
+                    table: DocumentTable,
                     span: ({ node, children, ...rest }) => {
                       const id = node?.properties?.dataCell;
                       const row = node?.properties?.dataRow;
@@ -493,6 +470,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <footer className="paper-footer"><span>AMIGO가 등록 자료와 답변을 바탕으로 생성한 문서입니다.</span><span>1 / 1</span></footer>
           </article>
           </CitationContext.Provider>
+          </DeptFilesContext.Provider>
           </GanttContext.Provider>
         </section>
         <aside className="final-pending" aria-label="시간 될 때 적어 주세요">
@@ -503,7 +481,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
             <ul>
               {pending.map((gap) => (
                 <li key={gap.id}>
-                  <button type="button" disabled={!!readOnly || revising} onClick={() => answerGap(gap)}>
+                  <button type="button" disabled={!!readOnly || sending} onClick={() => answerGap(gap)}>
                     <span className="final-pending-meta"><em>{slotTitle(gap.slot) || "기타"}</em><i className={`status-${gap.status}`}>{PENDING_LABEL[gap.status]}</i></span>
                     <strong>{gap.question || gap.description}</strong>
                     {gap.question && gap.description && gap.description !== gap.question && <small>{gap.description}</small>}

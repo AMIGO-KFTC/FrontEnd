@@ -10,6 +10,7 @@ export type IconName =
   | "chevron"
   | "clock"
   | "close"
+  | "cloudUpload"
   | "download"
   | "file"
   | "folder"
@@ -38,6 +39,7 @@ const paths: Record<IconName, ReactNode> = {
   chevron: <path d="m9 18 6-6-6-6" />,
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   close: <path d="m7 7 10 10M17 7 7 17" />,
+  cloudUpload: <><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.7 8.2 4.5 4.5 0 0 1 17 18" /><path d="M12 12v8m-3-5 3-3 3 3" /></>,
   download: <><path d="M12 3v12m-4-4 4 4 4-4M5 20h14" /></>,
   file: <><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h4M10 13h5m-5 4h5" /></>,
   folder: <path d="M3 7h7l2 2h9v10H3z" />,

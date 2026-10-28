@@ -251,7 +251,7 @@ RAG 저장소의 `samples/` 폴더(`amigo/RAG/samples/`)에 가상의 웹서비�
    - 틀렸으면 고칠 내용을 그대로 적고, 모르는 질문은 **이 질문 건너뛰기** 를 누릅니다.
 6. 질문이 끝나거나 **지금까지 내용으로 생성하기** 를 누르면 STAGE 4 로 넘어가 생성 중 화면을 거쳐 **인수인계서**가 나타납니다.
 7. 문서 위쪽 버튼으로 **PDF / Word / Markdown** 을 내려받습니다. 표의 `[1]` 같은 번호는 문서 끝 **근거 자료** 목록(파일명·페이지·메일 발신자)과 연결됩니다.
-8. **수정 요청 보내기** 에 `협업 관계에 총무팀 최OO 주임(내선 3456)도 추가해 주세요` 처럼 고칠 점을 적으면 반영된 **v2** 문서가 만들어집니다.
+8. 문서 오른쪽 **시간 될 때 적어 주세요** 목록의 질문을 눌러 답을 보내면 반영된 **v2** 문서가 만들어집니다. 표의 글은 **직접 수정** 스위치로 바로 고칠 수 있습니다.
 9. **인수인계 완료하기** → 완료 화면 → **홈으로 돌아가기**. 완성된 문서는 홈의 **완성 문서**에서 다시 열 수 있습니다.
 
 진행 상황은 서버에 저장되므로, 브라우저를 닫거나 서버를 다시 켜도 홈의 **진행 중인 인수인계**에서 **이어서 작성**으로 저장된 단계부터 계속할 수 있습니다.
@@ -393,7 +393,7 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
 | `#/s/<세션ID>/processing` | 분석 | `ProcessingScreen` | STAGE 1~2 진행률·현재 작업 문구, 실패 시 다시 시도 |
 | `#/s/<세션ID>/question` | 질의응답 | `QuestionScreen` | 메신저형 대화(질문·확인 요청·추천 답변·건너뛰기·대화 중 자료 첨부), 왼쪽 확인할 질문 목록, 항목 충족 현황, 문서 생성 |
 | `#/s/<세션ID>/generating` | 생성 중 | `GeneratingDocumentScreen` | STAGE 4 진행 표시(서버 상태 기준), 실패 시 다시 시도 |
-| `#/s/<세션ID>/document` | 인수인계서 | `FinalDocumentScreen` + `shared/GanttTable`, `MermaidDiagram` | Markdown 뷰어(표·근거 번호·간트 표·관계도), PDF/Word/Markdown 다운로드, 수정 요청(새 버전 생성) |
+| `#/s/<세션ID>/document` | 인수인계서 | `FinalDocumentScreen` + `shared/GanttTable`, `MermaidDiagram` | Markdown 뷰어(표·근거 번호·간트 표·관계도), PDF/Word/Markdown 다운로드, 직접 수정, 남은 질문 답변(새 버전 생성) |
 | `#/s/<세션ID>/complete` | 완료 | `CompletionScreen` | 완료 안내, 홈·새 인수인계로 이동 |
 
 장기휴가 유형은 같은 단계 화면에 바다 테마 배경(`shared/LeaveSeasideBackground`)이 깔립니다.
@@ -405,7 +405,7 @@ npm run preview      # 빌드 결과를 http://localhost:4173 에서 미리 보�
   로그인하지 않은 요청은 브라우저별 임의 ID 를 `X-User-Id` 헤더로 보내는 프로토타입 방식으로 구분합니다.
 - `src/shared/useSessionState.ts` 가 `GET /api/sessions/{id}/state?after=<마지막 메시지 ID>` 를 폴링합니다.
   AI 가 처리 중이거나 자료를 적재 중이면 1초, 그 외에는 4초 간격으로 새 메시지만 받아 이어 붙입니다.
-- 분석·답변·문서 생성·수정 요청은 서버가 202 로 바로 응답하고 백그라운드에서 처리하므로, 화면은 폴링 결과로 진행 상황을 그립니다.
+- 분석·답변·문서 생성은 서버가 202 로 바로 응답하고 백그라운드에서 처리하므로, 화면은 폴링 결과로 진행 상황을 그립니다.
   서버 단계(`setup → analyzing → summary → qna → composing → review`)가 바뀌면 `src/shared/router.ts` 의 `resolveStep` 이 그 단계에 맞는 화면으로 주소를 바꿉니다.
 - 주소창 해시(`#/s/<세션ID>/<단계>`)로 현재 작업과 단계를 기억해 새로고침·뒤로 가기·북마크로 돌아와도 이어서 작업하며, 이동만으로는 변경 요청(POST/PUT/DELETE)을 보내지 않습니다. 예전 주소 `#/s/<세션ID>` 도 그대로 동작합니다.
 

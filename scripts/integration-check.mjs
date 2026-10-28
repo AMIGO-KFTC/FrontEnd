@@ -1,5 +1,5 @@
 // 실제 BackEnd + 개발 서버를 상대로 전체 흐름을 브라우저에서 확인한다(API 가로채기 없음).
-// 로그인 → 세션 생성 → 자료 업로드 → 분석 → 질의응답(답변·확인·건너뛰기·첨부) → 문서 생성 → 수정 요청 → 다운로드
+// 로그인 → 세션 생성 → 자료 업로드 → 분석 → 질의응답(답변·확인·건너뛰기·첨부) → 문서 생성 → 다운로드
 // → 완료·목록·이어서 작성 → 삭제 → 로그아웃 후 주소 복귀까지 단계별 PASS/FAIL/SKIP 을 출력한다.
 //
 // 준비: BackEnd(8000)와 FrontEnd 개발 서버(5173)가 떠 있어야 하고, Playwright + Chromium 이 필요하다.
@@ -153,21 +153,7 @@ try {
   const docRestored = await waitFor(async () => (await rootClass()).includes("final-document-page") && (await page.locator(".paper-section").count()) > 0, 30000, 1000);
   record("새로고침 → 문서 화면으로 복원", !!docRestored, `hash=${await hash()}`);
 
-  // 11) 수정 요청 → 새 버전
-  const v1 = (await (await page.request.get(`${API}/sessions/${sessionId}/document`)).json()).version;
-  await page.locator(".amigo-revision-button").click();
-  await page.locator(".revision-compose textarea").fill("협업 관계에 총무팀 최유진 주임(내선 3456)도 추가해 주세요");
-  await page.locator(".revision-send").click();
-  const reseen = await waitFor(async () => { const c = await rootClass(); return c.includes("generation-page") ? "generating" : null; }, 3000, 100);
-  record("수정 요청 중 생성 중 화면 표시(실제 서버)", reseen ? true : null, reseen ? "" : "오프라인 엔진이 바로 끝나 생성 중 화면이 순간 지나감 — 가짜 응답으로만 확인됨");
-  const v2doc = await waitFor(async () => {
-    const d = await (await page.request.get(`${API}/sessions/${sessionId}/document`)).json();
-    return d.version > v1 && (await rootClass()).includes("final-document-page") ? d : null;
-  }, 180000, 1000);
-  await shot("10-document-v2");
-  record("수정 반영된 새 버전 문서 표시", !!v2doc, v2doc ? `v${v1} → v${v2doc.version}, 요청 내용 포함=${v2doc.markdown.includes("최유진")}` : "");
-
-  // 12) 다운로드(PDF·Word·Markdown): 쿠키 포함 요청으로 응답 확인
+  // 11) 다운로드(PDF·Word·Markdown): 쿠키 포함 요청으로 응답 확인
   for (const [fmt, type] of [["pdf", "application/pdf"], ["docx", "wordprocessingml"], ["md", "text/markdown"]]) {
     const res = await page.request.get(`${API}/sessions/${sessionId}/download?format=${fmt}`);
     const ct = res.headers()["content-type"] ?? "";
@@ -175,7 +161,7 @@ try {
     record(`다운로드 ${fmt.toUpperCase()}`, res.ok() && ct.includes(type) && body.length > 500, `HTTP ${res.status()}, ${ct.split(";")[0]}, ${body.length} bytes`);
   }
 
-  // 13) 완료 → 홈 → 목록(완성 문서)에 표시 → 문서 열기 → 이어서 작성 흐름
+  // 12) 완료 → 홈 → 목록(완성 문서)에 표시 → 문서 열기 → 이어서 작성 흐름
   await page.locator(".finish-handover:visible").first().click();
   await waitFor(async () => (await rootClass()).includes("completion-page"), 10000);
   await shot("11-complete");
@@ -189,7 +175,7 @@ try {
   const opened = await waitFor(async () => (await rootClass()).includes("final-document-page") && (await page.locator(".paper-section").count()) > 0, 30000, 1000);
   record("완성 문서 목록 → 문서 열기(서버 단계로 복원)", !!opened, `hash=${await hash()}`);
 
-  // 14) 질의응답으로 돌아가기 → 뒤로가기/앞으로가기(변경 요청 없음)
+  // 13) 질의응답으로 돌아가기 → 뒤로가기/앞으로가기(변경 요청 없음)
   await page.locator(".document-back").click();
   await waitFor(async () => (await rootClass()).includes("question-page"), 10000);
   await page.goBack();
@@ -198,7 +184,7 @@ try {
   const fwdQ = await waitFor(async () => (await rootClass()).includes("question-page"), 10000);
   record("브라우저 뒤로·앞으로 가기(문서 ↔ 질의응답)", !!backDoc && !!fwdQ);
 
-  // 15) 두 번째 세션으로 "이어서 작성": 새 세션을 자료 등록 단계에 두고 홈 목록에서 열기
+  // 14) 두 번째 세션으로 "이어서 작성": 새 세션을 자료 등록 단계에 두고 홈 목록에서 열기
   await page.goto(`${BASE}/#/new/leave`);
   await page.waitForSelector(".onboarding-page.leave-theme");
   await page.locator(".field-grid select").nth(0).selectOption({ index: 1 });
@@ -215,7 +201,7 @@ try {
   const resumed = await waitFor(async () => (await rootClass()).includes("upload-step-page") && (await rootClass()).includes("leave-theme"), 15000);
   record("이어서 작성 → 저장된 단계(자료 등록)·바다 테마로 복원", !!resumed, `${leaveHash} → ${await hash()}`);
 
-  // 16) 삭제(확인창 → 서버 삭제 → 목록 갱신), 삭제된 주소 접속 → 안내
+  // 15) 삭제(확인창 → 서버 삭제 → 목록 갱신), 삭제된 주소 접속 → 안내
   await page.goto(`${BASE}/#/home/handover`);
   await waitFor(async () => (await page.locator(".ongoing-card").count()) > 0, 15000);
   const card = page.locator(".ongoing-card", { hasText: "휴가 중 결재 대행" });
@@ -229,7 +215,7 @@ try {
   await shot("14-deleted-session");
   record("삭제된 작업 주소 접속 → '열 수 없는 작업' 안내", !!gone);
 
-  // 17) 로그아웃 → 작업 주소 직접 접속 → 로그인 → 같은 작업으로 복귀
+  // 16) 로그아웃 → 작업 주소 직접 접속 → 로그인 → 같은 작업으로 복귀
   await page.goto(`${BASE}/#/`);
   await waitFor(async () => (await rootClass()).includes("dashboard-page"), 10000);
   await page.locator(".profile-more").click();

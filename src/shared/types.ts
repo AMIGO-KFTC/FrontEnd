@@ -112,6 +112,9 @@ export interface UsageTotal extends Usage {
 export interface SessionDetail extends SessionSummary {
   duties: string;
   units?: HandoverUnit[]; // 인계자 정보에서 고른 단위업무와 세부업무(예전 세션·예전 서버는 없거나 빈 목록)
+  form?: string; // 인수인계서 양식. 팀장(관리자)이 만든 세션은 "office"
+  plans?: string[]; // 팀장용: 고른 주요 사업계획
+  issues?: string[]; // 팀장용: 주요 현안사항이 있는 사업계획
   owner_login_id: string; // 인계자 계정의 아이디. 로그인한 사용자와 다르면(인수자·팀장) 문서 화면을 읽기 전용으로 그린다
   viewer?: "owner" | "recipient" | "team" | ""; // 지금 계정과의 관계: 인계자 · 전송받은 사람 · 같은 팀 팀장
   progress: { message: string; current: number; total: number };
@@ -186,6 +189,15 @@ export interface SessionCreate {
   mode: HandoverMode;
   task_name: string;
   units?: HandoverUnit[];
+  plans?: string[]; // 팀장(관리자)용 인수인계서: 1단계에서 고른 주요 사업계획
+  issues?: string[]; // 팀장용: 주요 현안사항이 있는 사업계획(직접 더한 현안 포함)
+}
+
+// 우리 팀 주요 사업계획(GET /api/business-plans/me). 경영정보시스템 주요 업무보고 단위로 정리된 목록이다.
+export interface BusinessPlans {
+  division: string;
+  team: string;
+  plans: string[];
 }
 
 // 단위업무 1건과 그 세부업무(정기·비정기). 장기휴가는 단위업무 없이 이름을 비운 1건에 세부업무만 담는다.

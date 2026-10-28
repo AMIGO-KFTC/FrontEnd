@@ -11,7 +11,7 @@ import type { HandoverMode, SessionDetail } from "@/shared/types";
 type Props = {
   mode: HandoverMode;
   session: SessionDetail;
-  targetVersion: number; // 기다리는 문서 버전(처음 생성이면 1, 수정 요청이면 현재 버전 + 1)
+  targetVersion: number; // 기다리는 문서 버전(처음 생성이면 1, 문서 화면에서 답을 보내 다시 만들면 현재 버전 + 1)
   onRetry: () => void;
   onBack: () => void;
   onLogout: () => void;
