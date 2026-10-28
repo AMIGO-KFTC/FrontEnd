@@ -139,7 +139,7 @@ export interface MessageMeta {
   choice?: "yesno"; // 예/아니요 두 선택지로 답하는 질문
   picker?: "period"; // 주기(choices)를 고르거나, 정기적이지 않으면 달력에서 기간을 고르는 질문
   choices?: string[];
-  aux?: boolean; // 보조질문: 질문 왼편에 '보조질문' 태그와 aux_note 안내를 붙인다
+  aux?: boolean; // 보조질문(선택 질문): 질문 왼편에 '선택 질문' 태그와 aux_note 안내를 붙인다
   aux_note?: string;
   retry?: boolean;
   coverage?: Record<string, Coverage>;
@@ -162,6 +162,7 @@ export interface SlotSpec {
   fields: { key: string; label: string }[];
   required: string[];
   leave: boolean;
+  office?: boolean; // 팀장(원내 양식) 인수인계서의 장
 }
 
 export interface AppConfig {
