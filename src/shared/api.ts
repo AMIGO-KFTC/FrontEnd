@@ -110,7 +110,11 @@ export const api = {
   login: (loginId: string, password: string) => post<LoginResult>("/api/auth/login", { login_id: loginId, password }),
   logout: () => post<{ message: string }>("/api/auth/logout"),
   me: () => request<{ user: AuthUser }>("/api/auth/me"),
-  signup: (loginId: string, password: string, name: string, employeeNo = "") => post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo }),
+  // department·team: 가입과 동시에 팀 배정(내 정보를 고치지 않아도 인수인계에서 팀의 단위업무가 나온다)
+  signup: (loginId: string, password: string, name: string, employeeNo = "", department = "", team = "") =>
+    post<SignupResult>("/api/auth/signup", { login_id: loginId, password, name, employee_no: employeeNo, department, team }),
+  // 회원가입에서 고를 본부·부와 팀(로그인 없이)
+  orgTeams: () => request<{ divisions: { name: string; teams: string[] }[] }>("/api/auth/org-teams"),
   saveProfile: (body: ProfileInput) => request<ProfileResult>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>("/api/me/password", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }),

@@ -5,7 +5,7 @@ import { Brand } from "@/shared/Brand";
 import { api } from "@/shared/api";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
-import { useProfile } from "@/shared/profile";
+import { saveProfilePhoto, useProfile } from "@/shared/profile";
 import { ongoingSessions, recentSessions, sessionTitle, sessionTone } from "@/shared/sessions";
 import type { SessionSummary } from "@/shared/types";
 import { useCapsLock } from "@/shared/useCapsLock";
@@ -84,6 +84,7 @@ export function AppSidebar({
     setProfileError(null);
     setProfileNotice(null);
     if (!changingPassword) {
+      saveProfilePhoto(profile.loginId, profileDraft.photo);
       setProfile({ ...profile, photo: profileDraft.photo });
       setProfileEditOpen(false);
       return;
@@ -91,6 +92,7 @@ export function AppSidebar({
     setProfileSaving(true);
     try {
       const result = await api.changePassword(passwords.current, passwords.next);
+      saveProfilePhoto(profile.loginId, profileDraft.photo);
       setProfile({ ...profile, photo: profileDraft.photo });
       setPasswords(EMPTY_PASSWORDS);
       setProfileNotice(result.message || "비밀번호를 바꿨어요.");

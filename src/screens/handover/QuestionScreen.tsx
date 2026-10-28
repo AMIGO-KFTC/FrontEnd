@@ -95,9 +95,13 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
     : asking ? plain(asking.content) : lastAssistant && lastAssistant.kind !== "summary" ? plain(lastAssistant.content) : "";
   const gap = viewGap ?? session.gaps.find((g) => g.id === asking?.meta.gap_id);
   const category = viewGap ? slotTitle(viewGap.slot) : asking ? slotTitle(asking.meta.slot) : "";
+  // 이 질문이 어떤 세부업무(항목)에 대한 것인지(예: 정기업무 · 월간 실적 보고). 항목이 없는 질문은 장 이름만 보인다.
+  const itemName = gap?.slot && gap.item_id ? session.slots[gap.slot]?.items.find((item) => item.id === gap.item_id)?.title ?? "" : "";
   // 새 질문이 오면 보기를 닫고 지금 질문으로 돌아온다
   useEffect(() => setViewing(null), [asking?.id]);
-  const suggestions = (lastAssistant?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정"));
+  // "네, 맞아요" 는 정리한 내용이 맞는지 묻는 문장에만 보인다(예/아니요로 답할 수 없는 추가 질문에는 붙이지 않는다)
+  const asksConfirmation = /맞(나요|을까요|습니까|죠|는지|으면|다면|으신가요)|확인해 주|확인 부탁|맞아요\?/.test(lastAssistant?.content ?? "");
+  const suggestions = (lastAssistant?.meta.quick_replies ?? []).filter((q) => !q.includes("건너뛰기") && !q.includes("문서 생성") && !q.startsWith("수정") && (!q.startsWith("네, 맞") || asksConfirmation));
   // 지금 질문이 아직 답을 기다리는 상태(그 뒤에 확인 요청 등이 없을 때)에만 예/아니요·주기 선택을 보여 준다
   const awaiting = !viewGap && asking && lastAssistant?.id === asking.id ? asking.meta : null;
   const yesNo = awaiting?.choice === "yesno";
@@ -205,7 +209,7 @@ export function QuestionScreen({ mode, session, messages, config, error, busy, o
               <div className="question-card-top">
                 <span className="question-ai"><Icon name="sparkle" size={16} /></span>
                 <div><strong>AMIGO</strong><small>{viewGap ? (viewThread.length ? "지난 질문과 답변이에요" : "아직 답하지 않은 질문이에요") : "3단계 질의응답 · 빈틈을 함께 채워요"}</small></div>
-                {category && <em>{category}</em>}
+                {category && <em title={itemName ? `${category} · ${itemName}` : category}>{itemName ? `${category} · ${itemName}` : category}</em>}
               </div>
               <h2 style={{ whiteSpace: "pre-line" }}>
                 {aux && headline && <span className="question-aux-tag">선택 질문{auxLabel ? ` ${auxLabel}` : ""}</span>}

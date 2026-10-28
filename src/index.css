@@ -63,6 +63,8 @@ button { cursor: pointer; }
 .input-wrap { margin-top: 8px; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 13px; border: 1px solid #dce3e6; border-radius: 10px; color: #9aa5ad; transition: .2s; }
 .input-wrap:focus-within { border-color: #16ad8b; box-shadow: 0 0 0 3px rgba(22,173,139,.09); }
 .input-wrap input { width: 100%; border: 0; outline: 0; font-size: 14.5px; color: #17232e; }
+.input-wrap select { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 14.5px; color: #17232e; cursor: pointer; } /* 회원가입의 본부·팀 선택 */
+.input-wrap select:disabled { color: #a2abb1; cursor: not-allowed; }
 input::placeholder, textarea::placeholder { color: #a5afb6; }
 .login-options { display: flex; justify-content: space-between; align-items: center; margin: -2px 0 19px; }
 .check-label { display: flex; align-items: center; gap: 6px; color: #67757f; font-size: 15.5px; }
@@ -1061,14 +1063,17 @@ body:has(.handover-type-page), #root:has(.handover-type-page) { height: 100vh; o
 .handover-type-header .brand-mark { width: 30px; height: 30px; border-radius: 10px 10px 10px 3px; background: linear-gradient(145deg, #ff763b, #fc427d 48%, #7866ff); box-shadow: 0 6px 18px rgba(245,75,111,.2); }
 .type-header-profile { position: relative; display: flex; align-items: center; }
 .type-profile-avatar { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #ef6a35; color: #fff; font-size: 12px; font-weight: 700; }
-.type-profile-popover { width: 220px; position: absolute; top: 40px; right: 0; z-index: 30; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
-.type-profile-popover header { display: flex; align-items: center; gap: 9px; padding: 3px 3px 10px; border-bottom: 1px solid #eee8e5; }
+.type-profile-popover { width: 236px; position: absolute; top: 40px; right: 0; z-index: 30; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
+.type-profile-popover header { display: flex; align-items: center; gap: 10px; padding: 4px 4px 12px; border-bottom: 1px solid #eee8e5; }
 .type-profile-popover header > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #ef6a35; color: #fff; font-size: 12.5px; font-weight: 700; }
 .type-profile-popover header strong, .type-profile-popover header small { display: block; }
 .type-profile-popover header strong { font-size: 12.5px; }
 .type-profile-popover header small { margin-top: 3px; color: #9c9499; font-size: 13.5px; }
-.type-profile-actions { margin-top: 9px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.type-profile-actions button { height: 31px; display: flex; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 8px; font-size: 11.5px; font-weight: 700; }
+.type-profile-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr; gap: 7px; } /* 버튼 두 개를 한 줄에 끼우지 않고 위아래로 둔다(글자가 꽉 끼던 문제) */
+.type-profile-actions button { height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+/* 프로필 사진: 사이드바뿐 아니라 단계 화면·유형 선택 화면의 아바타에도 보인다 */
+.step-user-avatar, .type-profile-avatar, .type-profile-popover header > span { overflow: hidden; }
+.step-user-avatar img, .type-profile-avatar img, .type-profile-popover header > span img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .type-profile-home { background: #f0edf8; color: #6754aa; }
 .type-profile-home:hover { background: #e8e2f5; }
 .type-profile-logout { background: #fbebed; color: #b4525e; }
@@ -4087,3 +4092,10 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .onetel-all input { width: 16px; height: 16px; accent-color: #5b3fc4; }
 .onetel-footer > button { height: 36px; flex: none; padding: 0 16px; border: 0; border-radius: 9px; background: #5b3fc4; color: #fff; font-size: 13.5px; font-weight: 700; }
 .onetel-footer > button:disabled { opacity: .45; cursor: default; }
+
+/* ===== 진행 중인 인수인계(OngoingHandoverScreen): 목록이 칸을 넘으면 목록 안에서 스크롤 =====
+   align-self: start 라서 목록이 내용 높이만큼 커져 overflow-y: auto 가 동작하지 않았다. 칸(grid 영역) 높이로 제한한다. */
+.ongoing-list { max-height: 100%; scrollbar-width: thin; }
+
+/* 질문 카드 오른쪽 태그: '장 이름 · 세부업무명'이 길면 말줄임(마우스를 올리면 전체가 보인다) */
+.question-card-top > em { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
