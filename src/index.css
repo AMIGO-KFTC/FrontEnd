@@ -412,7 +412,7 @@ body { background: #faf8f6; }
 .sidebar-profile small { margin-top: 2px; color: #99918c; font-size: 13.5px; }
 .profile-more { width: 25px; height: 25px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #918a86; }
 .profile-more:hover { background: #e8e2de; color: #514b4f; }
-.profile-popover { width: 220px; position: absolute; left: 0; bottom: 51px; z-index: 60; overflow: hidden; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
+.profile-popover { width: 290px; position: absolute; left: 0; bottom: 51px; z-index: 60; overflow: hidden; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
 .profile-popover header { display: flex; align-items: center; gap: 9px; padding: 3px 3px 10px; border-bottom: 1px solid #eee8e5; }
 .profile-popover header > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #ef6a35; color: #fff; font-size: 13px; font-weight: 700; }
 .profile-popover header strong, .profile-popover header small { display: block; }
@@ -420,8 +420,8 @@ body { background: #faf8f6; }
 .profile-popover header small { margin-top: 3px; color: #9c9499; font-size: 13.5px; }
 .profile-popover dl { margin: 12px 3px; display: grid; gap: 10px; }
 .profile-popover dl > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.profile-popover dt { color: #827a7f; font-size: 15px; font-weight: 700; }
-.profile-popover dd { margin: 0; color: #3f393e; font-size: 13px; font-weight: 700; text-align: right; }
+.profile-popover dt { color: #827a7f; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.profile-popover dd { margin: 0; color: #3f393e; font-size: 13px; font-weight: 700; text-align: right; word-break: keep-all; }
 .profile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding-top: 8px; border-top: 1px solid #eee8e5; }
 .profile-actions > button { height: 31px; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 7px; border: 0; border-radius: 8px; background: #f2edfa; color: #6250a5; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .profile-actions > button:hover { background: #e9e1f7; }
@@ -1063,7 +1063,7 @@ body:has(.handover-type-page), #root:has(.handover-type-page) { height: 100vh; o
 .handover-type-header .brand-mark { width: 30px; height: 30px; border-radius: 10px 10px 10px 3px; background: linear-gradient(145deg, #ff763b, #fc427d 48%, #7866ff); box-shadow: 0 6px 18px rgba(245,75,111,.2); }
 .type-header-profile { position: relative; display: flex; align-items: center; }
 .type-profile-avatar { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #ef6a35; color: #fff; font-size: 12px; font-weight: 700; }
-.type-profile-popover { width: 236px; position: absolute; top: 40px; right: 0; z-index: 30; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
+.type-profile-popover { width: 290px; position: absolute; top: 40px; right: 0; z-index: 30; padding: 11px; border: 1px solid #e3dcda; border-radius: 14px; background: rgba(255,253,250,.98); box-shadow: 0 20px 55px rgba(40,30,44,.2); backdrop-filter: blur(16px); animation: notification-in .18s ease-out; }
 .type-profile-popover header { display: flex; align-items: center; gap: 10px; padding: 4px 4px 12px; border-bottom: 1px solid #eee8e5; }
 .type-profile-popover header > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #ef6a35; color: #fff; font-size: 12.5px; font-weight: 700; }
 .type-profile-popover header strong, .type-profile-popover header small { display: block; }
