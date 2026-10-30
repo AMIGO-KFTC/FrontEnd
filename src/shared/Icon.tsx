@@ -12,6 +12,7 @@ export type IconName =
   | "close"
   | "cloudUpload"
   | "download"
+  | "edit"
   | "file"
   | "folder"
   | "home"
@@ -41,6 +42,7 @@ const paths: Record<IconName, ReactNode> = {
   close: <path d="m7 7 10 10M17 7 7 17" />,
   cloudUpload: <><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.7 8.2 4.5 4.5 0 0 1 17 18" /><path d="M12 12v8m-3-5 3-3 3 3" /></>,
   download: <><path d="M12 3v12m-4-4 4 4 4-4M5 20h14" /></>,
+  edit: <><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
   file: <><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v5h4M10 13h5m-5 4h5" /></>,
   folder: <path d="M3 7h7l2 2h9v10H3z" />,
   home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,

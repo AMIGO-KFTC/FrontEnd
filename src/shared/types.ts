@@ -524,8 +524,8 @@ export type MailQueryParams = { subject?: string; person?: string; folder?: "" |
 export type MailImportResult = { success: boolean; message: string; session_id: string; files: Source[]; skipped: string[]; analysis_scheduled: boolean };
 
 // 캘린더 일정·할 일(GET /api/planner 등). 로그인 계정마다 서버에 저장한다. id 는 화면이 만들어 보낼 수 있다(같은 id 는 두 번 쌓이지 않음).
-export type PlannerEvent = { id: string; date: string; text: string; memo?: string; done?: boolean }; // date: 'YYYY-MM-DD', memo: 짧은 메모
 export type PlannerHistory = { id: string; text: string; created_at: string }; // 업무 진행 이력 한 줄
+export type PlannerEvent = { id: string; date: string; text: string; memo?: string; done?: boolean; history?: PlannerHistory[] }; // date: 'YYYY-MM-DD', memo: 짧은 메모. 원텔에서 가져온 일정도 같다
 export type PlannerTodo = { id: string; text: string; done: boolean; date: string | null; memo?: string; history?: PlannerHistory[] }; // date 가 null 이면 날짜 없는 할 일
 // 정기 업무: 받은 인수인계서에서 가져온 반복 업무(날짜로 풀지 않고 캘린더 화면의 '정기 업무' 칸에 주기별로 보여 준다)
 export type RoutineCadence = "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "other";
