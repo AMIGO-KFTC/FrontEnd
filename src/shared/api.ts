@@ -232,7 +232,7 @@ export const api = {
   // 캘린더 일정·할 일(계정별로 서버에 저장). id 를 화면이 만들어 보내므로 응답을 기다리지 않고 바로 그려도 된다.
   planner: () => request<PlannerData>("/api/planner"),
   addPlannerEvent: (event: PlannerEvent) => post<{ event: PlannerEvent }>("/api/planner/events", event),
-  updatePlannerEvent: (id: string, changes: { text?: string; memo?: string; done?: boolean }) =>
+  updatePlannerEvent: (id: string, changes: { text?: string; date?: string; memo?: string; done?: boolean }) =>
     request<{ event: PlannerEvent }>(`/api/planner/events/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
   updatePlannerWeekTask: (id: string, changes: { text?: string; memo?: string; done?: boolean }) =>
     request<{ task: PlannerWeekTask }>(`/api/planner/week-tasks/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
@@ -240,7 +240,12 @@ export const api = {
   addPlannerTodo: (todo: PlannerTodo) => post<{ todo: PlannerTodo }>("/api/planner/todos", todo),
   updatePlannerTodo: (id: string, changes: Partial<Omit<PlannerTodo, "id">>) =>
     request<{ todo: PlannerTodo }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
-  addPlannerTodoHistory: (id: string, text: string) => post<{ entry: PlannerHistory; todo: PlannerTodo }>(`/api/planner/todos/${encodeURIComponent(id)}/history`, { text }),
+  // 업무 진행 이력(CRUD): 할 일(todos)과 일정(events, 원텔에서 가져온 것 포함)이 같은 모양이다
+  addPlannerHistory: (kind: "todo" | "event", id: string, text: string) => post<{ entry: PlannerHistory }>(`/api/planner/${kind === "event" ? "events" : "todos"}/${encodeURIComponent(id)}/history`, { text }),
+  updatePlannerHistory: (kind: "todo" | "event", id: string, entryId: string, text: string) =>
+    request<{ entry: PlannerHistory }>(`/api/planner/${kind === "event" ? "events" : "todos"}/${encodeURIComponent(id)}/history/${encodeURIComponent(entryId)}`, { method: "PATCH", body: JSON.stringify({ text }) }),
+  deletePlannerHistory: (kind: "todo" | "event", id: string, entryId: string) =>
+    request<{ message: string }>(`/api/planner/${kind === "event" ? "events" : "todos"}/${encodeURIComponent(id)}/history/${encodeURIComponent(entryId)}`, { method: "DELETE" }),
   deletePlannerTodo: (id: string) => request<{ message: string }>(`/api/planner/todos/${encodeURIComponent(id)}`, { method: "DELETE" }),
   clearDonePlannerTodos: () => post<{ removed: number }>("/api/planner/todos/clear-done"),
   addPlannerWeekTask: (task: PlannerWeekTask) => post<{ task: PlannerWeekTask }>("/api/planner/week-tasks", task),

@@ -177,7 +177,7 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
                 })}
               </aside>
               {selected ? (
-              <article className="received-detail">
+              <article className={`received-detail${view === "received" && selected.message?.trim() ? " has-message" : ""}`}>
                 <header>
                   <div>
                     <span className={`received-status ${statusOf(selected).done ? "done" : ""}`}>{statusOf(selected).label}</span>
@@ -192,6 +192,12 @@ export function ReceivedHandoverScreen({ list, onHome, onHandover, onDocuments, 
                   <div><small>인계자</small><strong>{selected.owner_name}</strong><span>{[selected.organization, selected.position].filter(Boolean).join(" · ") || "소속 미입력"}</span></div>
                   <div><small>시작일</small><strong>{formatDate(selected.created_at)}</strong><span>인계 예정일 {selected.handover_date ? formatDate(selected.handover_date) : "미정"}</span></div>
                 </div>
+                {view === "received" && selected.message?.trim() && (
+                  <section className="received-message" aria-label="인계자가 남긴 말">
+                    <div><Icon name="message" size={14} /><strong>{selected.owner_name}님이 남긴 말</strong>{selected.sent_at && <small>{formatDate(selected.sent_at)}</small>}</div>
+                    <p>{selected.message}</p>
+                  </section>
+                )}
                 <section className="received-files">
                   <div><strong>전달받은 자료</strong><span>자료 {selected.file_count}개 · 문서 {hasDocument(selected) ? `v${selected.document_version}` : "작성 전"}</span></div>
                   <article className="received-document-preview">
