@@ -118,7 +118,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                 {weeks.map((week, weekIndex) => [
                   (() => {
                     const week = weekKeyOf(weekIndex);
-                    const tasks = tasksOf(week);
+                    const tasks = [...tasksOf(week)].sort((a, b) => Number(Boolean(a.done)) - Number(Boolean(b.done))); // 안 한 일을 앞에, 다 한 일은 흐리게 뒤에
                     const shown = 3;
                     const routinesShown = Math.max(0, shown - tasks.length);
                     const hidden = Math.max(0, tasks.length - shown) + Math.max(0, weekly.length - routinesShown);
@@ -136,7 +136,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                         <b>{weekIndex + 1}째주</b>
                         {(tasks.length > 0 || weekly.length > 0) && (
                           <ul>
-                            {tasks.slice(0, shown).map((task) => <li key={task.id} className="week-task" title={task.text}>{task.text}</li>)}
+                            {tasks.slice(0, shown).map((task) => <li key={task.id} className={`week-task${task.done ? " faded" : ""}`} title={task.done ? `${task.text} (완료)` : task.text}>{task.text}</li>)}
                             {weekly.slice(0, routinesShown).map((routine) => <li key={routine.id} title={`${routine.name} · ${routine.timing}`}>{weekdaysOf(routine.timing) && <em>{weekdaysOf(routine.timing)}</em>}{routine.name}</li>)}
                             {hidden > 0 && <li className="more">+{hidden}</li>}
                           </ul>
@@ -148,7 +148,13 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                     const inWeek = selectedWeek === weekKeyOf(weekIndex);
                     if (!day) return <span className={`empty${inWeek ? " in-week" : ""}`} key={`empty-${weekIndex}-${dayIndex}`} />;
                     const key = dateKey(new Date(year, month, day));
-                    const items = [...fixedOn(key).map((d) => ({ text: d.label, kind: d.kind === "shared" ? "shared-mark" : "personnel-mark" })), ...(planner.events[key] ?? []).map((text) => ({ text, kind: "event" })), ...planner.todos.filter((t) => t.date === key && !t.done).map((t) => ({ text: t.text, kind: "event" }))];
+                    // 다 한 일도 지우지 않고 흐리게 둔다. 칸이 좁아 3개만 보이므로 안 한 일을 앞에 둔다
+                    const all = [
+                      ...fixedOn(key).map((d) => ({ text: d.label, kind: d.kind === "shared" ? "shared-mark" : "personnel-mark", done: false })),
+                      ...planner.eventItems.filter((e) => e.date === key).map((e) => ({ text: e.text, kind: "event", done: Boolean(e.done) })),
+                      ...planner.todos.filter((t) => t.date === key).map((t) => ({ text: t.text, kind: "event", done: t.done })),
+                    ];
+                    const items = [...all.filter((item) => !item.done), ...all.filter((item) => item.done)];
                     return (
                       <button
                         key={key}
@@ -161,7 +167,7 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
                       >
                         <b>{day}</b>
                         <ul>
-                          {items.slice(0, 3).map((item, i) => <li key={i} className={item.kind}>{item.text}</li>)}
+                          {items.slice(0, 3).map((item, i) => <li key={i} className={`${item.kind}${item.done ? " faded" : ""}`} title={item.done ? `${item.text} (완료)` : undefined}>{item.text}</li>)}
                           {items.length > 3 && <li className="more">+{items.length - 3}</li>}
                         </ul>
                       </button>

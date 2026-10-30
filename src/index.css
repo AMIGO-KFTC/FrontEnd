@@ -601,6 +601,7 @@ body { background: #faf8f6; }
 .calendar-days button.appointment-day.selected { background: linear-gradient(145deg, #5879d6, #7657c9); box-shadow: 0 5px 14px rgba(82,103,193,.25); }
 .calendar-days button i { width: 3px; height: 3px; position: absolute; bottom: 3px; border-radius: 50%; background: #d35da7; }
 .calendar-days button.selected i { background: #fff; }
+.calendar-days button i.faded { opacity: .4; }
 .calendar-agenda { min-width: 0; display: flex; flex-direction: column; padding: 15px 13px 12px; border-left: 1px solid #ece6e3; background: linear-gradient(150deg, #faf7ff, #fff8fb); }
 .calendar-agenda > div:first-child strong { display: block; margin-top: 5px; font-size: 16.5px; letter-spacing: -.5px; }
 .personnel-countdowns { display: grid; gap: 5px; margin-top: 10px; }
@@ -1247,6 +1248,11 @@ body:has(.handover-type-page), #root:has(.handover-type-page) { height: 100vh; o
 .received-meta small { color: #9d969a; font-size: 13.5px; }
 .received-meta strong { margin: 5px 0 3px; font-size: 13px; }
 .received-meta span { color: #8d868b; font-size: 13.5px; }
+.received-detail.has-message { grid-template-rows: auto auto auto minmax(0, 1fr) auto; } /* 인계자가 남긴 말 카드가 한 줄 더 들어간다 */
+.received-message { margin: 14px 22px 0; padding: 12px 14px; border: 1px solid #e6dff5; border-radius: 12px; background: #faf7ff; }
+.received-message > div { display: flex; align-items: center; gap: 6px; color: #5b43b3; font-size: 13px; }
+.received-message > div small { margin-left: auto; color: #9d969a; font-size: 12px; }
+.received-message p { margin: 7px 0 0; color: #3b3540; font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .received-files { min-height: 0; overflow-y: auto; padding: 15px 22px 10px; }
 .received-files > div:first-child { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .received-files > div:first-child strong { font-size: 13px; }
@@ -2271,6 +2277,8 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
 }
 /* 배경 그림 위에 내용이 오도록. 화면 위에 뜨는 덮개창(확인창·대화상자, role=presentation/dialog)은 fixed 위치를 덮어쓰지 않게 뺀다 */
 .leave-theme > :not(.leave-seaside-scene):not([role="presentation"]):not([role="dialog"]) { position: relative; z-index: 1; }
+/* 머리글은 본문보다 위층: 같은 층(1)이면 뒤에 오는 본문이 머리글의 프로필 팝업(홈으로 돌아가기·로그아웃)을 덮어 버린다 */
+.leave-theme > header:not(.leave-seaside-scene):not([role="presentation"]):not([role="dialog"]) { z-index: 20; }
 .leave-seaside-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .leave-sun { width: 92px; height: 92px; position: absolute; top: 10%; right: 9%; border: 7px solid rgba(255,255,255,.72); border-radius: 50%; background: #ffd75d; box-shadow: 0 0 0 18px rgba(255,224,106,.17); animation: leave-sun-float 5s ease-in-out infinite; }
 .leave-cloud { width: 110px; height: 28px; position: absolute; top: 15%; left: -130px; border-radius: 30px; background: rgba(255,255,255,.82); filter: drop-shadow(0 7px 0 rgba(124,198,222,.08)); animation: leave-cloud-drift 24s linear infinite; }
@@ -3434,6 +3442,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .period-range { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 12px; border: 1px solid #e6e0ee; border-radius: 12px; background: #fcfbfe; }
 .period-range label { display: grid; gap: 4px; font-size: 13px; color: #7d7484; }
 .period-range input { height: 36px; padding: 0 10px; border: 1px solid #ddd6e5; border-radius: 8px; font-size: 15px; color: #3b3440; background: #fff; }
+.period-range .date-picker-trigger { min-width: 190px; min-height: 36px; font-size: 14px; }
 .period-range-sep { padding-bottom: 8px; color: #9f97a2; }
 .period-range .answer-send { height: 36px; }
 .period-range-error { flex-basis: 100%; color: #c0392b; font-size: 13px; }
@@ -3502,6 +3511,7 @@ a.integration-more { margin-left: 8px; text-decoration: none; }
 .calendar-board-grid li.todo.done { color: #9aa79f; text-decoration: line-through; }
 .calendar-board-grid li.todo.done::before { content: "\2713  "; }
 .calendar-board-grid li.more { padding: 0 6px; color: #9a9297; }
+.calendar-board-grid li.faded, .week-cell li.faded { opacity: .55; filter: grayscale(1); } /* 다 한 일: 지우지 않고 회색으로 흐리게(연보라 칩은 투명도만으로는 티가 안 난다) */
 .calendar-side { min-height: 0; display: grid; grid-template-rows: minmax(0, .85fr) minmax(0, 1.15fr); gap: 12px; }
 .calendar-side-card { display: flex; flex-direction: column; padding: 14px 14px 12px; }
 .calendar-side-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
@@ -4170,11 +4180,6 @@ button.dept-file-head:hover { background: #faf8fd; }
 .todo-detail-picked small { color: #9a9297; font-size: 11px; font-weight: 600; }
 .todo-detail-picked strong { color: #2f2a33; font-size: 14px; font-weight: 800; }
 .todo-detail h4 { display: flex; align-items: center; gap: 5px; margin: 6px 0 0; color: #3b3540; font-size: 12.5px; font-weight: 800; }
-.todo-detail-date { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 38px; padding: 0 12px; border: 1px solid #e0d9e6; border-radius: 10px; background: #fff; color: #5d5561; font-size: 13px; cursor: pointer; }
-.todo-detail-date:focus-within { border-color: #a995e0; }
-.todo-detail-date input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.todo-detail-date input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
-.todo-detail-date-text { flex: 1; color: #2f2a33; }
 .todo-detail-note { margin: 0; color: #9a9297; font-size: 11.5px; }
 .todo-history { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .todo-history li { display: flex; align-items: flex-start; gap: 7px; color: #4a444e; font-size: 12.5px; line-height: 1.45; }
@@ -4203,3 +4208,39 @@ button.dept-file-head:hover { background: #faf8fd; }
 /* 문서 제목 직접 수정 */
 .final-paper-cover .paper-title-input { width: 100%; box-sizing: border-box; margin: 0; padding: 4px 8px; border: 1px dashed #b9a9e6; border-radius: 8px; background: #fbf9ff; color: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; outline: none; }
 .final-paper-cover .paper-title-input:focus { border-color: #7659da; background: #fff; }
+
+/* 날짜 고르기(shared/DatePicker): 기본 date 입력 대신 쓰는 버튼 + 달력 팝업 */
+.date-picker-trigger { width: 100%; min-height: 40px; display: flex; align-items: center; gap: 8px; box-sizing: border-box; padding: 0 12px; border: 1px solid #dcd5e6; border-radius: 10px; background: #fff; color: #2f2a33; font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.date-picker-trigger > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.date-picker-trigger > svg:first-child { flex: none; color: #8a7cc9; }
+.date-picker-trigger > svg:last-child { flex: none; color: #a39aab; transform: rotate(90deg); transition: transform .15s; }
+.date-picker-trigger.open > svg:last-child { transform: rotate(-90deg); }
+.date-picker-trigger.empty > span { color: #a39aab; font-weight: 500; }
+.date-picker-trigger:hover:not(:disabled) { border-color: #b7a9e6; }
+.date-picker-trigger:focus-visible, .date-picker-trigger.open { outline: 0; border-color: #7a5fd0; box-shadow: 0 0 0 3px rgba(122, 95, 208, .15); }
+.date-picker-trigger:disabled { opacity: .5; cursor: not-allowed; }
+.date-picker-popover { position: fixed; z-index: 400; box-sizing: border-box; padding: 12px; border: 1px solid #e6dff0; border-radius: 16px; background: #fffdfa; color: #2f2a33; box-shadow: 0 22px 55px rgba(40, 30, 60, .24); animation: date-picker-in .14s ease-out; }
+@keyframes date-picker-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.date-picker-popover > header { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
+.date-picker-popover > header strong { font-size: 14.5px; font-weight: 800; letter-spacing: -.3px; }
+.date-picker-popover > header button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #6c6470; cursor: pointer; }
+.date-picker-popover > header button:hover { background: #f3effa; color: #4b3a99; }
+.date-picker-popover > header button.prev svg { transform: rotate(180deg); }
+.date-picker-weekdays, .date-picker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.date-picker-weekdays span { padding: 4px 0 6px; text-align: center; color: #9a93a3; font-size: 11.5px; font-weight: 700; }
+.date-picker-weekdays span.sun { color: #d0566a; }
+.date-picker-weekdays span.sat { color: #4f7fd6; }
+.date-picker-grid button { height: 36px; border: 0; border-radius: 10px; background: transparent; color: #2f2a33; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.date-picker-grid button:hover:not(:disabled):not(.selected) { background: #f1ecfb; }
+.date-picker-grid button.sun { color: #d0566a; }
+.date-picker-grid button.sat { color: #4f7fd6; }
+.date-picker-grid button.other { color: #c4bdcc; font-weight: 500; }
+.date-picker-grid button.today { box-shadow: inset 0 0 0 1.5px #a995e0; }
+.date-picker-grid button.selected { background: #6d5bd0; color: #fff; font-weight: 800; box-shadow: none; }
+.date-picker-grid button:disabled { opacity: .3; cursor: not-allowed; }
+.date-picker-grid button:focus-visible { outline: 2px solid #7a5fd0; outline-offset: 1px; }
+.date-picker-popover > footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee8f1; }
+.date-picker-popover > footer button { height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #6d5bd0; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.date-picker-popover > footer button:hover:not(:disabled) { background: #f3effa; }
+.date-picker-popover > footer button.clear { margin-left: auto; color: #c45a66; }
+.date-picker-popover > footer button:disabled { opacity: .4; cursor: not-allowed; }

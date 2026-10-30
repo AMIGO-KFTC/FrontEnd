@@ -1,5 +1,6 @@
 // 4단계 작성 화면 머리글 오른쪽의 사용자 아바타 메뉴(홈으로 돌아가기 · 로그아웃).
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/shared/Icon";
 import { LogoutConfirmModal } from "@/shared/LogoutConfirmModal";
 import { ProfilePhoto, useProfile } from "@/shared/profile";
@@ -46,10 +47,11 @@ export function StepUserMenu({ onLogout, onHome }: { onLogout: () => void; onHom
           </div>
         )}
       </div>
-      {logoutConfirmOpen && <LogoutConfirmModal onCancel={() => setLogoutConfirmOpen(false)} onConfirm={() => {
+      {/* 헤더 안에 그리면 장기휴가 테마(.leave-theme 의 header z-index)에 갇혀 본문 뒤로 숨어 버린다. 그래서 body 로 꺼내 그린다 */}
+      {logoutConfirmOpen && createPortal(<LogoutConfirmModal onCancel={() => setLogoutConfirmOpen(false)} onConfirm={() => {
         setLogoutConfirmOpen(false);
         onLogout();
-      }} />}
+      }} />, document.body)}
     </>
   );
 }

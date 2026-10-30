@@ -3,6 +3,7 @@
 // - 팀 공유 일정: 워크숍·회의·마감 등. 구성원의 홈·캘린더 달력에 나온다. GET /api/team-schedules, 추가·수정·삭제 /api/admin/team-schedules
 import { useState, type FormEvent } from "react";
 import { api } from "@/shared/api";
+import { DatePicker } from "@/shared/DatePicker";
 import { longDate, refreshPersonnel, usePersonnel } from "@/shared/personnel";
 import { dateKey, formatDday } from "@/shared/planner";
 import type { PersonnelSchedule, TeamSchedule } from "@/shared/types";
@@ -112,8 +113,8 @@ function PersonnelSchedules() {
       <form className="admin-panel personnel-form" onSubmit={submit}>
         <header><div><h2>{editingId === null ? "정기인사 추가" : "정기인사 수정"}</h2></div>{editingId !== null && <button type="button" className="text-button" onClick={reset}>취소</button>}</header>
         <label>일정 이름<input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="예: 2027 상반기 정기인사" maxLength={100} /></label>
-        <label>발표일 <small>(선택)</small><input type="date" value={draft.announce_date} onChange={(e) => setDraft({ ...draft, announce_date: e.target.value })} /></label>
-        <label>발령일<input type="date" value={draft.appoint_date} onChange={(e) => setDraft({ ...draft, appoint_date: e.target.value })} /></label>
+        <label>발표일 <small>(선택)</small><DatePicker value={draft.announce_date} onChange={(value) => setDraft({ ...draft, announce_date: value })} clearable ariaLabel="발표일" /></label>
+        <label>발령일<DatePicker value={draft.appoint_date} openMonth={draft.announce_date} onChange={(value) => setDraft({ ...draft, appoint_date: value })} ariaLabel="발령일" /></label>
         {notice && <p className={`personnel-notice ${notice.tone}`} role={notice.tone === "error" ? "alert" : "status"}>{notice.text}</p>}
         <button type="submit" className="personnel-submit" disabled={busy}>{busy ? "저장 중…" : editingId === null ? "일정 추가" : "수정 저장"}</button>
       </form>
@@ -188,8 +189,8 @@ function SharedSchedules() {
       <form className="admin-panel personnel-form" onSubmit={submit}>
         <header><div><h2>{editingId === null ? "공유 일정 추가" : "공유 일정 수정"}</h2></div>{editingId !== null && <button type="button" className="text-button" onClick={reset}>취소</button>}</header>
         <label>일정 이름<input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="예: 하반기 팀 워크숍" maxLength={100} /></label>
-        <label>날짜<input type="date" value={draft.start_date} onChange={(e) => setDraft({ ...draft, start_date: e.target.value })} /></label>
-        <label>끝나는 날 <small>(여러 날일 때)</small><input type="date" value={draft.end_date} min={draft.start_date || undefined} onChange={(e) => setDraft({ ...draft, end_date: e.target.value })} /></label>
+        <label>날짜<DatePicker value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} ariaLabel="날짜" /></label>
+        <label>끝나는 날 <small>(여러 날일 때)</small><DatePicker value={draft.end_date} min={draft.start_date || undefined} openMonth={draft.start_date} onChange={(value) => setDraft({ ...draft, end_date: value })} clearable ariaLabel="끝나는 날" /></label>
         <label>메모 <small>(선택)</small><input value={draft.memo} onChange={(e) => setDraft({ ...draft, memo: e.target.value })} placeholder="예: 대전 연수원, 오후 2시" maxLength={300} /></label>
         {notice && <p className={`personnel-notice ${notice.tone}`} role={notice.tone === "error" ? "alert" : "status"}>{notice.text}</p>}
         <button type="submit" className="personnel-submit" disabled={busy}>{busy ? "저장 중…" : editingId === null ? "일정 추가" : "수정 저장"}</button>

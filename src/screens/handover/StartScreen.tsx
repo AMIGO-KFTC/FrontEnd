@@ -6,6 +6,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/shared/api";
 import { Brand } from "@/shared/Brand";
+import { DatePicker } from "@/shared/DatePicker";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { HelpTip } from "@/shared/HelpTip";
 import { dutiesText, type StartData } from "@/shared/handover";
@@ -412,8 +413,8 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
         </div>
       </div>
       <div className="wide-field leave-period-field">
-        <label>휴가 시작일 <i>*</i><input type="date" value={data.leaveStart} max={data.leaveEnd || undefined} onChange={(e) => update("leaveStart", e.target.value)} /></label>
-        <label>휴가 종료일 <i>*</i><input type="date" value={data.leaveEnd} min={data.leaveStart || undefined} onChange={(e) => update("leaveEnd", e.target.value)} /></label>
+        <label>휴가 시작일 <i>*</i><DatePicker value={data.leaveStart} max={data.leaveEnd || undefined} onChange={(value) => update("leaveStart", value)} ariaLabel="휴가 시작일" /></label>
+        <label>휴가 종료일 <i>*</i><DatePicker value={data.leaveEnd} min={data.leaveStart || undefined} openMonth={data.leaveStart} onChange={(value) => update("leaveEnd", value)} ariaLabel="휴가 종료일" /></label>
       </div>
     </>
   );
