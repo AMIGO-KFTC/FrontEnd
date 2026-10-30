@@ -9,7 +9,7 @@ import { Brand } from "@/shared/Brand";
 import { DatePicker } from "@/shared/DatePicker";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { HelpTip } from "@/shared/HelpTip";
-import { dutiesText, type StartData } from "@/shared/handover";
+import { dutiesText, isAutoRegularUnit, withAutoRegular, type StartData } from "@/shared/handover";
 import { Icon } from "@/shared/Icon";
 import { LeaveSeasideBackground } from "@/shared/LeaveSeasideBackground";
 import { useProfile } from "@/shared/profile";
@@ -229,7 +229,7 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
       onStart(form);
       return;
     }
-    const units = withDrafts(data.units);
+    const units = mode === "leave" ? withDrafts(data.units) : withAutoRegular(withDrafts(data.units)); // 세부업무를 안 적은 '규정/규약 심사'는 정기 업무로 자동 입력
     const form = { ...data, name: profile.name, division: profile.division, team: profile.team, role: profile.role, units, task: dutiesText(units) };
     if (mode === "leave") {
       const detailCount = units.reduce((sum, unit) => sum + unit.regular.length + unit.irregular.length, 0);
@@ -434,6 +434,9 @@ export function StartScreen({ mode, onStart, onLogout, onHome, busy = false, err
             {chipField(unit, "regular", "예: 월간 실적 보고")}
             {chipField(unit, "irregular", "예: 홈페이지 리뉴얼")}
           </div>
+          {isAutoRegularUnit(unit.name) && !unit.regular.length && !unit.irregular.length && !(drafts[draftKey(unit.name, "regular")] ?? "").trim() && !(drafts[draftKey(unit.name, "irregular")] ?? "").trim() && (
+            <p className="unit-detail-auto"><Icon name="check" size={13} /> 세부업무를 적지 않으면 <b>'{unit.name}'</b> 업무가 정기 업무로 자동 입력돼요.</p>
+          )}
         </section>
       ))}
     </div>
