@@ -38,10 +38,12 @@ function yearColumns(rows: Hast[]): Column[] | null {
   const top = elements(first, "th");
   const years = elements(second, "th");
   const months = elements(third, "th");
-  if (top.length !== 3 || !years.length || spanOf(top[1]) !== months.length || months.length < 12) return null;
+  // 분기 표는 연도마다 4칸이라 2개 연도에 걸치면 8칸이다(예전에는 12칸 미만이면 일정표로 보지 않아 2개 연도 표는 막대를 못 고쳤다). 월 표는 12칸 이상.
+  const quarterly = months.length > 0 && months.every((cell) => quarterNumber(cell));
+  if (top.length !== 3 || !years.length || spanOf(top[1]) !== months.length || months.length < (quarterly ? 4 : 12)) return null;
   const yearOf: number[] = years.flatMap((cell) => Array.from({ length: spanOf(cell) }, () => Number(textOf(cell).trim().replace(/년$/, ""))));
   if (yearOf.length !== months.length || yearOf.some((y) => !Number.isFinite(y))) return null;
-  if (months.every((cell) => quarterNumber(cell))) {
+  if (quarterly) {
     return months.map((cell, i) => {
       const q = quarterNumber(cell);
       const first = (q - 1) * 3 + 1;
