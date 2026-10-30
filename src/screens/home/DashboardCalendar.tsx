@@ -13,7 +13,7 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
   const personnel = personnelView(today, schedules, teamSchedules);
   const markOn = (key: string) => personnel.marks.filter((mark) => mark.key === key);
   const todayKey = dateKey(today);
-  const { events, eventItems, todos, setDone } = usePlanner();
+  const { eventItems, todos, setDone } = usePlanner();
   const [openMemo, setOpenMemo] = useState<string | null>(null);
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDay, setSelectedDay] = useState(today.getDate());
@@ -57,7 +57,11 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
               const isAppointmentDay = marks.some((mark) => mark.kind === "appointment");
               const isSpecialDay = isAnnouncementDay || isAppointmentDay;
               const isToday = key === todayKey;
-              const hasItems = Boolean(events[key]?.length) || marks.some((mark) => mark.kind === "shared") || todos.some((todo) => todo.date === key && !todo.done);
+              // 점: 안 한 일정·할 일이 있으면 진하게, 다 한 일만 있으면 흐리게(지우지 않는다)
+              const dayEvents = eventItems.filter((event) => event.date === key);
+              const dayTodos = todos.filter((todo) => todo.date === key);
+              const hasOpen = dayEvents.some((event) => !event.done) || dayTodos.some((todo) => !todo.done) || marks.some((mark) => mark.kind === "shared");
+              const hasItems = hasOpen || dayEvents.length > 0 || dayTodos.length > 0;
               return (
                 <button
                   className={`${day === selectedDay ? "selected" : ""} ${isSpecialDay ? "special-day" : ""} ${isAnnouncementDay ? "announcement-day" : ""} ${isAppointmentDay ? "appointment-day" : ""} ${isToday ? "today" : ""}`}
@@ -66,7 +70,7 @@ export function DashboardCalendar({ onOpenCalendar }: { onOpenCalendar?: () => v
                   title={marks.length ? marks.map((mark) => mark.label).join(", ") : isToday ? "오늘" : undefined}
                 >
                   {day}
-                  {hasItems ? <i /> : null}
+                  {hasItems ? <i className={hasOpen ? "" : "faded"} /> : null}
                 </button>
               );
             })}

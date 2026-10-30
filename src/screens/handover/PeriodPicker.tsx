@@ -1,6 +1,7 @@
 // 수행 시기 질문의 답 고르기: 정기 업무면 주기(매일·매주·매월·매년) 중 하나를 고르고,
 // 정기적으로 하지 않는 업무면 달력에서 수행 기간(시작일 ~ 종료일)을 고른다. 고른 값은 답변 글로 보낸다('매월', '2026-03-02 ~ 2026-05-29').
 import { useState } from "react";
+import { DatePicker } from "@/shared/DatePicker";
 import { Icon } from "@/shared/Icon";
 
 type Props = {
@@ -28,12 +29,12 @@ export function PeriodPicker({ choices, disabled, onPick }: Props) {
         <div className="period-range">
           <label>
             <span>시작일</span>
-            <input type="date" value={start} max={end || undefined} onChange={(event) => setStart(event.target.value)} />
+            <DatePicker value={start} max={end || undefined} onChange={setStart} ariaLabel="시작일" />
           </label>
           <span className="period-range-sep">~</span>
           <label>
             <span>종료일</span>
-            <input type="date" value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} />
+            <DatePicker value={end} min={start || undefined} openMonth={start} onChange={setEnd} ariaLabel="종료일" />
           </label>
           <button type="button" className="answer-send" disabled={disabled || !start || !end || invalid} onClick={() => onPick(`${start} ~ ${end}`)}>
             이 기간으로 답하기 <Icon name="arrow" size={16} />

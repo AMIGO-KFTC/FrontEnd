@@ -396,6 +396,8 @@ export interface ReceivedHandover {
   status: Status;
   document_version: number;
   file_count: number;
+  message?: string; // 인계자가 전송하면서 남긴 한마디(받은 인수인계 목록에서만 채워진다)
+  sent_at?: string | null; // 나에게 전송된 시각
   created_at: string;
   updated_at: string;
 }

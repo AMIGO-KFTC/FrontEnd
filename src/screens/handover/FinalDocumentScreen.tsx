@@ -53,6 +53,22 @@ function splitSections(markdown: string): { title: string; body: string }[] {
     });
 }
 
+// 장기휴가 '주요 연락망'은 외부(5열)·내부(4열) 표 두 개로 싣는다(AI render.py 와 같은 모양, 빈 칸은 '-').
+// 예전에 저장된 문서는 연락망이 비면 "확인된 내용이 없습니다." 한 줄이거나 한쪽 표만 있어서, 보기와 직접 수정 모두에서 표로 보이도록 없는 쪽 표를 채운다.
+const CONTACT_TITLE = "주요 연락망";
+const CONTACT_EXTERNAL = "**외부**\n\n| 소속 | 이름 | 주요역할 | 연락처 | 비고(유의사항) |\n|---|---|---|---|---|\n| - | - | - | - | - |";
+const CONTACT_INTERNAL = "**내부**\n\n| 소속 | 이름 | 주요역할 | 비고(유의사항) |\n|---|---|---|---|\n| - | - | - | - |";
+function withContactTables(body: string): string {
+  const hasExternal = /^\*\*외부\*\*[ \t]*$/m.test(body);
+  const hasInternal = /^\*\*내부\*\*[ \t]*$/m.test(body);
+  if (hasExternal && hasInternal) return body;
+  if (hasExternal) return `${body.trimEnd()}\n\n${CONTACT_INTERNAL}`;
+  if (hasInternal) return `${CONTACT_EXTERNAL}\n\n${body.trim()}`;
+  if (/^\|/m.test(body)) return body; // 외부·내부 표시가 없는 다른 형식의 표는 건드리지 않는다
+  const text = body.replace(/확인된 내용이 없습니다\.?/g, "").trim(); // 안내 한 줄뿐이면 표로 바꾸고, 직접 쓴 글이 있으면 그 아래에 표를 붙인다
+  return `${text ? `${text}\n\n` : ""}${CONTACT_EXTERNAL}\n\n${CONTACT_INTERNAL}`;
+}
+
 // 예전에 저장된 문서에 남아 있을 수 있는 장. 지금은 본문에 넣지 않고 오른쪽 목록·출처 창이 대신하므로 화면에서 숨긴다.
 const HIDDEN_SECTION = /^(확인 필요 사항|근거 자료)$/;
 
@@ -177,7 +193,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     closeAnswer();
     onAnswer(question ? `[질문] ${question}\n[답변] ${text}` : text);
   };
-  const parsed = splitSections(markdown);
+  const parsed = splitSections(markdown).map((section) => (data.mode === "leave" && section.title === CONTACT_TITLE ? { ...section, body: withContactTables(section.body) } : section));
   // 화면에 그릴 장. index 는 원래 문서의 장 번호(직접 고친 글을 저장할 때 rebuildMarkdown 이 쓴다).
   const visible = parsed.map((section, index) => ({ ...section, index })).filter((section) => !HIDDEN_SECTION.test(section.title));
   const gantt = useMemo(() => ({
@@ -318,7 +334,7 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
               {isEditing && <span className="edit-mode-badge"><Icon name="file" size={12} /> 수정 모드</span>}
               {isEditing && <button onClick={() => void finishEditing()} disabled={saveState === "saving"} className="edit-save"><Icon name="check" size={13} /> 수정 완료</button>}
               {isEditing && <button onClick={cancelEditing} disabled={saveState === "saving"}>취소</button>}
-              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{"\n"}월별 일정표의 막대는 칸을 끌어서 고쳐요.{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
+              {isEditing && <small className="gantt-hint">표의 글을 눌러 바로 고친 뒤 '수정 완료'를 누르면 새 버전으로 저장돼요.{data.mode === "leave" ? "" : "\n월별 일정표의 막대는 칸을 끌어서 고쳐요."}{saveState === "saved" ? " 저장됨" : saveState === "failed" ? ` 저장 실패${saveError ? `: ${saveError}` : ""}` : ""}</small>}
             </div>
             )}
           </div>

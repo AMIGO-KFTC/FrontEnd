@@ -4,6 +4,7 @@
 //   입력칸은 달력에서 고른 곳에 추가한다. 날짜를 고르면 그 날짜가 마감일인 할 일, 주를 고르면 주간 업무, 달 제목을 고르면 마감일 없는 할 일.
 //   정기 업무·정기인사·팀 일정은 할 일이 아니라서 목록 아래 '정기·팀 일정'에 따로 보여 준다.
 import { useEffect, useRef, useState } from "react";
+import { DatePicker } from "@/shared/DatePicker";
 import { Icon } from "@/shared/Icon";
 import { personnelView, usePersonnel } from "@/shared/personnel";
 import { dateKey, usePlanner } from "@/shared/planner";
@@ -223,12 +224,7 @@ function ItemDetail({ item, dateRequired, onDate, onAdd, onEdit, onRemove }: { i
     <div className="todo-detail">
       <div className="todo-detail-picked"><small>선택한 업무</small><strong>{item.text}</strong></div>
       <h4><Icon name="calendar" size={14} />업무 마감일</h4>
-      <label className="todo-detail-date">
-        <Icon name="calendar" size={15} />
-        <input type="date" value={item.date ?? ""} required={dateRequired} onChange={(event) => onDate(event.target.value || null)} aria-label="업무 마감일" />
-        <span className="todo-detail-date-text">{item.date ? `${item.date.slice(2, 4)}. ${Number(item.date.slice(5, 7))}. ${Number(item.date.slice(8))}.` : "날짜 선택"}</span>
-        <Icon name="chevron" size={14} />
-      </label>
+      <DatePicker value={item.date ?? ""} onChange={(value) => onDate(value || null)} clearable={!dateRequired} placeholder="마감일 선택" ariaLabel="업무 마감일" />
       <p className="todo-detail-note">변경한 날짜는 위 업무 목록에도 반영됩니다.</p>
       <h4><Icon name="clock" size={14} />업무 진행 이력</h4>
       {history.length > 0 ? (

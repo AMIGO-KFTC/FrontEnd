@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
 import { Icon } from "@/shared/Icon";
+import { useProfile } from "@/shared/profile";
 import { completedSessions, formatDate, MODE_LABEL, sessionTitle, sessionTone } from "@/shared/sessions";
 import type { Source } from "@/shared/types";
 import { SourcesDialog } from "../handover/SourcesDialog";
+import { TransferDialog } from "../handover/TransferDialog";
 import type { HomeNav, SessionList } from "./types";
 
 type Props = HomeNav & { list: SessionList };
@@ -23,6 +25,8 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
   // 선택한 문서를 만드는 데 올린 자료 파일(링크·처리 실패 파일은 내려받을 수 없어 뺀다). 선택이 바뀔 때마다 불러온다.
   const [usedFiles, setUsedFiles] = useState<Source[] | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false); // '인수인계 전송하기'(완료 화면과 같은 TransferDialog)
+  const [profile] = useProfile();
   const selectedKey = selected?.id;
   useEffect(() => {
     if (!selectedKey) return;
@@ -87,12 +91,14 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                   <button onClick={() => setSourcesOpen(true)} disabled={!usedFiles?.length} title="이 인수인계서를 만드는 데 올린 자료 파일을 내려받아요"><Icon name="download" size={14} /> 근거 자료{usedFiles ? ` ${usedFiles.length}개` : ""}</button>
                   <button onClick={() => onChat(selected.id)}><Icon name="sparkle" size={14} /> 이 업무에 질문하기</button>
                   <button onClick={() => { window.location.href = api.downloadUrl(selected.id, "pdf"); }}><Icon name="download" size={14} /> PDF 내려받기</button>
+                  <button onClick={() => setTransferOpen(true)} title="받는 사람을 골라 이 인수인계서를 보내요"><Icon name="send" size={14} /> 인수인계 전송하기</button>
                 </footer>
               </article>
             </section>
           )}
         </div>
       </main>
+      {transferOpen && selected && <TransferDialog sessionId={selected.id} selfLoginId={profile.loginId} onClose={() => setTransferOpen(false)} />}
       {sourcesOpen && selected && usedFiles && <SourcesDialog sessionId={selected.id} files={usedFiles} config={null} onClose={() => setSourcesOpen(false)} />}
     </div>
   );
