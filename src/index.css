@@ -4150,7 +4150,15 @@ button.dept-file-head:hover { background: #faf8fd; }
 .todo-focus-list { display: grid; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
 .todo-focus-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 8px; border-radius: 10px; }
 .todo-focus-row.selected { background: #eaf2ff; }
+.todo-focus-row.hit { background: #f6f2ff; }
+.todo-done-group { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee8f1; }
+.todo-done-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border: 0; border-radius: 8px; background: transparent; color: #7a727e; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.todo-done-toggle:hover { background: #f3eff6; }
+.todo-done-toggle small { padding: 0 6px; border-radius: 9px; background: #ece7f1; color: #6c6470; font-size: 11px; font-weight: 700; }
+.todo-done-toggle svg { transition: transform .15s; }
+.todo-done-group.open .todo-done-toggle svg { transform: rotate(90deg); }
 .todo-focus-row .check-box { flex: none; width: 18px; height: 18px; border-radius: 50%; }
+.todo-focus-row.done .check-box { border-color: #2f2a33; background: #2f2a33; }
 .todo-focus-main { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 2px 0; border: 0; background: transparent; color: #a1999e; font: inherit; text-align: left; cursor: pointer; }
 .todo-focus-main > span { min-width: 0; display: grid; gap: 1px; }
 .todo-focus-main strong { overflow: hidden; color: #2f2a33; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
@@ -4172,6 +4180,19 @@ button.dept-file-head:hover { background: #faf8fd; }
 .todo-history li { display: flex; align-items: flex-start; gap: 7px; color: #4a444e; font-size: 12.5px; line-height: 1.45; }
 .todo-history li svg { flex: none; margin-top: 2px; color: #9a9297; }
 .todo-history li span { min-width: 0; overflow-wrap: anywhere; }
+.todo-history li > span:not(.todo-history-actions) { flex: 1; }
+.todo-history-actions { flex: none; display: inline-flex; align-items: center; gap: 2px; opacity: .45; transition: opacity .12s; }
+.todo-history li:hover .todo-history-actions, .todo-history-actions:focus-within, .todo-history-actions.confirm { opacity: 1; }
+.todo-history-actions button { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 4px; border: 0; border-radius: 6px; background: transparent; color: #8b8390; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.todo-history li .todo-history-actions svg { margin-top: 0; }
+.todo-history-actions button:hover { background: #f1ecf5; color: #4a444e; }
+.todo-history-actions button.danger { color: #c2403d; }
+.todo-history-actions button.danger:hover { background: #fdecec; }
+.todo-history li.todo-history-edit { flex-direction: column; align-items: stretch; gap: 6px; }
+.todo-history-edit-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.todo-history-edit-actions button { height: 28px; padding: 0 12px; border: 1px solid #e0d9e6; border-radius: 8px; background: #fff; color: #5d5561; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.todo-history-edit-actions button.primary { border-color: #6d5bd0; background: #6d5bd0; color: #fff; }
+.todo-history-edit-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .todo-history-label { margin-top: 6px; color: #3b3540; font-size: 12.5px; font-weight: 800; }
 .todo-detail textarea { width: 100%; padding: 8px 10px; border: 1px solid #e0d9e6; border-radius: 10px; outline: 0; background: #fff; color: #3b3540; font: inherit; font-size: 12.5px; line-height: 1.5; resize: vertical; }
 .todo-detail textarea:focus { border-color: #a995e0; }

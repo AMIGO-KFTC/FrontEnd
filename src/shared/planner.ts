@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { api } from "./api";
 import { useProfile } from "./profile";
-import type { PlannerEvent, PlannerRoutine, PlannerTodo, PlannerWeekTask } from "./types";
+import type { PlannerEvent, PlannerHistory, PlannerRoutine, PlannerTodo, PlannerWeekTask } from "./types";
 
 export type Todo = PlannerTodo; // date: 'YYYY-MM-DD', null 이면 날짜 없는 할 일
 export type Planner = { events: Record<string, string[]>; todos: Todo[] };
@@ -151,6 +151,13 @@ function select(loginId: string) {
   if (loginId) enqueue(loginId, () => load(loginId));
 }
 
+// 진행 이력은 할 일(todo)과 일정(event, 원텔에서 가져온 것 포함)이 같은 모양이다
+type HistoryKind = "todo" | "event";
+function mapHistory(state: State, kind: HistoryKind, id: string, fn: (history: PlannerHistory[]) => PlannerHistory[]): State {
+  if (kind === "event") return { ...state, events: state.events.map((e) => (e.id === id ? { ...e, history: fn(e.history ?? []) } : e)) };
+  return { ...state, todos: state.todos.map((t) => (t.id === id ? { ...t, history: fn(t.history ?? []) } : t)) };
+}
+
 function change(local: (state: State) => State, remote: () => Promise<unknown>) {
   const loginId = store.loginId ?? "";
   if (!store.loaded) store.pending.push(local);
@@ -224,20 +231,27 @@ export function usePlanner() {
     },
     // 할 일의 업무 마감일(YYYY-MM-DD, null 이면 이 달 전체로 되돌림). 날짜가 있으면 캘린더의 그날에 나타난다
     setTodoDate: (id: string, date: string | null) => change((s) => ({ ...s, todos: s.todos.map((todo) => (todo.id === id ? { ...todo, date } : todo)) }), () => api.updatePlannerTodo(id, { date })),
-    // 진행 이력 한 줄 추가: 서버가 id·시각을 정하므로 응답을 받은 뒤 화면에 붙인다(앞선 요청을 다 보낸 다음 보내 할 일이 서버에 먼저 생기게). 실패하면 던진다
-    addTodoHistory: (id: string, text: string) =>
+    // 일정의 날짜(=마감일). 원텔에서 가져온 일정도 똑같이 바꾼다. 일정은 날짜가 꼭 있어야 해서 비우는 건 받지 않는다
+    setEventDate: (id: string, date: string) => change((s) => ({ ...s, events: s.events.map((event) => (event.id === id ? { ...event, date } : event)) }), () => api.updatePlannerEvent(id, { date })),
+    // 업무 진행 이력(할 일 · 일정 공통). 추가는 서버가 id·시각을 정하므로 응답을 받은 뒤 화면에 붙인다(앞선 요청을 다 보낸 다음 보내 항목이 서버에 먼저 생기게). 실패하면 던진다
+    addHistory: (kind: HistoryKind, id: string, text: string) =>
       new Promise<void>((resolve, reject) => {
         const loginId = store.loginId ?? "";
         store.queue = store.queue.then(async () => {
           try {
-            const { entry } = await api.addPlannerTodoHistory(id, text);
-            if (store.loginId === loginId) setState({ ...store.state, todos: store.state.todos.map((t) => (t.id === id ? { ...t, history: [...(t.history ?? []), entry] } : t)) });
+            const { entry } = await api.addPlannerHistory(kind, id, text);
+            if (store.loginId === loginId) setState(mapHistory(store.state, kind, id, (history) => [...history, entry]));
             resolve();
           } catch (error) {
             reject(error);
           }
         });
       }),
+    // 고치기·지우기는 id 를 이미 알고 있어 바로 화면에 반영하고 서버에는 순서대로 보낸다
+    editHistory: (kind: HistoryKind, id: string, entryId: string, text: string) =>
+      change((s) => mapHistory(s, kind, id, (history) => history.map((h) => (h.id === entryId ? { ...h, text } : h))), () => api.updatePlannerHistory(kind, id, entryId, text)),
+    removeHistory: (kind: HistoryKind, id: string, entryId: string) =>
+      change((s) => mapHistory(s, kind, id, (history) => history.filter((h) => h.id !== entryId)), () => api.deletePlannerHistory(kind, id, entryId)),
     removeTodo: (id: string) => change((s) => ({ ...s, todos: s.todos.filter((todo) => todo.id !== id) }), () => api.deletePlannerTodo(id)),
     clearDone: () => change((s) => ({ ...s, todos: s.todos.filter((todo) => !todo.done) }), () => api.clearDonePlannerTodos()),
     routines: state.routines,

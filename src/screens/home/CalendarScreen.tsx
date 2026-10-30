@@ -175,13 +175,6 @@ export function CalendarScreen({ list, onHome, onHandover, onDocuments, onReceiv
               year={year}
               month={month}
               target={selectedWeek ? { kind: "week", week: selectedWeek } : agendaMonth ? { kind: "month" } : { kind: "day", key: selectedKey }}
-              selectedKey={selectedKey}
-              onTarget={(next) => {
-                setAgendaMonth(next.kind === "month");
-                if (next.kind === "week") setSelectedWeek(next.week);
-                else setSelectedWeek(null);
-                if (next.kind === "day") setSelectedKey(next.key);
-              }}
             />
           </section>
 
