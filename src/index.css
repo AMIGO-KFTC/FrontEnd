@@ -4247,3 +4247,8 @@ button.dept-file-head:hover { background: #faf8fd; }
 .date-picker-popover > footer button:hover:not(:disabled) { background: #f3effa; }
 .date-picker-popover > footer button.clear { margin-left: auto; color: #c45a66; }
 .date-picker-popover > footer button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* 인수인계서 삭제 버튼(근거 자료·내가 작성한 문서) */
+.materials-detail > footer button.materials-delete, .document-preview-card > footer button.document-delete { margin-right: auto; border-color: #f0cdd0; background: #fff6f6; color: #b64a55; }
+.materials-detail > footer button.materials-delete:hover, .document-preview-card > footer button.document-delete:hover { background: #ffecee; }
+.materials-delete-error, .documents-delete-error { position: fixed; left: 50%; bottom: 24px; z-index: 80; transform: translateX(-50%); }

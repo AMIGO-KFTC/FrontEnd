@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
+import { ConfirmModal } from "@/shared/ConfirmModal";
 import { Icon } from "@/shared/Icon";
 import { useProfile } from "@/shared/profile";
 import { completedSessions, formatDate, MODE_LABEL, sessionTitle, sessionTone } from "@/shared/sessions";
@@ -15,6 +16,9 @@ type Props = HomeNav & { list: SessionList };
 export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived, onChat, onCalendar, onMaterials, onLogout, onDocuments }: Props) {
   const documents = list.sessions ? completedSessions(list.sessions) : null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false); // 삭제 확인 창
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   // 직접 고친 문서인지(현재 버전을 만든 쪽). 목록을 다시 불러올 때마다 함께 갱신한다.
   const [origins, setOrigins] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -87,6 +91,7 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
                   <div><strong>문서 내용</strong><p>표와 근거 번호가 달린 전체 문서는 ‘문서 열기’에서 확인하고, 대화창으로 고칠 점을 보내면 새 버전이 만들어집니다.</p></div>
                 </div>
                 <footer>
+                  <button className="document-delete" onClick={() => { setDeleteError(null); setDeleting(true); }} title="이 인수인계서와 자료·대화를 모두 지워요"><Icon name="close" size={14} /> 삭제</button>
                   <button onClick={() => list.open(selected.id)}><Icon name="file" size={14} /> 문서 열기</button>
                   <button onClick={() => setSourcesOpen(true)} disabled={!usedFiles?.length} title="이 인수인계서를 만드는 데 올린 자료 파일을 내려받아요"><Icon name="download" size={14} /> 근거 자료{usedFiles ? ` ${usedFiles.length}개` : ""}</button>
                   <button onClick={() => onChat(selected.id)}><Icon name="sparkle" size={14} /> 이 업무에 질문하기</button>
@@ -100,6 +105,25 @@ export function CompletedDocumentsScreen({ list, onHome, onHandover, onReceived,
       </main>
       {transferOpen && selected && <TransferDialog sessionId={selected.id} selfLoginId={profile.loginId} onClose={() => setTransferOpen(false)} />}
       {sourcesOpen && selected && usedFiles && <SourcesDialog sessionId={selected.id} files={usedFiles} config={null} onClose={() => setSourcesOpen(false)} />}
+      {deleting && selected && (
+        <ConfirmModal
+          icon="close"
+          title="이 인수인계서를 삭제할까요?"
+          description={`${sessionTitle(selected)}의 자료·대화·문서가 서버에서 모두 지워지며 되돌릴 수 없습니다.`}
+          confirmLabel="삭제하기"
+          busy={deleteBusy}
+          onCancel={() => !deleteBusy && setDeleting(false)}
+          onConfirm={async () => {
+            setDeleteBusy(true);
+            const error = await list.remove(selected.id);
+            setDeleteBusy(false);
+            setDeleting(false);
+            setDeleteError(error);
+            if (!error) setSelectedId(null);
+          }}
+        />
+      )}
+      {deleteError && <div className="list-notice error documents-delete-error" role="alert">삭제하지 못했어요. {deleteError}</div>}
     </div>
   );
 }

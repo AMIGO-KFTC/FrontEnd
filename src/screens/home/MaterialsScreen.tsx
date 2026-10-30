@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/shared/api";
 import { AppSidebar } from "@/shared/AppSidebar";
+import { ConfirmModal } from "@/shared/ConfirmModal";
 import { Icon } from "@/shared/Icon";
 import { useProfile } from "@/shared/profile";
 import { formatDate, hasDocument, MODE_LABEL, sessionTitle, sessionTone, STAGE_LABEL } from "@/shared/sessions";
@@ -41,6 +42,9 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
   const [received, setReceived] = useState<ReceivedHandover[] | null>(null);
   const [receivedError, setReceivedError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false); // 삭제 확인 창
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [profile] = useProfile();
   const [team, setTeam] = useState<ReceivedHandover[] | null>(null);
   const [teamError, setTeamError] = useState<string | null>(null);
@@ -203,6 +207,7 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
                   )}
                 </div>
                 <footer>
+                  {tab === "mine" && <button className="materials-delete" onClick={() => { setDeleteError(null); setDeleting(true); }} title="이 인수인계서와 자료·대화를 모두 지워요"><Icon name="close" size={14} /> 삭제</button>}
                   {downloadable.length > 0 && <a className="materials-zip" href={api.sourcesArchiveUrl(selected.id)} download title="올린 자료 파일을 ZIP 한 개로 내려받아요"><Icon name="download" size={14} /> 파일 모두 내려받기 (ZIP)</a>}
                   <button onClick={() => onChat(selected.id)} disabled={tab !== "mine" && !selectedHasDocument && !(tab === "team" && sources?.some((source) => source.status === "ready"))}><Icon name="sparkle" size={14} /> 이 인수인계서에 질문하기</button>
                   <button onClick={() => (tab === "mine" ? list.open(selected.id) : list.openDocument(selected.id))} disabled={tab !== "mine" && !selectedHasDocument}><Icon name="file" size={14} /> {tab === "mine" && !selectedHasDocument ? "작업 열기" : "문서 열기"}</button>
@@ -214,6 +219,25 @@ export function MaterialsScreen({ list, onHome, onHandover, onDocuments, onRecei
           </section>
         </div>
       </main>
+      {deleting && selected && (
+        <ConfirmModal
+          icon="close"
+          title="이 인수인계서를 삭제할까요?"
+          description={`${selected.title}의 자료·대화·문서가 서버에서 모두 지워지며 되돌릴 수 없습니다.`}
+          confirmLabel="삭제하기"
+          busy={deleteBusy}
+          onCancel={() => !deleteBusy && setDeleting(false)}
+          onConfirm={async () => {
+            setDeleteBusy(true);
+            const error = await list.remove(selected.id);
+            setDeleteBusy(false);
+            setDeleting(false);
+            setDeleteError(error);
+            if (!error) setSelectedId(null);
+          }}
+        />
+      )}
+      {deleteError && <div className="list-notice error materials-delete-error" role="alert">삭제하지 못했어요. {deleteError}</div>}
     </div>
   );
 }
