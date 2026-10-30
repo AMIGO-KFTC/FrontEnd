@@ -200,8 +200,10 @@ export function FinalDocumentScreen({ data, sessionId, markdown, onGanttEdit, on
     editable: isEditing,
     onChange: (name: string, nth: number, months: number[]) => {
       setSaveState("saving");
+      setSaveError("");
       const done = onGanttEdit(name, nth, months);
-      done.then(() => setSaveState("saved"), () => setSaveState("failed"));
+      // 실패하면 막대는 원래대로 돌아가므로, 이유(예: '고칠 일정 행을 찾지 못했습니다')를 수정 모드 안내 줄에 보여 준다
+      done.then(() => setSaveState("saved"), (e) => { setSaveState("failed"); setSaveError(e instanceof Error ? e.message : ""); });
       return done;
     },
   }), [isEditing, onGanttEdit]);
