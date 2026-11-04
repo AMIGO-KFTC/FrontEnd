@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Brand } from "@/shared/Brand";
 import { ErrorNote } from "@/shared/ErrorNote";
 import { Icon } from "@/shared/Icon";
@@ -6,6 +6,7 @@ import { useCapsLock } from "@/shared/useCapsLock";
 import { AuthVisual } from "./AuthVisual";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
+const DEMO_NOTICE_DATE_KEY = "amigo-admin-demo-notice-hidden-date";
 
 // 임시: Onetel SSO 연동 전까지 SSO 로그인은 시연 계정(계장 최금결)으로 들어간다. 연동되면 이 계정 정보를 지우고 SSO 응답으로 바꾼다.
 const SSO_DEMO_ACCOUNT = { loginId: "1111111", password: "amigo1234" }; // 시드 계정: IT아미고팀 계장 최금결(아이디 = 사번)
@@ -15,6 +16,22 @@ function savedLoginId(): string {
     return window.localStorage.getItem(SAVED_ID_KEY) ?? "";
   } catch {
     return "";
+  }
+}
+
+function localDateKey(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function shouldShowDemoNotice(): boolean {
+  try {
+    return window.localStorage.getItem(DEMO_NOTICE_DATE_KEY) !== localDateKey();
+  } catch {
+    return true;
   }
 }
 
@@ -32,7 +49,30 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(() => savedLoginId() !== "");
   const [ssoOpen, setSsoOpen] = useState(false);
+  const [demoNoticeOpen, setDemoNoticeOpen] = useState(shouldShowDemoNotice);
   const caps = useCapsLock();
+
+  const closeDemoNotice = () => {
+    setDemoNoticeOpen(false);
+  };
+
+  const hideDemoNoticeToday = () => {
+    try {
+      window.localStorage.setItem(DEMO_NOTICE_DATE_KEY, localDateKey());
+    } catch {
+      /* 저장소를 못 쓰는 브라우저는 현재 화면에서만 닫는다 */
+    }
+    setDemoNoticeOpen(false);
+  };
+
+  useEffect(() => {
+    if (!demoNoticeOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDemoNotice();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [demoNoticeOpen]);
   const ssoLogin = async () => {
     if (busy) return;
     setSsoOpen(false);
@@ -87,6 +127,26 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
             <h2 id="sso-title">SSO 로그인</h2>
             <p>현재 Onetel에서 로그인된 사번으로 로그인합니다.</p>
             <div><button type="button" onClick={() => setSsoOpen(false)}>취소</button><button type="button" autoFocus onClick={ssoLogin}>로그인</button></div>
+          </section>
+        </div>
+      )}
+      {demoNoticeOpen && (
+        <div className="demo-account-overlay" role="presentation">
+          <section className="demo-account-modal" role="dialog" aria-modal="true" aria-labelledby="demo-account-title" aria-describedby="demo-account-description">
+            <span className="brand-emblem demo-account-emblem" aria-hidden="true" />
+            <h2 id="demo-account-title">관리자 데모 계정 안내</h2>
+            <p id="demo-account-description">
+              관리자 모드 체험을 위한 테스트용 계정 정보입니다.<br />
+              실 운영 환경에서는 계정 정보 안내 팝업이 제공되지 않습니다.
+            </p>
+            <dl className="demo-account-credentials">
+              <div><dt>사번</dt><dd>1100812</dd></div>
+              <div><dt>비밀번호</dt><dd>amigo1234</dd></div>
+            </dl>
+            <div className="demo-account-actions">
+              <button type="button" className="demo-account-today" onClick={hideDemoNoticeToday}>오늘은 보지 않기</button>
+              <button type="button" className="demo-account-close" autoFocus onClick={closeDemoNotice}>닫기</button>
+            </div>
           </section>
         </div>
       )}
