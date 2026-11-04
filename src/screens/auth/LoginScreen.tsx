@@ -7,7 +7,6 @@ import { AuthVisual } from "./AuthVisual";
 
 const SAVED_ID_KEY = "amigo-saved-login-id";
 const DEMO_NOTICE_DATE_KEY = "amigo-admin-demo-notice-hidden-date";
-const DEMO_NOTICE_SESSION_KEY = "amigo-admin-demo-notice-dismissed";
 
 // 임시: Onetel SSO 연동 전까지 SSO 로그인은 시연 계정(계장 최금결)으로 들어간다. 연동되면 이 계정 정보를 지우고 SSO 응답으로 바꾼다.
 const SSO_DEMO_ACCOUNT = { loginId: "1111111", password: "amigo1234" }; // 시드 계정: IT아미고팀 계장 최금결(아이디 = 사번)
@@ -30,7 +29,6 @@ function localDateKey(): string {
 
 function shouldShowDemoNotice(): boolean {
   try {
-    if (window.sessionStorage.getItem(DEMO_NOTICE_SESSION_KEY) === "1") return false;
     return window.localStorage.getItem(DEMO_NOTICE_DATE_KEY) !== localDateKey();
   } catch {
     return true;
@@ -55,18 +53,12 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
   const caps = useCapsLock();
 
   const closeDemoNotice = () => {
-    try {
-      window.sessionStorage.setItem(DEMO_NOTICE_SESSION_KEY, "1");
-    } catch {
-      /* 저장소를 못 쓰는 브라우저는 현재 화면에서만 닫는다 */
-    }
     setDemoNoticeOpen(false);
   };
 
   const hideDemoNoticeToday = () => {
     try {
       window.localStorage.setItem(DEMO_NOTICE_DATE_KEY, localDateKey());
-      window.sessionStorage.setItem(DEMO_NOTICE_SESSION_KEY, "1");
     } catch {
       /* 저장소를 못 쓰는 브라우저는 현재 화면에서만 닫는다 */
     }
