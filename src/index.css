@@ -77,6 +77,23 @@ input::placeholder, textarea::placeholder { color: #a5afb6; }
 .login-divider span { height: 1px; flex: 1; background: #e1e6e9; }
 .sso-button { width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #dce3e6; border-radius: 10px; background: #fff; color: #3f4e58; font-size: 13.5px; font-weight: 700; transition: .2s ease; }
 .sso-button:hover { border-color: #b9c6cc; background: #f8fafb; transform: translateY(-1px); }
+.demo-account-overlay { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 24px; background: rgba(32, 33, 38, .5); backdrop-filter: blur(3px); animation: signup-fade .2s ease-out; }
+.demo-account-modal { width: min(100%, 548px); padding: 38px 30px 28px; border: 1px solid rgba(255,255,255,.72); border-radius: 14px; background: #fff; color: #29262b; text-align: center; box-shadow: 0 26px 70px rgba(26, 22, 30, .28); animation: signup-rise .28s cubic-bezier(.2,.8,.2,1); }
+.demo-account-emblem { width: 40px; height: 40px; display: block; margin: 0 auto 20px; }
+.demo-account-modal h2 { margin: 0; font-size: 29px; line-height: 1.35; letter-spacing: -1.1px; }
+.demo-account-modal > p { margin: 15px 0 25px; color: #5f5962; font-size: 15.5px; line-height: 1.75; word-break: keep-all; }
+.demo-account-credentials { margin: 0; padding: 8px 28px; border-radius: 15px; background: #fbf2f7; text-align: left; }
+.demo-account-credentials > div { min-height: 54px; display: grid; grid-template-columns: 118px 1fr; align-items: center; }
+.demo-account-credentials > div + div { border-top: 1px solid #eadfe6; }
+.demo-account-credentials dt { color: #69616b; font-size: 15px; font-weight: 700; }
+.demo-account-credentials dd { margin: 0; color: #29262b; font: 800 18px/1.3 "Manrope", "Pretendard Variable", sans-serif; letter-spacing: -.2px; }
+.demo-account-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 16px; margin-top: 28px; }
+.demo-account-actions button { height: 54px; border-radius: 12px; font-size: 16px; font-weight: 700; transition: .18s ease; }
+.demo-account-today { border: 0; background: transparent; color: #373238; }
+.demo-account-today:hover { background: #f7f4f6; }
+.demo-account-close { border: 0; background: #292629; color: #fff; box-shadow: 0 8px 20px rgba(41,38,41,.17); }
+.demo-account-close:hover { background: #171517; transform: translateY(-1px); }
+.demo-account-actions button:focus-visible { outline: 3px solid rgba(117,87,216,.3); outline-offset: 2px; }
 .signup-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 28px; background: rgba(10, 18, 24, .62); backdrop-filter: blur(5px); animation: signup-fade .22s ease-out; }
 .signup-modal { width: min(100%, 410px); max-height: calc(100vh - 56px); position: relative; overflow-y: auto; padding: 28px 30px 24px; border: 1px solid rgba(255,255,255,.7); border-radius: 22px; background: rgba(255,255,255,.96); box-shadow: 0 28px 80px rgba(3,15,19,.32); animation: signup-rise .3s cubic-bezier(.2,.8,.2,1); }
 .signup-close { width: 32px; height: 32px; position: absolute; top: 15px; right: 15px; display: grid; place-items: center; border: 0; border-radius: 9px; background: #f1f4f5; color: #65727a; }
@@ -2780,6 +2797,17 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
   .login-panel { min-height: 100vh; padding: 32px; }
   .mobile-brand { display: block; position: absolute; top: 30px; left: 32px; }
   .copyright { display: none; }
+  .demo-account-overlay { padding: 18px; }
+  .demo-account-modal { padding: 30px 20px 20px; border-radius: 14px; }
+  .demo-account-emblem { width: 36px; height: 36px; margin-bottom: 16px; }
+  .demo-account-modal h2 { font-size: 24px; }
+  .demo-account-modal > p { margin: 13px 0 21px; font-size: 14px; }
+  .demo-account-credentials { padding: 7px 18px; }
+  .demo-account-credentials > div { min-height: 50px; grid-template-columns: 94px 1fr; }
+  .demo-account-credentials dt { font-size: 14px; }
+  .demo-account-credentials dd { font-size: 16px; }
+  .demo-account-actions { gap: 9px; margin-top: 22px; }
+  .demo-account-actions button { height: 48px; font-size: 14px; }
 }
 
 /* 관리자 모드 미리보기 띠 */
