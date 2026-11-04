@@ -134,9 +134,9 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
         <div className="demo-account-overlay" role="presentation">
           <section className="demo-account-modal" role="dialog" aria-modal="true" aria-labelledby="demo-account-title" aria-describedby="demo-account-description">
             <span className="brand-emblem demo-account-emblem" aria-hidden="true" />
-            <h2 id="demo-account-title">관리자 데모 계정 안내</h2>
+            <h2 id="demo-account-title">관리자(팀장) 데모 계정 안내</h2>
             <p id="demo-account-description">
-              관리자 모드 체험을 위한 테스트용 계정 정보입니다.<br />
+              관리자(팀장) 모드 체험을 위한 테스트용 계정 정보입니다.<br />
               실 운영 환경에서는 계정 정보 안내 팝업이 제공되지 않습니다.
             </p>
             <dl className="demo-account-credentials">
