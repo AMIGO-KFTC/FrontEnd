@@ -134,15 +134,22 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
         <div className="demo-account-overlay" role="presentation">
           <section className="demo-account-modal" role="dialog" aria-modal="true" aria-labelledby="demo-account-title" aria-describedby="demo-account-description">
             <span className="brand-emblem demo-account-emblem" aria-hidden="true" />
-            <h2 id="demo-account-title">관리자 데모 계정 안내</h2>
+            <h2 id="demo-account-title">관리자(팀장) 데모 계정 안내</h2>
             <p id="demo-account-description">
-              관리자 모드 체험을 위한 테스트용 계정 정보입니다.<br />
+              관리자(팀장) 모드 체험을 위한 테스트용 계정 정보입니다.<br />
               실 운영 환경에서는 계정 정보 안내 팝업이 제공되지 않습니다.
             </p>
             <dl className="demo-account-credentials">
               <div><dt>사번</dt><dd>1100812</dd></div>
               <div><dt>비밀번호</dt><dd>amigo1234</dd></div>
             </dl>
+            <div className="demo-account-general">
+              <span aria-hidden="true"><Icon name="user" size={24} /></span>
+              <div>
+                <strong>일반 사용자 안내</strong>
+                <p>일반 계정은 SSO 로그인 또는 회원가입을 통해 이용할 수 있습니다.</p>
+              </div>
+            </div>
             <div className="demo-account-actions">
               <button type="button" className="demo-account-today" onClick={hideDemoNoticeToday}>오늘은 보지 않기</button>
               <button type="button" className="demo-account-close" autoFocus onClick={closeDemoNotice}>닫기</button>

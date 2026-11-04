@@ -87,7 +87,11 @@ input::placeholder, textarea::placeholder { color: #a5afb6; }
 .demo-account-credentials > div + div { border-top: 1px solid #eadfe6; }
 .demo-account-credentials dt { color: #69616b; font-size: 15px; font-weight: 700; }
 .demo-account-credentials dd { margin: 0; color: #29262b; font: 800 18px/1.3 "Manrope", "Pretendard Variable", sans-serif; letter-spacing: -.2px; }
-.demo-account-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 16px; margin-top: 28px; }
+.demo-account-general { margin-top: 16px; padding: 12px 18px; display: flex; align-items: center; gap: 14px; border-radius: 12px; background: #f5f3fa; color: #3d3841; text-align: left; }
+.demo-account-general > span { flex: none; padding-right: 14px; display: grid; place-items: center; align-self: stretch; border-right: 1px solid #dfd9e9; color: #7865b5; }
+.demo-account-general strong { display: block; margin-bottom: 2px; font-size: 14px; }
+.demo-account-general p { margin: 0; color: #5f5964; font-size: 13.5px; line-height: 1.45; word-break: keep-all; }
+.demo-account-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 16px; margin-top: 22px; }
 .demo-account-actions button { height: 54px; border-radius: 12px; font-size: 16px; font-weight: 700; transition: .18s ease; }
 .demo-account-today { border: 0; background: transparent; color: #373238; }
 .demo-account-today:hover { background: #f7f4f6; }
@@ -2806,6 +2810,10 @@ body:has(.upload-step-page), #root:has(.upload-step-page) { height: 100vh; overf
   .demo-account-credentials > div { min-height: 50px; grid-template-columns: 94px 1fr; }
   .demo-account-credentials dt { font-size: 14px; }
   .demo-account-credentials dd { font-size: 16px; }
+  .demo-account-general { margin-top: 12px; padding: 11px 13px; gap: 11px; }
+  .demo-account-general > span { padding-right: 11px; }
+  .demo-account-general strong { font-size: 13.5px; }
+  .demo-account-general p { font-size: 12.5px; }
   .demo-account-actions { gap: 9px; margin-top: 22px; }
   .demo-account-actions button { height: 48px; font-size: 14px; }
 }
