@@ -143,6 +143,13 @@ export function LoginScreen({ onLogin, onSignup, onForgot, busy = false, error =
               <div><dt>사번</dt><dd>1100812</dd></div>
               <div><dt>비밀번호</dt><dd>amigo1234</dd></div>
             </dl>
+            <div className="demo-account-general">
+              <span aria-hidden="true"><Icon name="user" size={24} /></span>
+              <div>
+                <strong>일반 사용자 안내</strong>
+                <p>일반 계정은 SSO 로그인 또는 회원가입을 통해 이용할 수 있습니다.</p>
+              </div>
+            </div>
             <div className="demo-account-actions">
               <button type="button" className="demo-account-today" onClick={hideDemoNoticeToday}>오늘은 보지 않기</button>
               <button type="button" className="demo-account-close" autoFocus onClick={closeDemoNotice}>닫기</button>
